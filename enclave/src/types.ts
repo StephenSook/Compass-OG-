@@ -13,7 +13,11 @@ export type EligibilityResult = {
     | "credential-expired"
     | "credential-bad-signature"
     | "issuer-not-trusted"
-    | "missing-required-claim";
+    | "missing-required-claim"
+    | "wrong-vct"
+    | "status-list-unreachable"
+    | "malformed-presentation"
+    | "kb-binding-failed";
   policyId: string;
   policyHash: string;
   /** Disclosed claims that satisfied the predicate (for audit logs). */
@@ -40,6 +44,8 @@ export type CompassPolicy = {
   version: string;
   predicate: PredicateNode;
   minAnonymitySet: number;
+  /** SD-JWT VC type the verifier MUST require (`vct` claim). */
+  expectedVct: string;
   credentialBundleSchema: {
     required: string[];
     properties: Record<string, unknown>;
@@ -70,6 +76,6 @@ export type HolderKeyPair = {
 
 export type StatusListEntry = {
   index: number;
-  /** "valid" or "revoked" — bit flag in the RFC 7644 status list */
+  /** "valid" or "revoked" — per IETF OAuth Token Status List (draft) bitmap */
   status: "valid" | "revoked";
 };
