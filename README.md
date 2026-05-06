@@ -56,17 +56,21 @@ This is hackathon-grade. Read `docs/honest-limits.md` for the full disclosure li
 - On-chain `verifyAttestation` is a **stub** — RA quote verification too expensive on-chain, real verification happens off-chain in the enclave service
 - SD-JWT VC pinned to draft-ietf-oauth-sd-jwt-vc-15 (the underlying SD-JWT primitive is RFC 9901 stable, but the VC profile is in flux)
 
-## Replicate a receipt yourself
+## Replicate a receipt yourself — *roadmap, Day 24 / Phase 10.5.5*
 
-Once mainnet is live (Day 24):
+The judge-replicable verify-receipt CLI is a roadmap item (built in Phase 10.5.5 of the locked plan). It will reproduce the receipt digest from public on-chain inputs + the canonical 0G TEE provider's attestation quote + the policy JSON. **Status today: scaffolded, not built.** It depends on (a) the canonical 0G TEE provider being pinned in Phase 6a.1 and (b) at least one real receipt anchored on Aristotle mainnet in Phase 8.
+
+When live, the invocation will be:
 
 ```bash
 git clone https://github.com/StephenSook/Compass-OG-.git
 cd Compass-OG- && npm install
-npm run verify-receipt -- --receiptId 0xABCD…
+npm run verify-receipt -- --receiptId 0x…
 ```
 
-Expected output: `OK — receipt verified against TEE attestation.` Reproduces the digest from public on-chain inputs + attestation quote + policy JSON.
+Expected output: `OK — receipt verified against TEE attestation.`
+
+Until then, the receipt's digest construction (`H(policyHash || providerChallenge || agentIdCommitment || verifierPubKey || result || expiry || credentialBundleHash)`) is documented in [`contracts/contracts/CompassHub.sol`](./contracts/contracts/CompassHub.sol) `issueReceipt` NatSpec, and the locked Plan-B enclave-key TEE-binding requirement is documented in `docs/honest-limits.md`.
 
 ## License
 

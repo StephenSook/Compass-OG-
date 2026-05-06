@@ -4,31 +4,31 @@ pragma solidity ^0.8.24;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title AgentRegistry — ERC-7857-stripped Agent identity for Compass.
-/// @notice Stripped per the locked plan: mint, getEncryptedURI, authorizeUsage,
-///         attestEligibility, verifyAttestation. Each Agent is owned by the
-///         user's Privy-derived wallet (single-principal model — see plan
-///         Phase 4b keybinding lock).
-/// @dev verifyAttestation is a v1 STUB — see docs/honest-limits.md. Real RA-quote
-///      verification is too expensive on-chain; the off-chain enclave service
-///      verifies the TDX quote against the canonical provider's measurement.
+/// @title AgentRegistry
+/// @notice ERC-7857-stripped Agent INFT for Compass. Soulbound by design — Maria's
+///         agent identity is bound to her wallet and cannot be transferred. The
+///         single-principal model relies on this: the agent owner is the holder
+///         of the credential vault, the EIP-712 signer for Authwit grants, and
+///         the principal whose key signs SD-JWT VC presentations.
+/// @dev    Transfers (other than mint/burn) revert with `SoulboundTransferDenied`.
+///         `verifyAttestation` is a v1 stub — it requires the quote bytes to be
+///         non-empty but does not perform real TDX RA verification (too expensive
+///         on-chain). Real verification is in the off-chain enclave service and
+///         documented in docs/honest-limits.md and the README "What's Real /
+///         What's Mocked" table.
 contract AgentRegistry is ERC721, Ownable {
-    /// @notice ERC-7857-stripped Agent metadata.
     struct Agent {
-        bytes32 metadataHash;   // hash of encrypted credential vault on 0G Storage
-        string encryptedURI;    // 0G Storage root-hash URI
-        address attestor;       // who issued the genesis credential (mocked v1)
-        bytes32 trustListRoot;  // merkle root of accepted issuers
+        bytes32 metadataHash;
+        string encryptedURI;
+        address attestor;
+        bytes32 trustListRoot;
     }
 
     uint256 private _nextTokenId;
 
     mapping(uint256 => Agent) public agents;
-    /// @notice agentId => policyId => last receiptHash anchored on-chain.
     mapping(uint256 => mapping(bytes32 => bytes32)) public lastReceipt;
-    /// @notice ERC-7857-style authorizeUsage delegation table.
     mapping(uint256 => mapping(address => bytes)) public authorizations;
-    /// @notice Registered oracles whose signatures count for verifyAttestation (v1 stub).
     mapping(address => bool) public registeredOracles;
 
     event AgentMinted(
@@ -51,18 +51,22 @@ contract AgentRegistry is ERC721, Ownable {
 
     error NotAgentOwner(uint256 tokenId, address caller);
     error AgentNotFound(uint256 tokenId);
+    error NotAuthorizedOracle(address caller);
+    error InvalidMetadataHash();
+    error EmptyAttestationQuote();
+    error SoulboundTransferDenied(uint256 tokenId, address from, address to);
 
-    constructor() ERC721("Compass Agent", "COMPASS-AGENT") Ownable(msg.sender) {
-        // contract owner can register oracles for verifyAttestation v1 stub
-    }
+    constructor() ERC721("Compass Agent", "COMPASS-AGENT") Ownable(msg.sender) {}
 
-    /// @notice Mints a new Agent INFT to the caller.
+    /// @notice Mint a new Agent INFT to the caller. metadataHash MUST be non-zero
+    ///         so the existence check `agents[tokenId].metadataHash == 0` is reliable.
     function mintAgent(
         bytes32 metadataHash,
         string calldata encryptedURI,
         address attestor,
         bytes32 trustListRoot
     ) external returns (uint256 tokenId) {
+        if (metadataHash == bytes32(0)) revert InvalidMetadataHash();
         tokenId = ++_nextTokenId;
         agents[tokenId] = Agent({
             metadataHash: metadataHash,
@@ -74,52 +78,43 @@ contract AgentRegistry is ERC721, Ownable {
         emit AgentMinted(tokenId, msg.sender, metadataHash, encryptedURI, attestor, trustListRoot);
     }
 
-    /// @notice Updates the encrypted vault pointer. Only the agent owner can call.
-    /// @dev teeAttestation arg reserved for v2 — for now, ownership check alone gates.
     function updateMetadata(
         uint256 tokenId,
         bytes32 newMetadataHash,
         string calldata newURI,
         bytes calldata /* teeAttestation */
     ) external {
-        if (ownerOf(tokenId) != msg.sender) {
-            revert NotAgentOwner(tokenId, msg.sender);
-        }
+        if (ownerOf(tokenId) != msg.sender) revert NotAgentOwner(tokenId, msg.sender);
+        if (newMetadataHash == bytes32(0)) revert InvalidMetadataHash();
         agents[tokenId].metadataHash = newMetadataHash;
         agents[tokenId].encryptedURI = newURI;
         emit MetadataUpdated(tokenId, newMetadataHash, newURI);
     }
 
-    /// @notice ERC-7857 authorizeUsage — delegates a specific permission set to a user
-    ///         without transferring ownership.
+    /// @notice ERC-7857 authorizeUsage — delegates a specific permission set to a
+    ///         user without transferring ownership. Note: this is for SAME-PRINCIPAL
+    ///         delegation (e.g., the user's hot wallet authorizing a smart-account
+    ///         executor); v1 does NOT enforce that the delegate is owned by the
+    ///         same principal. Documented in docs/honest-limits.md.
     function authorizeUsage(
         uint256 tokenId,
         address user,
         bytes calldata permissions
     ) external {
-        if (ownerOf(tokenId) != msg.sender) {
-            revert NotAgentOwner(tokenId, msg.sender);
-        }
+        if (ownerOf(tokenId) != msg.sender) revert NotAgentOwner(tokenId, msg.sender);
         authorizations[tokenId][user] = permissions;
         emit UsageAuthorized(tokenId, user, permissions);
     }
 
-    /// @notice Anchors a receipt hash for a (tokenId, policyId) pair.
-    /// @dev Called by an authorized oracle after Sealed Inference produces the receipt.
-    ///      v1 stub: any registered oracle can anchor. v2: gate by attestation
-    ///      quote verification on-chain (too expensive — handled off-chain instead).
     function attestEligibility(
         uint256 tokenId,
         bytes32 policyId,
         bytes32 receiptHash,
         bytes calldata attestationQuote
     ) external {
-        if (!registeredOracles[msg.sender]) {
-            revert NotAgentOwner(tokenId, msg.sender); // reuse error — caller not authorized
-        }
-        if (agents[tokenId].metadataHash == bytes32(0)) {
-            revert AgentNotFound(tokenId);
-        }
+        if (!registeredOracles[msg.sender]) revert NotAuthorizedOracle(msg.sender);
+        if (agents[tokenId].metadataHash == bytes32(0)) revert AgentNotFound(tokenId);
+        if (attestationQuote.length == 0) revert EmptyAttestationQuote();
         lastReceipt[tokenId][policyId] = receiptHash;
         emit EligibilityAttested(tokenId, policyId, receiptHash, attestationQuote);
     }
@@ -128,20 +123,35 @@ contract AgentRegistry is ERC721, Ownable {
         return agents[tokenId].encryptedURI;
     }
 
-    /// @notice v1 STUB — returns true if the bytes are a registered-oracle signature.
-    /// @dev Real TDX RA quote verification happens off-chain in the enclave service.
-    ///      Documented in docs/honest-limits.md and README "What's Real / What's Mocked".
+    /// @notice v1 STUB — requires non-empty quote bytes. Real TDX RA verification
+    ///         is too expensive on-chain; the off-chain enclave service performs
+    ///         it. Documented in docs/honest-limits.md and the README "What's
+    ///         Real / What's Mocked" table.
     function verifyAttestation(
         uint256 /* tokenId */,
-        bytes calldata /* quote */
+        bytes calldata quote
     ) external pure returns (bool) {
-        // v1 stub — accepts any non-empty bytes. Real verification: enclave service.
+        if (quote.length == 0) return false;
         return true;
     }
 
-    /// @notice Owner-only oracle registration (v1).
     function setOracle(address oracle, bool active) external onlyOwner {
         registeredOracles[oracle] = active;
         emit OracleUpdated(oracle, active);
+    }
+
+    /// @notice Soulbound — block all transfers (mint and burn still allowed).
+    ///         Single-principal model requires the agent identity to be inseparable
+    ///         from the original wallet.
+    function _update(
+        address to,
+        uint256 tokenId,
+        address auth
+    ) internal override returns (address) {
+        address from = _ownerOf(tokenId);
+        if (from != address(0) && to != address(0)) {
+            revert SoulboundTransferDenied(tokenId, from, to);
+        }
+        return super._update(to, tokenId, auth);
     }
 }

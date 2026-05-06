@@ -84,7 +84,13 @@ async function main() {
 
   const notesDir = path.resolve(__dirname, "../../docs/notes");
 
-  const balance = await provider.getBalance(signer.address);
+  let balance: bigint;
+  try {
+    balance = await provider.getBalance(signer.address);
+  } catch (e: unknown) {
+    console.error("[smoke] FATAL (exit 5): RPC unreachable —", JSON.stringify(e, bigintReplacer));
+    process.exit(5);
+  }
   console.log(`[smoke] Balance: ${balance.toString()} wei`);
   if (balance === 0n) {
     console.error("ERROR: wallet has 0 balance.");
@@ -92,24 +98,36 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("[smoke] Creating broker...");
-  const broker = await createZGComputeNetworkBroker(signer);
+  let broker: any;
+  try {
+    console.log("[smoke] Creating broker...");
+    broker = await createZGComputeNetworkBroker(signer);
+  } catch (e: unknown) {
+    console.error(
+      "[smoke] FATAL (exit 6): broker construction failed —",
+      JSON.stringify(e, bigintReplacer),
+    );
+    console.error(
+      "[smoke] Likely causes: SDK version mismatch, contract address drift, or 0G network down.",
+    );
+    process.exit(6);
+  }
 
-  // addLedger expects a number, not a string (per @0glabs/0g-serving-broker types).
-  // Per Codex review: ledger setup failure is FATAL unless the error confidently
-  // says "already exists" — non-fatal swallowing masks real broker/wallet/chain
-  // misconfigurations.
+  // Tighten the "already exists" matcher per Codex finding 4/silent-failure-hunter
+  // finding 2 — broad substring match could swallow unrelated errors like
+  // "endpoint exists but unreachable."
+  const LEDGER_EXISTS_RE = /ledger.*(already|exist|registered)/i;
   try {
     await broker.ledger.addLedger(0.01);
     console.log("[smoke] Ledger funded with 0.01 A0GI.");
-  } catch (e: any) {
-    const msg = String(e?.message ?? "").toLowerCase();
-    if (msg.includes("already") || msg.includes("exists")) {
+  } catch (e: unknown) {
+    const msg = String((e as any)?.message ?? "");
+    if (LEDGER_EXISTS_RE.test(msg)) {
       console.log("[smoke] Ledger already exists, skipping addLedger.");
     } else {
-      console.error("[smoke] FATAL: addLedger failed:", e?.message ?? e);
+      console.error("[smoke] FATAL (exit 3): addLedger failed:", msg || JSON.stringify(e, bigintReplacer));
       console.error(
-        "[smoke] If 'insufficient funds', wallet has gas but no balance to deposit. Fund more.",
+        "[smoke] If 'insufficient funds', wallet has gas but no deposit balance. Fund more.",
       );
       console.error(
         "[smoke] If 'wrong chain', RPC or chainId mismatch. Verify ZEROG_TESTNET_RPC_URL.",
@@ -118,8 +136,17 @@ async function main() {
     }
   }
 
-  console.log("[smoke] Listing providers...");
-  const providers = await broker.inference.listService();
+  let providers: unknown[];
+  try {
+    console.log("[smoke] Listing providers...");
+    providers = await broker.inference.listService();
+  } catch (e: unknown) {
+    console.error(
+      "[smoke] FATAL (exit 7): inference.listService failed —",
+      JSON.stringify(e, bigintReplacer),
+    );
+    process.exit(7);
+  }
   console.log(`[smoke] Found ${providers.length} provider(s).`);
 
   // ServiceStructOutput shape (verified from @0glabs/0g-serving-broker types):
@@ -155,9 +182,17 @@ async function main() {
   console.log(`[smoke] Found ${teeMlProviders.length} TeeML / TEE-attested provider(s).`);
 
   // Per Codex review: validate non-zero pricing — a free/dead/malformed provider
-  // could pass the smoke gate otherwise.
+  // could pass the smoke gate otherwise. Per silent-failure-hunter finding 5:
+  // SDK shape drift (inputPrice as number not bigint) would throw on bigint
+  // comparison. Coerce defensively.
+  const toBig = (v: unknown): bigint => {
+    if (typeof v === "bigint") return v;
+    if (typeof v === "number") return BigInt(v);
+    if (typeof v === "string" && /^\d+$/.test(v)) return BigInt(v);
+    return 0n;
+  };
   const teeMlWithPricing = teeMlProviders.filter(
-    (p: any) => (p.inputPrice ?? 0n) > 0n && (p.outputPrice ?? 0n) > 0n,
+    (p: any) => toBig(p.inputPrice) > 0n && toBig(p.outputPrice) > 0n,
   );
   console.log(
     `[smoke] TeeML providers with non-zero input+output pricing: ${teeMlWithPricing.length}`,
