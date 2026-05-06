@@ -1,8 +1,5 @@
 # Honest Limits — What Compass Does NOT Protect Against
 
-> The competitive moat. We document the v1 gaps explicitly so judges who
-> read carefully see them named, not glossed.
-
 ## Compass v1 does NOT:
 
 ### 1. Defeat physical coercion
@@ -42,10 +39,11 @@ the verify-receipt CLI (Phase 10.5.5 — coming Day 24) reproduces the chain.
 
 ### 6. SD-JWT VC standards stability
 
-We pin `@sd-jwt/sd-jwt-vc` to draft-ietf-oauth-sd-jwt-vc-15. The underlying
-SD-JWT primitive is RFC 9901 (stable) but the VC profile is in flux. Re-pin
-on each draft increment. Production deployments should track the IETF working
-group.
+We pin `@sd-jwt/sd-jwt-vc` to a draft-stage IETF profile. The underlying
+SD-JWT selective-disclosure primitive is published as RFC 9601 (December
+2024); the VC profile (draft-ietf-oauth-sd-jwt-vc) is still moving. Re-pin
+on each draft increment. Production deployments should track the IETF
+OAuth working group's progress.
 
 ### 7. Cross-issuer threshold trust
 
@@ -55,11 +53,10 @@ attestation. Documented future work.
 
 ### 8. Fully unlinkable cross-policy presentations
 
-Within the same policy, the same Agent produces the same nullifier (by
-design, for revocation). Across distinct policies, nullifiers are unlinkable
-without additional metadata correlation. Full presentation unlinkability
-across verifiers would require BBS+ signatures or zero-knowledge proofs of
-knowledge — out of scope for v1.
+Each grant carries a unique nullifier; across distinct grants, nullifiers
+are unlinkable without additional metadata correlation. Full presentation
+unlinkability across verifiers would require BBS+ signatures or
+zero-knowledge proofs of knowledge — out of scope for v1.
 
 ### 9. Differential privacy budget across receipts
 
@@ -77,11 +74,12 @@ compliance.
 
 ### 11. Mainnet ecosystem-credit grant
 
-Phase 8 mainnet deploy needs OG tokens. There is no mainnet faucet for
+Mainnet deploy needs real OG tokens. There is no mainnet faucet for
 hackathon participants per the 0G Telegram bug-report channel. Builders
-either bridge from Ethereum (~$1.26 gas via Interport, ~$18 via XSwap) or
-qualify for an ecosystem grant after deployment. Compass v1 demo runs on
-Galileo testnet (16602); mainnet deploy is pending Phase 8.
+either bridge from Ethereum (low-single-digit USD via Interport, ~$10-20
+via XSwap; verify at deploy time) or qualify for an ecosystem grant after
+deployment. v1 demo runs on Galileo testnet (16602); mainnet deploy is
+pending.
 
 ### 12. `oid4vc-ts` transport
 
@@ -93,10 +91,10 @@ layer would consume 2–4 days for zero demo gain. Documented decision.
 ### 13. Mainnet Cancun EVM compatibility verification
 
 We compile with `evmVersion: cancun` because OpenZeppelin v5 uses `mcopy`
-(a Cancun opcode). If 0G Aristotle mainnet runs a fork without Cancun
-support, contract deployment fails. Galileo testnet deployment in Phase 2.11
-is the verification step — bump to OpenZeppelin v4.x (paris-compatible) if
-needed before Phase 8.
+(a Cancun opcode). If 0G mainnet runs a fork without Cancun support,
+contract deployment fails. Galileo testnet deployment is the verification
+step — bump to OpenZeppelin v4.x (paris-compatible) if needed before
+mainnet deploy.
 
 ---
 
@@ -104,9 +102,11 @@ needed before Phase 8.
 
 To be clear:
 
-- **The receipt itself is non-identifying.** It contains only
-  `{nullifier, policyHash, attestationDigest, timestampBucket}` — no name,
-  no HKID, no employer, no documents.
+- **The receipt itself is non-identifying.** The on-chain `ReceiptIssued`
+  event contains only
+  `{receiptId, policyId, nullifier, agentIdCommitment, resultHash, expiry,
+  attestationDigest, timestampBucket}` — no name, no HKID, no employer,
+  no documents.
 - **The clinic never holds raw credentials.** They flow into the TEE,
   the policy evaluates inside the TEE, only the receipt comes out.
 - **Single-principal binding is enforced on-chain.** `consumeGrant` recovers

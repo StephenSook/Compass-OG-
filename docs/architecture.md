@@ -55,7 +55,7 @@
 | Component | Trusted by | Trust assumption |
 |---|---|---|
 | Privy wallet | Maria | Embedded wallet doesn't leak key |
-| AES-256-GCM | All | NIST-vetted; correct nonce reuse |
+| AES-256-GCM | All | NIST-vetted; **never** nonce-reuses |
 | SD-JWT VC issuer (NGO) | Verifier | Issuer keypair held honestly |
 | 0G Storage | All | Merkle-rooted archive returns same bytes |
 | 0G Sealed Inference TEE | Provider + verifier | TDX attestation valid; no >1-day side-channel exploits |
@@ -106,5 +106,4 @@ same principal" from public on-chain data + the VC.
 The same architecture serves DV survivors (shelter eligibility), foster youth
 aging out (housing eligibility), undocumented immigrants (emergency healthcare
 eligibility), journalists' sources (whistleblower-program eligibility). One
-protocol, many vulnerable populations. Maria is the lead persona; the
-architecture is the moat.
+protocol, many vulnerable populations. Maria is the lead persona.

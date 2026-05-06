@@ -6,12 +6,14 @@
   "description": "Canonical schema for the off-chain receipt payload that gets hashed into CompassHub.issueReceipt's attestationDigest field. Reproducible byte-for-byte by the verify-receipt CLI for judge replication.",
   "required": [
     "version",
+    "receiptId",
     "challenge",
     "policyHash",
     "agentIdCommitment",
     "verifierPubKey",
     "credentialBundleHash",
     "result",
+    "resultHash",
     "expiry",
     "issuedAt"
   ],
@@ -21,6 +23,16 @@
       "type": "string",
       "const": "compass-receipt-1.0.0",
       "description": "Schema version. Bump on any field add/remove/rename."
+    },
+    "receiptId": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "Unique receipt identifier emitted on-chain. Lowercase hex."
+    },
+    "resultHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "keccak256(canonicalize(result)) — emitted on-chain."
     },
     "challenge": {
       "type": "string",
@@ -83,9 +95,7 @@
     "_note": "MUST be applied identically by the issuer (enclave), the verifier (off-chain consumer), and the judge-replicable verify-receipt CLI. Any whitespace / key-order divergence breaks the digest match."
   },
   "_attestationDigestFormula": "sha256(canonicalize(this-document))",
-  "_planRefs": {
-    "phase-6a.8": "construct content payload from this schema",
-    "phase-6b.0": "verifierPubKey MUST be bound into TEE REPORTDATA",
-    "phase-10.5.5": "verify-receipt CLI reproduces this digest from public on-chain inputs + attestation quote"
+  "_alignmentToOnChain": {
+    "_note": "The on-chain ReceiptIssued event in CompassHub emits a subset of these fields plus on-chain-derived ones: receiptId, policyId, nullifier, agentIdCommitment, resultHash, expiry, attestationDigest, timestampBucket. The attestationDigest emitted on-chain MUST equal sha256(canonicalize(this-receipt-document))."
   }
 }

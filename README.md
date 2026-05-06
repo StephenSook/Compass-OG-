@@ -2,7 +2,7 @@
 
 > **Prove eligibility, not identity.**
 
-Compass is a private eligibility firewall built on 0G Network. Vulnerable users (lead persona: Maria Cruz, Filipino domestic worker in Hong Kong) prove they qualify for services through an autonomous agent — clinics receive only non-identifying receipts, never raw credentials.
+Compass is a private eligibility firewall built on 0G Network. Vulnerable users (lead persona: Maria Cruz, Filipino domestic worker in Hong Kong) prove they qualify for services through a soulbound agent identity — clinics receive only non-identifying receipts, never raw credentials.
 
 **Track 5: Privacy & Sovereign Infrastructure** — 0G APAC Hackathon 2026.
 
@@ -12,11 +12,11 @@ Compass is a private eligibility firewall built on 0G Network. Vulnerable users 
 
 A two-contract on-chain footprint plus an off-chain enclave service:
 
-- `AgentRegistry` (ERC-7857-stripped) — Maria's portable agent identity with encrypted credential pointer to 0G Storage
-- `CompassHub` — policy registry + Aztec-Authwit-style EIP-712 single-use grants + receipt event log
+- `AgentRegistry` (ERC-7857-stripped, soulbound) — Maria's agent identity with encrypted credential pointer to 0G Storage
+- `CompassHub` — policy registry + atomic `consumeGrantAndIssueReceipt` (Aztec-Authwit-style EIP-712 grant + bounded-disclosure receipt in a single tx, single-principal-bound to the agent owner)
 - 0G Sealed Inference (TeeML) — policy evaluation inside hardware-attested enclave
 - 0G Storage — AES-256-GCM-encrypted SD-JWT VC vaults
-- 0G Chain (Aristotle, chainId 16661) — receipts and grants on-chain, no PII
+- 0G Chain — testnet (Galileo, chainId 16602) for staging; mainnet chainId pending verification (16661 or 16600 — see `docs/notes/0g-ecosystem-status.md`)
 
 The clinic's view of Maria after she passes eligibility: `"Someone qualified for free legal assistance at 14:32 on May 18, 2026."` That's the entire disclosure. No name. No HKID. No employer. No documents.
 
@@ -37,16 +37,30 @@ Compass-OG-/
 
 ## Status
 
-**Day 1 (May 6 2026)**: scaffolding + 0G broker smoke test. See `docs/notes/0g-tee-smoke.md`.
+**Today (May 6 2026):** workspace + scaffolding + contracts + invariants. See `docs/notes/0g-tee-smoke.md` for the broker smoke-test result.
+
+| Area | State |
+|---|---|
+| Hardhat workspace + 0G networks (Galileo / Aristotle) | wired |
+| `AgentRegistry` soulbound + ERC-7857-stripped | implemented + tested |
+| `CompassHub` atomic grant + receipt | implemented + tested |
+| Property-based invariants (5) | green |
+| `slither` static analysis | clean (medium + high) |
+| `solidity-coverage` | 100% lines, 96.55% branches |
+| 0G broker SDK smoke test | infrastructure ready, gated on testnet funding |
+| SD-JWT VC issuer/holder/verifier round-trip | not started |
+| 0G Storage encrypted vault upload | not started |
+| 0G Sealed Inference broker integration | not started |
+| Mainnet deploy | not yet |
 
 Build-in-public:
-- X thread: posted Day 1 — search `#0GHackathon` for `@StephenSook` updates
+- X thread: posted day-1 — search `#0GHackathon` for `@StephenSook` updates
 - Discord: 0G builders channel
-- Repo updates daily through May 16 / June 5 deadline
+- Repo updates daily through the submission deadline
 
 ## Architecture (at a glance)
 
-User device (Privy embedded wallet) → AES-256-GCM encrypts SD-JWT VC → uploaded to 0G Storage. Provider sends fresh challenge + policyId. Maria's agent calls 0G Sealed Inference: TEE decrypts the VC inside the enclave, evaluates the policy predicate, emits a receipt with the result + policy hash + agent commitment + attestation digest. The enclave's signing key is bound into the TEE attestation REPORTDATA. Receipt logged on 0G Chain via `CompassHub.issueReceipt`. The clinic sees the receipt; the clinic never sees Maria.
+User device (Privy embedded wallet) → AES-256-GCM encrypts SD-JWT VC → uploaded to 0G Storage. Provider sends fresh challenge + policyId. Maria signs an Authwit grant via Privy. Provider passes the grant to the enclave; the enclave decrypts the VC inside the TEE, evaluates the policy predicate, signs the receipt with an enclave-born key bound into the TEE attestation custom-data, and returns it. Provider posts grant + receipt in a single `consumeGrantAndIssueReceipt` call — atomic, no half-state. The clinic sees the on-chain `ReceiptIssued` event; the clinic never sees Maria.
 
 ## Honest limits
 
@@ -56,9 +70,9 @@ This is hackathon-grade. Read `docs/honest-limits.md` for the full disclosure li
 - On-chain `verifyAttestation` is a **stub** — RA quote verification too expensive on-chain, real verification happens off-chain in the enclave service
 - SD-JWT VC pinned to draft-ietf-oauth-sd-jwt-vc-15 (the underlying SD-JWT primitive is RFC 9901 stable, but the VC profile is in flux)
 
-## Replicate a receipt yourself — *roadmap, Day 24 / Phase 10.5.5*
+## Replicate a receipt yourself — *roadmap*
 
-The judge-replicable verify-receipt CLI is a roadmap item (built in Phase 10.5.5 of the locked plan). It will reproduce the receipt digest from public on-chain inputs + the canonical 0G TEE provider's attestation quote + the policy JSON. **Status today: scaffolded, not built.** It depends on (a) the canonical 0G TEE provider being pinned in Phase 6a.1 and (b) at least one real receipt anchored on Aristotle mainnet in Phase 8.
+The judge-replicable verify-receipt CLI is a roadmap item. It will reproduce the receipt digest from public on-chain inputs + the canonical 0G TEE provider's attestation quote + the policy JSON. **Status today: scaffolded, not built.** It depends on (a) the canonical 0G TEE provider being pinned in production and (b) at least one real receipt anchored on mainnet.
 
 When live, the invocation will be:
 
@@ -70,7 +84,7 @@ npm run verify-receipt -- --receiptId 0x…
 
 Expected output: `OK — receipt verified against TEE attestation.`
 
-Until then, the receipt's digest construction (`H(policyHash || providerChallenge || agentIdCommitment || verifierPubKey || result || expiry || credentialBundleHash)`) is documented in [`contracts/contracts/CompassHub.sol`](./contracts/contracts/CompassHub.sol) `issueReceipt` NatSpec, and the locked Plan-B enclave-key TEE-binding requirement is documented in `docs/honest-limits.md`.
+Until then, the receipt's digest construction is documented in [`docs/schemas/receipt-v1.json`](./docs/schemas/receipt-v1.json) (RFC 8785 JCS canonical form), and the enclave-key TEE-binding requirement is documented in `docs/honest-limits.md`.
 
 ## License
 
@@ -78,4 +92,4 @@ MIT — see [LICENSE](./LICENSE).
 
 ## Build credits
 
-Solo build by Stephen Sookra (KSU CS sophomore, Atlanta). Built with Claude Code Opus 4.7 + Codex GPT-5.5 + Gemini 2.5 Pro under the Sookra Methodology framework. Thanks to the 0G Labs team and HackQuest for the infrastructure and the platform.
+Solo build by Stephen Sookra (KSU CS sophomore, Atlanta). Pair-coded with Claude Code (Opus 4.7), reviewed by Codex (GPT-5.5) and Gemini 2.5 Pro. Thanks to the 0G Labs team and HackQuest for the infrastructure and the platform.

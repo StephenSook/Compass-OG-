@@ -32,9 +32,10 @@ Chain so revocation is auditable.
 **Threat.** Two providers (clinic A + clinic B) both ask for "free legal
 assistance eligible" receipts and combine logs to triangulate Maria.
 
-**Mitigation.** Receipts contain only
-`{policyHash, attestationBucket, timestampBucket, nullifier=H(salt||agentId||policyId)}`.
-Bucketed timestamps (15-min) and per-policy nullifiers limit linkability.
+**Mitigation.** The on-chain `ReceiptIssued` event contains
+`{receiptId, policyId, nullifier, agentIdCommitment, resultHash, expiry,
+attestationDigest, timestampBucket}` — no name, no HKID, no employer.
+Bucketed timestamps (15-min) and per-grant nullifiers limit linkability.
 
 **Cannot solve in 31 days.** Full unlinkable presentations across verifiers
 (would need BBS+ or full ZK).
@@ -80,12 +81,17 @@ a batch list, the verifier never tells the issuer which slot it cares about.
 
 ## 1e. Device compromise
 
-**Threat.** Employer-controlled phone, abuser stalkerware. ~95% of UK
-domestic-violence cases involve some tech abuse (Refuge UK / MIT Tech Review).
+**Threat.** Employer-controlled phone, abuser stalkerware. Tech-enabled
+abuse (location-tracking, account hijacking, covert apps) is reported as
+a routine feature of intimate-partner-violence cases by Refuge UK, the UK's
+largest specialist domestic-abuse charity (see Refuge's "Unsocial Spaces"
+work, 2020-2024). Hard percentages vary by source and definition; we
+treat tech abuse as the default threat surface, not the exception.
 
-**Mitigation.** Duress PIN that wipes the agent vault and emits a normal-
-looking dummy receipt. No app icon by default. Web app accessed via shared
-kiosk at NGO premises.
+**Mitigation (planned, not yet implemented).** Duress PIN that wipes the
+agent vault and emits a normal-looking dummy receipt. No app icon by
+default. Web app accessed via shared kiosk at NGO premises. v1 demo does
+not include the duress PIN — Phase 7 frontend roadmap.
 
 **Cannot solve in 31 days.** Hardware attestation of the user's device,
 root/jailbreak detection.
@@ -116,11 +122,12 @@ survives forensic analysis.
 
 ## 1g. TEE side-channels and operator compromise
 
-**Threat.** Documented 2024–2025 attacks: TDXdown (CCS 2024 — single-stepping
-TDX VMs by deluding the security monitor); StumbleStepping (leaks instruction
-count via the prevention mechanism itself); TEE.Fail (2025 — DDR5 bus-
-interposition attack extracting Intel SGX/TDX and AMD SEV-SNP attestation
-keys, including from NVIDIA Confidential Computing).
+**Threat.** Documented 2024–2025 attacks: TDXdown (USENIX Security 2024 —
+single-stepping TDX VMs by deluding the security monitor); StumbleStepping
+(USENIX Security 2025 — leaks instruction count via the prevention mechanism
+itself); TEE.Fail (Sep 2025 — DDR5 bus-interposition attack extracting Intel
+SGX/TDX and AMD SEV-SNP attestation keys, including from NVIDIA Confidential
+Computing).
 
 **Mitigation.** The 0G broker pattern verifies a TEE signature per response;
 we validate the attestation report on every request. Plan B requires the
@@ -162,7 +169,8 @@ provable k-anonymity for arbitrary policies.
 ## 1i. GDPR / right-to-deletion vs permanent 0G Storage
 
 **Threat.** Article 17 RTBF vs blockchain immutability is an unresolved
-literature problem (Botto/Iovino/Visconti 2023; EDPB April 2025 guidance).
+regulatory problem (see EDPB Guidelines 02/2025 on processing of personal
+data through blockchain, April 2025).
 
 **Mitigation.** All PII strictly off-chain. On 0G Storage we keep only
 encrypted blobs whose decryption keys live on the user's device — destroy

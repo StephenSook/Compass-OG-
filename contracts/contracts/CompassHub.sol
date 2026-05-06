@@ -4,27 +4,31 @@ pragma solidity ^0.8.24;
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-/// @notice Minimal interface to AgentRegistry for the consumeGrant signer-binding check.
 interface IAgentRegistry {
     function ownerOf(uint256 tokenId) external view returns (address);
+    function verifyAttestation(uint256 tokenId, bytes calldata quote) external view returns (bool);
 }
 
 /// @title CompassHub
-/// @notice On-chain hub for Compass policy registry, Authwit-style single-use grants,
-///         and bounded-disclosure receipt logging.
-/// @dev    Grants are EIP-712 signed by the agent owner (single-principal model);
-///         the contract enforces this by recovering the signer and matching it
-///         against `agentRegistry.ownerOf(grant.agentTokenId)`. Receipts are
-///         emitted only by registered oracles for active policies, with replay
-///         protection via `usedReceiptIds` and expiry validation.
+/// @notice Atomic grant-consumption + receipt-issuance hub. A single transaction
+///         binds Maria's signed Authwit grant to a TEE-attested eligibility
+///         receipt — eliminating the griefing window where a provider could
+///         consume a grant without producing a receipt.
 contract CompassHub is EIP712 {
     struct Grant {
-        uint256 agentTokenId; // the AgentRegistry tokenId whose owner must sign
+        uint256 agentTokenId;
         bytes32 policyId;
         address provider;
         uint256 nonce;
         uint64 expiry;
         bytes32 nullifier;
+    }
+
+    struct ReceiptInputs {
+        bytes32 receiptId;
+        bytes32 resultHash;
+        uint64 receiptExpiry;
+        bytes32 attestationDigest;
     }
 
     struct PolicyMeta {
@@ -46,14 +50,26 @@ contract CompassHub is EIP712 {
     mapping(bytes32 => bool) public usedNullifiers;
     mapping(bytes32 => bool) public usedReceiptIds;
     mapping(bytes32 => PolicyMeta) public policies;
-    mapping(address => bool) public registeredOracles;
 
+    /// @notice ReceiptIssued carries every field a verifier needs to match
+    ///         off-chain canonical receipt to on-chain emission. nullifier
+    ///         binds it to a consumed grant; agentIdCommitment is the
+    ///         non-identifying handle for the agent.
+    event ReceiptIssued(
+        bytes32 indexed receiptId,
+        bytes32 indexed policyId,
+        bytes32 indexed nullifier,
+        bytes32 agentIdCommitment,
+        bytes32 resultHash,
+        uint64 expiry,
+        bytes32 attestationDigest,
+        uint64 timestampBucket
+    );
     event GrantConsumed(
         bytes32 indexed nullifier,
         bytes32 indexed policyId,
         address indexed provider,
-        uint256 agentTokenId,
-        uint256 timestamp
+        uint256 agentTokenId
     );
     event PolicyRegistered(
         bytes32 indexed policyId,
@@ -62,15 +78,6 @@ contract CompassHub is EIP712 {
         uint32 minAnonymitySet
     );
     event PolicyDeactivated(bytes32 indexed policyId);
-    event ReceiptIssued(
-        bytes32 indexed receiptId,
-        bytes32 indexed policyId,
-        bytes32 resultHash,
-        uint64 expiry,
-        bytes32 attestationDigest,
-        uint64 timestampBucket
-    );
-    event OracleUpdated(address indexed oracle, bool active);
     event OracleAdminTransferred(address indexed previous, address indexed next);
 
     error GrantAlreadyUsed(bytes32 nullifier);
@@ -81,12 +88,15 @@ contract CompassHub is EIP712 {
     error PolicyAlreadyRegistered(bytes32 policyId);
     error PolicyNotFound(bytes32 policyId);
     error NotPolicyAdmin(bytes32 policyId, address caller);
-    error NotAuthorizedOracle(address caller);
     error NotOracleAdmin(address caller);
     error PolicyInactive(bytes32 policyId);
     error InvalidPolicyHash();
+    error InvalidMinAnonymitySet();
     error ReceiptAlreadyIssued(bytes32 receiptId);
     error ReceiptExpired(uint64 expiry, uint256 nowTimestamp);
+    error InvalidReceiptId();
+    error InvalidResultHash();
+    error InvalidAttestationDigest();
     error InvalidAgentRegistry();
     error InvalidOracleAdmin();
 
@@ -97,7 +107,7 @@ contract CompassHub is EIP712 {
     }
 
     // -------------------------------------------------------------------------
-    // Authwit single-use grant
+    // Atomic grant + receipt
     // -------------------------------------------------------------------------
 
     function hashGrant(Grant calldata g) external view returns (bytes32) {
@@ -121,12 +131,25 @@ contract CompassHub is EIP712 {
             );
     }
 
-    /// @notice Consume a single-use grant. Caller must be the bound provider; the
-    ///         signature must be from `agentRegistry.ownerOf(g.agentTokenId)`; the
-    ///         policy must be active. Order: provider → expiry → policy active →
-    ///         nullifier → sig shape → recover → bind to agent owner → mark used.
-    function consumeGrant(Grant calldata g, bytes calldata sig) external {
+    /// @notice Atomically consume a single-use grant AND issue the receipt.
+    ///         Caller must be the bound provider; the signature must come from
+    ///         the agent owner; the policy must be active; receipt fields must
+    ///         be non-zero; receipt expiry must be in the future. Both effects
+    ///         (nullifier + receiptId) are written in the same tx — no
+    ///         half-state, no provider-grief window.
+    /// @dev    Order of checks: provider → grant expiry → policy exists+active →
+    ///         nullifier unused → sig length → recover signer → bind to agent
+    ///         owner → receipt fields non-zero → receipt expiry → receipt id
+    ///         unused → effects → events.
+    function consumeGrantAndIssueReceipt(
+        Grant calldata g,
+        bytes calldata sig,
+        ReceiptInputs calldata r
+    ) external {
+        // === Caller binding ===
         if (msg.sender != g.provider) revert WrongProvider(g.provider, msg.sender);
+
+        // === Grant validity ===
         // slither-disable-next-line timestamp
         if (block.timestamp > g.expiry) revert GrantExpired(g.expiry, block.timestamp);
 
@@ -137,17 +160,41 @@ contract CompassHub is EIP712 {
         if (usedNullifiers[g.nullifier]) revert GrantAlreadyUsed(g.nullifier);
         if (sig.length != 65) revert MalformedSignature();
 
+        // === Single-principal signer binding ===
         address recovered = ECDSA.recover(_hashGrant(g), sig);
         address expected = agentRegistry.ownerOf(g.agentTokenId);
         if (recovered != expected) revert UnauthorizedSigner(recovered, expected);
 
+        // === Receipt validity ===
+        if (r.receiptId == bytes32(0)) revert InvalidReceiptId();
+        if (r.resultHash == bytes32(0)) revert InvalidResultHash();
+        if (r.attestationDigest == bytes32(0)) revert InvalidAttestationDigest();
+        // slither-disable-next-line timestamp
+        if (r.receiptExpiry <= block.timestamp)
+            revert ReceiptExpired(r.receiptExpiry, block.timestamp);
+        if (usedReceiptIds[r.receiptId]) revert ReceiptAlreadyIssued(r.receiptId);
+
+        // === Effects ===
         usedNullifiers[g.nullifier] = true;
-        emit GrantConsumed(
-            g.nullifier,
+        usedReceiptIds[r.receiptId] = true;
+
+        bytes32 agentIdCommitment = keccak256(abi.encode(g.agentTokenId, expected));
+        // 15-min bucket alignment per threat-model section 1b — the divide-then-multiply
+        // floor is the desired behavior, sub-bucket precision IS what we discard.
+        // slither-disable-next-line divide-before-multiply
+        uint64 bucket = uint64((block.timestamp / 900) * 900);
+
+        // === Events ===
+        emit GrantConsumed(g.nullifier, g.policyId, g.provider, g.agentTokenId);
+        emit ReceiptIssued(
+            r.receiptId,
             g.policyId,
-            g.provider,
-            g.agentTokenId,
-            block.timestamp
+            g.nullifier,
+            agentIdCommitment,
+            r.resultHash,
+            r.receiptExpiry,
+            r.attestationDigest,
+            bucket
         );
     }
 
@@ -155,6 +202,9 @@ contract CompassHub is EIP712 {
     // Policy registry
     // -------------------------------------------------------------------------
 
+    /// @notice Register a policy. Caller becomes admin. policyHash must be
+    ///         non-zero; minAnonymitySet must be non-zero (per threat-model
+    ///         section 1h, every policy declares its k-anonymity floor).
     function registerPolicy(
         bytes32 policyId,
         bytes32 policyHash,
@@ -162,9 +212,9 @@ contract CompassHub is EIP712 {
         uint32 minAnonymitySet
     ) external {
         if (policyHash == bytes32(0)) revert InvalidPolicyHash();
-        if (policies[policyId].policyHash != bytes32(0)) {
+        if (minAnonymitySet == 0) revert InvalidMinAnonymitySet();
+        if (policies[policyId].policyHash != bytes32(0))
             revert PolicyAlreadyRegistered(policyId);
-        }
         policies[policyId] = PolicyMeta({
             policyHash: policyHash,
             admin: msg.sender,
@@ -176,68 +226,16 @@ contract CompassHub is EIP712 {
     }
 
     function deactivatePolicy(bytes32 policyId) external {
-        PolicyMeta storage p = policies[policyId];
-        if (p.policyHash == bytes32(0)) revert PolicyNotFound(policyId);
-        if (p.admin != msg.sender) revert NotPolicyAdmin(policyId, msg.sender);
-        p.active = false;
+        PolicyMeta storage pol = policies[policyId];
+        if (pol.policyHash == bytes32(0)) revert PolicyNotFound(policyId);
+        if (pol.admin != msg.sender) revert NotPolicyAdmin(policyId, msg.sender);
+        pol.active = false;
         emit PolicyDeactivated(policyId);
     }
 
     // -------------------------------------------------------------------------
-    // Receipt log
+    // Oracle admin (kept for forward-compat; not consumed by the atomic flow)
     // -------------------------------------------------------------------------
-
-    /// @notice Issue an eligibility receipt. Oracle-only. Receipt id must be unique;
-    ///         expiry must be in the future; policy must exist and be active.
-    /// @dev    `attestationDigest` is the receipt's load-bearing field. It is
-    ///         expected to equal the off-chain digest:
-    ///         H(policyHash || providerChallenge || agentIdCommitment ||
-    ///         verifierPubKey || result || expiry || credentialBundleHash).
-    ///         The off-chain verify-receipt CLI reproduces this hash from public
-    ///         inputs + the TEE attestation quote, gated on the canonical
-    ///         provider's TEE measurement.
-    function issueReceipt(
-        bytes32 receiptId,
-        bytes32 policyId,
-        bytes32 resultHash,
-        uint64 expiry,
-        bytes32 attestationDigest
-    ) external {
-        if (!registeredOracles[msg.sender]) revert NotAuthorizedOracle(msg.sender);
-        if (usedReceiptIds[receiptId]) revert ReceiptAlreadyIssued(receiptId);
-        // slither-disable-next-line timestamp
-        if (expiry <= block.timestamp) revert ReceiptExpired(expiry, block.timestamp);
-
-        PolicyMeta storage p = policies[policyId];
-        if (p.policyHash == bytes32(0)) revert PolicyNotFound(policyId);
-        if (!p.active) revert PolicyInactive(policyId);
-
-        usedReceiptIds[receiptId] = true;
-        // 15-minute bucket alignment is intentional (threat model 1b — verifier
-        // collusion mitigation). Divide-then-multiply is the correct floor-to-bucket
-        // operation; slither flags it as potential precision loss but the loss IS
-        // the desired behavior (sub-bucket timestamps are normalized away).
-        // slither-disable-next-line divide-before-multiply
-        uint64 bucket = uint64((block.timestamp / 900) * 900);
-        emit ReceiptIssued(
-            receiptId,
-            policyId,
-            resultHash,
-            expiry,
-            attestationDigest,
-            bucket
-        );
-    }
-
-    // -------------------------------------------------------------------------
-    // Oracle admin
-    // -------------------------------------------------------------------------
-
-    function setOracle(address oracle, bool active) external {
-        if (msg.sender != oracleAdmin) revert NotOracleAdmin(msg.sender);
-        registeredOracles[oracle] = active;
-        emit OracleUpdated(oracle, active);
-    }
 
     function transferOracleAdmin(address next) external {
         if (msg.sender != oracleAdmin) revert NotOracleAdmin(msg.sender);
