@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "smoke-test": "ts-node src/smoke-test.ts",
     "build": "tsc"
   },
@@ -15,12 +15,21 @@
   "dependencies": {
     "@0glabs/0g-serving-broker": "^2.0.0",
     "@0glabs/0g-ts-sdk": "^0.3.3",
+    "@noble/curves": "^2.2.0",
+    "@noble/ed25519": "^3.1.0",
+    "@noble/hashes": "^2.2.0",
+    "@scure/base": "^2.2.0",
+    "@sd-jwt/core": "^0.19.0",
+    "@sd-jwt/crypto-nodejs": "^0.19.0",
+    "@sd-jwt/jwt-status-list": "^0.19.0",
+    "@sd-jwt/sd-jwt-vc": "^0.19.0",
     "dotenv": "^17.4.2",
     "ethers": "^6.16.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "ts-node": "^10.9.2",
-    "typescript": "~5.6.0"
+    "typescript": "~5.6.0",
+    "vitest": "^4.1.5"
   }
 }

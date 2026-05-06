@@ -88,7 +88,17 @@ intentionally NOT integrated. Compass's "issuer" is a local mock for the
 demo — there is no real OID4VCI flow to a wallet. Adding the transport
 layer would consume 2–4 days for zero demo gain. Documented decision.
 
-### 13. Mainnet Cancun EVM compatibility verification
+### 13. SD-JWT VC key-binding (KB) on the holder side
+
+The holder presents SD-JWT VCs with selective disclosure but does NOT attach
+a KB-JWT (audience+nonce binding signed by the holder's secp256k1 key) in
+v1. Production SD-JWT VC presentations include KB to prove the presenter
+authorized THIS specific request. v1 gets equivalent integrity from the
+on-chain `consumeGrantAndIssueReceipt` flow, where the agent owner's
+EIP-712 signature on the Authwit grant proves authorization. KB on the
+SD-JWT side is belt-and-suspenders — documented as a future hardening.
+
+### 14. Mainnet Cancun EVM compatibility verification
 
 We compile with `evmVersion: cancun` because OpenZeppelin v5 uses `mcopy`
 (a Cancun opcode). If 0G mainnet runs a fork without Cancun support,
