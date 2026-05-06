@@ -13,6 +13,11 @@ const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.24",
     settings: {
+      // cancun — required by OpenZeppelin v5+ which uses mcopy (Cancun opcode).
+      // Per Codex review (finding 7): verify 0G Aristotle supports Cancun
+      // before mainnet deploy. If 0G runs a fork without Cancun, downgrade
+      // to OpenZeppelin v4.x (which compiles for paris) before Phase 8.
+      // Galileo testnet deployment in Phase 2.11 is the verification step.
       evmVersion: "cancun",
       viaIR: true,
       optimizer: { enabled: true, runs: 200 },
