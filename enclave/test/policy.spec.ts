@@ -12,6 +12,7 @@ const HELP_POLICY: CompassPolicy = {
     ],
   },
   minAnonymitySet: 100,
+  expectedVct: "compass:help-legal-aid",
   credentialBundleSchema: {
     required: ["is_FDH_in_HK", "has_pending_case"],
     properties: {},
@@ -80,5 +81,28 @@ describe("evaluatePolicy — pure predicate evaluator", () => {
     );
     expect(r.policyHash).toBe(POLICY_HASH);
     expect(r.policyId).toBe("help-legal-aid");
+  });
+
+  it("rejects an empty and:[] predicate as predicate-false (Codex finding)", () => {
+    const empty: CompassPolicy = { ...HELP_POLICY, predicate: { and: [] } };
+    const r = evaluatePolicy(empty, {}, POLICY_HASH);
+    expect(r.eligible).toBe(false);
+    expect(r.reason).toBe("predicate-false");
+  });
+
+  it("rejects an empty or:[] predicate as predicate-false (Codex finding)", () => {
+    const empty: CompassPolicy = { ...HELP_POLICY, predicate: { or: [] } };
+    const r = evaluatePolicy(empty, {}, POLICY_HASH);
+    expect(r.eligible).toBe(false);
+    expect(r.reason).toBe("predicate-false");
+  });
+
+  it("rejects predicates deeper than MAX_PREDICATE_DEPTH (DoS guard)", () => {
+    let node: any = { claim: "leaf", equals: true };
+    for (let i = 0; i < 20; i++) node = { and: [node] };
+    const deep: CompassPolicy = { ...HELP_POLICY, predicate: node };
+    const r = evaluatePolicy(deep, { leaf: true }, POLICY_HASH);
+    expect(r.eligible).toBe(false);
+    expect(r.reason).toBe("predicate-false");
   });
 });

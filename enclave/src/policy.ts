@@ -1,5 +1,12 @@
 /**
  * Pure policy predicate evaluator. No I/O. Used inside the TEE.
+ *
+ * Hardening (Sonnet review):
+ * - Depth guard prevents stack-overflow DoS from deeply-nested predicates.
+ * - Empty `and: []` rejected (would otherwise vacuously return true and grant
+ *   eligibility from a no-op predicate).
+ * - Empty `or: []` rejected (would always return false — caller-side bug,
+ *   surface it explicitly rather than silently denying).
  */
 import type {
   ClaimSet,
@@ -9,38 +16,48 @@ import type {
   PredicateNode,
 } from "./types";
 
+const MAX_PREDICATE_DEPTH = 16;
+
+class MalformedPredicateError extends Error {}
+
 function isLeaf(node: PredicateNode): node is PredicateLeaf {
   return typeof (node as PredicateLeaf).claim === "string";
 }
 
-function evalNode(node: PredicateNode, claims: ClaimSet): boolean {
+function evalNode(node: PredicateNode, claims: ClaimSet, depth: number): boolean {
+  if (depth > MAX_PREDICATE_DEPTH) {
+    throw new MalformedPredicateError(`predicate depth exceeds ${MAX_PREDICATE_DEPTH}`);
+  }
   if (isLeaf(node)) {
     return claims[node.claim] === node.equals;
   }
   if ("and" in node) {
-    return node.and.every((child) => evalNode(child, claims));
+    if (node.and.length === 0) throw new MalformedPredicateError("empty and:[]");
+    return node.and.every((child) => evalNode(child, claims, depth + 1));
   }
   if ("or" in node) {
-    return node.or.some((child) => evalNode(child, claims));
+    if (node.or.length === 0) throw new MalformedPredicateError("empty or:[]");
+    return node.or.some((child) => evalNode(child, claims, depth + 1));
   }
-  throw new Error(`Unknown predicate node: ${JSON.stringify(node)}`);
+  throw new MalformedPredicateError(`unknown predicate node: ${JSON.stringify(node)}`);
 }
 
-/**
- * Determine which claim names appear in the predicate tree (for required-claim
- * checks before evaluation).
- */
-function collectClaimNames(node: PredicateNode, acc: Set<string>): void {
+function collectClaimNames(node: PredicateNode, acc: Set<string>, depth: number): void {
+  if (depth > MAX_PREDICATE_DEPTH) {
+    throw new MalformedPredicateError(`predicate depth exceeds ${MAX_PREDICATE_DEPTH}`);
+  }
   if (isLeaf(node)) {
     acc.add(node.claim);
     return;
   }
   if ("and" in node) {
-    node.and.forEach((child) => collectClaimNames(child, acc));
+    if (node.and.length === 0) throw new MalformedPredicateError("empty and:[]");
+    node.and.forEach((child) => collectClaimNames(child, acc, depth + 1));
     return;
   }
   if ("or" in node) {
-    node.or.forEach((child) => collectClaimNames(child, acc));
+    if (node.or.length === 0) throw new MalformedPredicateError("empty or:[]");
+    node.or.forEach((child) => collectClaimNames(child, acc, depth + 1));
   }
 }
 
@@ -49,9 +66,21 @@ export function evaluatePolicy(
   claims: ClaimSet,
   policyHashHex: string,
 ): EligibilityResult {
-  // Check every claim referenced in the predicate is present.
-  const required = new Set<string>();
-  collectClaimNames(policy.predicate, required);
+  let required: Set<string>;
+  try {
+    required = new Set<string>();
+    collectClaimNames(policy.predicate, required, 0);
+  } catch (e) {
+    if (e instanceof MalformedPredicateError) {
+      return {
+        eligible: false,
+        reason: "predicate-false",
+        policyId: policy.policyId,
+        policyHash: policyHashHex,
+      };
+    }
+    throw e;
+  }
 
   for (const c of required) {
     if (!(c in claims)) {
@@ -64,7 +93,21 @@ export function evaluatePolicy(
     }
   }
 
-  const ok = evalNode(policy.predicate, claims);
+  let ok: boolean;
+  try {
+    ok = evalNode(policy.predicate, claims, 0);
+  } catch (e) {
+    if (e instanceof MalformedPredicateError) {
+      return {
+        eligible: false,
+        reason: "predicate-false",
+        policyId: policy.policyId,
+        policyHash: policyHashHex,
+      };
+    }
+    throw e;
+  }
+
   if (!ok) {
     return {
       eligible: false,
