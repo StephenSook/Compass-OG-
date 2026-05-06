@@ -141,3 +141,27 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# === Compass-specific additions ===
+
+# Hardhat
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+.openzeppelin/
+
+# Vercel
+.vercel
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Extra secrets safety
+*.pem
+*.key
+mnemonic.txt
