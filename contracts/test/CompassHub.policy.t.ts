@@ -207,4 +207,11 @@ describe("CompassHub — Policy registry + Receipt log", function () {
       hub.connect(deployer).setOracle(await other.getAddress(), true),
     ).to.be.revertedWithCustomError(hub, "NotOracleAdmin");
   });
+
+  it("transferOracleAdmin rejects zero address (slither missing-zero-check)", async function () {
+    const { hub, deployer } = await deploy();
+    await expect(
+      hub.connect(deployer).transferOracleAdmin(ethers.ZeroAddress),
+    ).to.be.revertedWithCustomError(hub, "InvalidOracleAdmin");
+  });
 });

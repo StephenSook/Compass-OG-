@@ -88,6 +88,7 @@ contract CompassHub is EIP712 {
     error ReceiptAlreadyIssued(bytes32 receiptId);
     error ReceiptExpired(uint64 expiry, uint256 nowTimestamp);
     error InvalidAgentRegistry();
+    error InvalidOracleAdmin();
 
     constructor(address _agentRegistry) EIP712("Compass", "1") {
         if (_agentRegistry == address(0)) revert InvalidAgentRegistry();
@@ -126,6 +127,7 @@ contract CompassHub is EIP712 {
     ///         nullifier → sig shape → recover → bind to agent owner → mark used.
     function consumeGrant(Grant calldata g, bytes calldata sig) external {
         if (msg.sender != g.provider) revert WrongProvider(g.provider, msg.sender);
+        // slither-disable-next-line timestamp
         if (block.timestamp > g.expiry) revert GrantExpired(g.expiry, block.timestamp);
 
         PolicyMeta storage p = policies[g.policyId];
@@ -203,6 +205,7 @@ contract CompassHub is EIP712 {
     ) external {
         if (!registeredOracles[msg.sender]) revert NotAuthorizedOracle(msg.sender);
         if (usedReceiptIds[receiptId]) revert ReceiptAlreadyIssued(receiptId);
+        // slither-disable-next-line timestamp
         if (expiry <= block.timestamp) revert ReceiptExpired(expiry, block.timestamp);
 
         PolicyMeta storage p = policies[policyId];
@@ -210,6 +213,11 @@ contract CompassHub is EIP712 {
         if (!p.active) revert PolicyInactive(policyId);
 
         usedReceiptIds[receiptId] = true;
+        // 15-minute bucket alignment is intentional (threat model 1b — verifier
+        // collusion mitigation). Divide-then-multiply is the correct floor-to-bucket
+        // operation; slither flags it as potential precision loss but the loss IS
+        // the desired behavior (sub-bucket timestamps are normalized away).
+        // slither-disable-next-line divide-before-multiply
         uint64 bucket = uint64((block.timestamp / 900) * 900);
         emit ReceiptIssued(
             receiptId,
@@ -233,6 +241,7 @@ contract CompassHub is EIP712 {
 
     function transferOracleAdmin(address next) external {
         if (msg.sender != oracleAdmin) revert NotOracleAdmin(msg.sender);
+        if (next == address(0)) revert InvalidOracleAdmin();
         emit OracleAdminTransferred(oracleAdmin, next);
         oracleAdmin = next;
     }
