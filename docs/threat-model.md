@@ -68,7 +68,7 @@ never sees gas), 0G gas sponsorship, broad issuer trust lists.
 **Threat.** Standard CRL / status-list lookups leak which credential is being
 checked.
 
-**Mitigation.** `@sd-jwt/jwt-status-list` (RFC 7644 status list JWT) — fetches
+**Mitigation.** `@sd-jwt/jwt-status-list` (IETF OAuth Token Status List, draft) — fetches
 a batch list, the verifier never tells the issuer which slot it cares about.
 
 **Cannot solve in 31 days.** Private information retrieval (PIR) for status.

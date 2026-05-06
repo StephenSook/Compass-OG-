@@ -88,15 +88,22 @@ intentionally NOT integrated. Compass's "issuer" is a local mock for the
 demo — there is no real OID4VCI flow to a wallet. Adding the transport
 layer would consume 2–4 days for zero demo gain. Documented decision.
 
-### 13. SD-JWT VC key-binding (KB) on the holder side
+### 13. SD-JWT VC key-binding (KB) — v2 enforces, v1 did not
 
-The holder presents SD-JWT VCs with selective disclosure but does NOT attach
-a KB-JWT (audience+nonce binding signed by the holder's secp256k1 key) in
-v1. Production SD-JWT VC presentations include KB to prove the presenter
-authorized THIS specific request. v1 gets equivalent integrity from the
-on-chain `consumeGrantAndIssueReceipt` flow, where the agent owner's
-EIP-712 signature on the Authwit grant proves authorization. KB on the
-SD-JWT side is belt-and-suspenders — documented as a future hardening.
+**v2 (current):** The verifier MUST reject any presentation that does not
+include a KB-JWT signed by the secp256k1 key declared in the credential's
+`cnf.jwk` claim. The holder attaches a KB-JWT covering `{aud, nonce, iat,
+sd_hash}`; the verifier checks (a) signature against `cnf.jwk`, (b) `aud`
+matches the verifier's expected audience, (c) `nonce` matches the verifier's
+challenge, (d) `iat`/`nbf`/`exp` are within skew. The single-principal
+binding (cnf.jwk == agent INFT owner == EIP-712 grant signer) is the
+load-bearing security claim — any presentation forged by a key not bound
+to the credential is rejected with reason `kb-binding-failed`.
+
+What was true in v1 (now superseded): KB was skipped, presentations were
+effectively bearer tokens, and integrity relied entirely on the on-chain
+Authwit signature. The Codex + Sonnet review surfaced this as a BLOCKER;
+v2 closes it.
 
 ### 14. Mainnet Cancun EVM compatibility verification
 
