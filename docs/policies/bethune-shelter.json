@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "policyId": "bethune-shelter",
+  "issuerCanonicalName": "Bethune House Migrant Women's Refuge",
+  "version": "1.0.0",
+  "predicate": {
+    "and": [
+      { "claim": "is_female", "equals": true },
+      { "claim": "is_FDH_in_HK", "equals": true },
+      { "claim": "in_distress_marker_from_NGO", "equals": true }
+    ]
+  },
+  "minAnonymitySet": 50,
+  "credentialBundleSchema": {
+    "required": [
+      "is_female",
+      "is_FDH_in_HK",
+      "in_distress_marker_from_NGO",
+      "residency"
+    ],
+    "properties": {
+      "is_female": { "type": "boolean" },
+      "is_FDH_in_HK": { "type": "boolean" },
+      "in_distress_marker_from_NGO": { "type": "boolean" },
+      "residency": { "type": "string", "const": "HK" }
+    }
+  },
+  "trustedIssuers": [
+    "did:key:z6MkREPLACE_BETHUNE_DID_KEY_AT_PHASE_4A"
+  ],
+  "humanReadable": {
+    "title": "Bethune House — Migrant Women's Refuge Intake Eligibility",
+    "description": "Confirms a female foreign domestic worker in Hong Kong is in active distress (homeless, jobless, abused, or pursuing a legal case) per a partner-NGO assessor. Used to gate temporary shelter intake without disclosing identity.",
+    "issuingOrg": "Bethune House (under Mission for Migrant Workers, founded 1986; ~25-30 women per shelter, ~680 women per year served)",
+    "averageStay": "2 weeks – 2 months; some over a year"
+  },
+  "policyHashAlgorithm": "sha256",
+  "policyHashCanonicalization": "RFC 8785 JSON Canonicalization Scheme",
+  "_note": "Smaller minAnonymitySet (50 vs 100 for HELP) reflects the narrower eligibility population. Per threat model section 1h, policies with low k-anonymity require additional review before deployment."
+}

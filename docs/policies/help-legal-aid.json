@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "policyId": "help-legal-aid",
+  "issuerCanonicalName": "HELP for Domestic Workers",
+  "version": "1.0.0",
+  "predicate": {
+    "and": [
+      { "claim": "is_FDH_in_HK", "equals": true },
+      { "claim": "has_pending_case", "equals": true }
+    ]
+  },
+  "minAnonymitySet": 100,
+  "credentialBundleSchema": {
+    "required": ["is_FDH_in_HK", "has_pending_case", "employment_active", "residency"],
+    "properties": {
+      "is_FDH_in_HK": { "type": "boolean" },
+      "has_pending_case": { "type": "boolean" },
+      "employment_active": { "type": "boolean" },
+      "residency": { "type": "string", "const": "HK" }
+    }
+  },
+  "trustedIssuers": [
+    "did:key:z6MkREPLACE_HELP_DID_KEY_AT_PHASE_4A"
+  ],
+  "humanReadable": {
+    "title": "HELP for Domestic Workers — Free Legal Aid Eligibility",
+    "description": "Confirms a foreign domestic helper currently in Hong Kong has an active or recently-terminated employment contract and a labor / legal / abuse case in progress. Used to gate access to HELP's pro-bono legal services without disclosing identity.",
+    "issuingOrg": "Helpers for Domestic Helpers (St. John's Cathedral, Hong Kong; tel +852 2523-4020)",
+    "founded": 1989
+  },
+  "policyHashAlgorithm": "sha256",
+  "policyHashCanonicalization": "RFC 8785 JSON Canonicalization Scheme",
+  "_note": "policyHash is computed off-chain over this canonical JSON; CompassHub.registerPolicy stores the digest. Any whitespace / key-order divergence between off-chain canonical and on-chain digest invalidates the policy."
+}
