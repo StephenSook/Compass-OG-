@@ -1,17 +1,22 @@
 /**
- * Maria persona claims + 3 mock-issuer fixtures (HELP, Bethune House,
- * Hospital). Deterministic keys — same seed → same did:key → same demo.
+ * INSECURE_FIXTURE_ONLY — Maria persona claims + 3 mock-issuer fixtures
+ * (HELP, Bethune House, Hospital). Deterministic keys derived from public
+ * seed strings; reproducible across runs but trivially recovered by anyone
+ * who reads this file. Demo + tests only.
  */
-import { deterministicIssuerKeyPair, deterministicHolderKeyPair } from "./keys";
+import {
+  INSECURE_FIXTURE_deterministicIssuerKeyPair,
+  INSECURE_FIXTURE_deterministicHolderKeyPair,
+} from "./keys";
 import type { ClaimSet, IssuerKeyPair, HolderKeyPair } from "./types";
 
 export const ISSUERS = {
-  help: deterministicIssuerKeyPair("compass-fixture-help-legal-aid-v1"),
-  bethune: deterministicIssuerKeyPair("compass-fixture-bethune-shelter-v1"),
-  hospital: deterministicIssuerKeyPair("compass-fixture-hk-fdh-hospital-v1"),
+  help: INSECURE_FIXTURE_deterministicIssuerKeyPair("compass-fixture-help-legal-aid-v1"),
+  bethune: INSECURE_FIXTURE_deterministicIssuerKeyPair("compass-fixture-bethune-shelter-v1"),
+  hospital: INSECURE_FIXTURE_deterministicIssuerKeyPair("compass-fixture-hk-fdh-hospital-v1"),
 };
 
-export const MARIA: HolderKeyPair = deterministicHolderKeyPair(
+export const MARIA: HolderKeyPair = INSECURE_FIXTURE_deterministicHolderKeyPair(
   "compass-fixture-maria-cruz-v1",
 );
 

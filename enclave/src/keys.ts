@@ -33,10 +33,15 @@ export function generateIssuerKeyPair(): IssuerKeyPair {
 }
 
 /**
- * Derive a deterministic issuer key from a seed string. Used for fixture
- * issuers (HELP, Bethune, Hospital) so the demo is reproducible.
+ * INSECURE_FIXTURE_ONLY — derive a deterministic issuer key from a seed
+ * string. Tests + demo only. The private key is sha256(seed), so anyone
+ * who knows the seed reconstructs it instantly. NEVER use this in
+ * production: there is no entropy beyond the seed string.
+ *
+ * Used for fixture issuers (HELP, Bethune, Hospital) so the demo is
+ * reproducible. Real issuers MUST call generateIssuerKeyPair().
  */
-export function deterministicIssuerKeyPair(seed: string): IssuerKeyPair {
+export function INSECURE_FIXTURE_deterministicIssuerKeyPair(seed: string): IssuerKeyPair {
   const privateKeyBytes = sha256(new TextEncoder().encode(seed));
   const publicKeyBytes = ed25519.getPublicKey(privateKeyBytes);
   const did = ed25519DidKey(publicKeyBytes);
@@ -65,7 +70,12 @@ export function generateHolderKeyPair(): HolderKeyPair {
   };
 }
 
-export function deterministicHolderKeyPair(seed: string): HolderKeyPair {
+/**
+ * INSECURE_FIXTURE_ONLY — see INSECURE_FIXTURE_deterministicIssuerKeyPair.
+ * Holder variant for Maria's reproducible demo identity. Production
+ * holders MUST use Privy / hardware wallet entropy via generateHolderKeyPair().
+ */
+export function INSECURE_FIXTURE_deterministicHolderKeyPair(seed: string): HolderKeyPair {
   const privateKeyBytes = sha256(new TextEncoder().encode(seed));
   const publicKeyBytes = secp256k1.getPublicKey(privateKeyBytes, false);
   const privateKeyHex = "0x" + Buffer.from(privateKeyBytes).toString("hex");
