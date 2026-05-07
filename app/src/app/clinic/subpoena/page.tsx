@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { RevealText } from "@/components/primitives/RevealText";
 import { MagneticButton } from "@/components/primitives/MagneticButton";
@@ -47,7 +48,7 @@ export default function SubpoenaPage() {
             No name. No HKID. No employer. No documents.
           </p>
 
-          <div className="mt-16 flex justify-center">
+          <div className="mt-16 flex flex-wrap justify-center gap-4">
             <MagneticButton
               href={`https://chainscan-galileo.0g.ai/tx/${RECEIPT_TX_HASH}`}
               ariaLabel="Verify receipt transaction on chainscan-galileo (opens new tab)"
@@ -55,6 +56,12 @@ export default function SubpoenaPage() {
             >
               Verify on chain →
             </MagneticButton>
+            <Link
+              href="/receipt/1"
+              className="self-center font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+            >
+              See the receipt →
+            </Link>
           </div>
         </div>
       </section>
