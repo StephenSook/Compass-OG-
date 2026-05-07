@@ -1,5 +1,17 @@
 # 0G Dev TG Ping — Four Blocking Questions (Compass)
 
+> **2026-05-07 STATUS:** Q1 + Q2 + Q4 ANSWERED by 0G compute team.
+> Q3 (storage Flow.submit) flagged to storage team, follow-up pending.
+>   - Q1 (custom-code TeeML): **YES** — arbitrary Docker code attested;
+>     OpenAI API constraint is broker-routing only, not TDX measurement.
+>   - Q2 (compute SDK CAs): **MIGRATED** — `@0glabs` deprecated; new
+>     package is `@0gfoundation/0g-compute-ts-sdk@0.8.1` with V4 ledger
+>     CA `0xE70830508dAc0A97e6c087c75f402f9Be669E406`.
+>   - Q3 (storage Flow.submit): **PENDING** storage team.
+>   - Q4 (REPORTDATA binding): **YES** — option (a). dstack TDX writes
+>     signing key's Ethereum address into `report_data`. Verify via
+>     Intel DCAP / dstack verifier.
+
 **For copy-paste to 0G Telegram bug-report channel / Daily Q&A (14:00–15:00 UTC+8).**
 
 Send as one message, follow up per-thread. Greeting + context + four numbered questions.

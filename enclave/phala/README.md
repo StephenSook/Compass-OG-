@@ -1,10 +1,15 @@
-# Compass on Phala TDX — Day-3 Scaffold
+# Compass on Phala TDX — Day-15 Escape Hatch
 
-Phala TDX deployment for the Compass enclave service. Used if 0G TeeML cannot run custom Compass evaluator code (Codex BLOCKER 6.1 — see `docs/notes/codex-tee-architecture-review.md`).
+Phala TDX deployment scaffold. **Not the primary path.** Retained as a Day-15 fallback if the pure-0G TeeML deployment hits an integration issue we can't resolve in time.
 
-## Why this exists
+## Status (Day 3, 2026-05-07)
 
-0G TeeML providers must "implement the OpenAI API Interface" per `https://docs.0g.ai/developer-hub/building-on-0g/compute-network/inference-provider`. Compass needs to run a deterministic SD-JWT verifier + policy evaluator, not an LLM. Phala TDX supports arbitrary Docker images measured by TDX attestation with full REPORTDATA binding (up to 64 bytes — covers `sha256(signerPubkey || nonce)`).
+The original trigger for this scaffold was the assumption that 0G TeeML couldn't measure custom Compass code AND didn't expose REPORTDATA. Both assumptions were inverted by the 0G compute team's TG response the same day:
+
+- TeeML attests arbitrary Docker images via dstack TDX. The OpenAI API requirement is a broker-routing constraint, NOT a TDX measurement constraint. Compass wraps the receipt-signer as an OpenAI-shaped HTTP endpoint to satisfy routing; TDX measures the whole image.
+- REPORTDATA binding works on 0G TeeML — dstack TDX writes the signing key's Ethereum address into `report_data` automatically.
+
+So Compass ships pure-0G with real hardware-bound REPORTDATA proof. This scaffold remains as the bounded-cost escape hatch in case integration with 0G's TeeML provider deployment hits a blocker we can't resolve before Day 15.
 
 ## What's here
 

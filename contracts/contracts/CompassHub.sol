@@ -65,11 +65,15 @@ contract CompassHub is EIP712 {
         bytes32 attestationDigest,
         uint64 timestampBucket
     );
+    /// @notice GrantConsumed emits agentIdCommitment (not raw tokenId) so the
+    ///         on-chain log cannot be correlated to Maria via
+    ///         agentRegistry.ownerOf(tokenId). Same commitment is in
+    ///         ReceiptIssued — single privacy primitive across both events.
     event GrantConsumed(
         bytes32 indexed nullifier,
         bytes32 indexed policyId,
         address indexed provider,
-        uint256 agentTokenId
+        bytes32 agentIdCommitment
     );
     event PolicyRegistered(
         bytes32 indexed policyId,
@@ -185,7 +189,7 @@ contract CompassHub is EIP712 {
         uint64 bucket = uint64((block.timestamp / 900) * 900);
 
         // === Events ===
-        emit GrantConsumed(g.nullifier, g.policyId, g.provider, g.agentTokenId);
+        emit GrantConsumed(g.nullifier, g.policyId, g.provider, agentIdCommitment);
         emit ReceiptIssued(
             r.receiptId,
             g.policyId,

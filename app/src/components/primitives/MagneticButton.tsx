@@ -1,88 +1,95 @@
 "use client";
 
-import { useRef, useEffect, useState, type ReactNode } from "react";
-import { useReducedMotion } from "motion/react";
+import { useRef, useEffect, type ReactNode } from "react";
+import { motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
 
-type MagneticButtonProps = {
+type MagneticButtonCommonProps = {
   children: ReactNode;
-  href?: string;
-  onClick?: () => void;
   strength?: number;
   padding?: number;
   className?: string;
+  ariaLabel?: string;
 };
 
-export function MagneticButton({
-  children,
-  href,
-  onClick,
-  strength = 3,
-  padding = 150,
-  className = "",
-}: MagneticButtonProps) {
-  const ref = useRef<HTMLAnchorElement | HTMLButtonElement>(null);
-  const [transform, setTransform] = useState("translate3d(0,0,0)");
-  const [transition, setTransition] = useState("transform 0.6s ease-in-out");
+type MagneticButtonProps =
+  | (MagneticButtonCommonProps & { href: string; external?: boolean; onClick?: never })
+  | (MagneticButtonCommonProps & { onClick: () => void; href?: never; external?: never });
+
+export function MagneticButton(props: MagneticButtonProps) {
+  const {
+    children,
+    strength = 3,
+    padding = 150,
+    className = "",
+    ariaLabel,
+  } = props;
+  const isLink = "href" in props && props.href !== undefined;
+
+  const elementRef = useRef<HTMLAnchorElement | HTMLButtonElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  const safeStrength = Math.max(strength, 0.5);
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 200, damping: 20 });
+  const sy = useSpring(y, { stiffness: 200, damping: 20 });
 
   useEffect(() => {
     if (prefersReducedMotion) return;
-    const el = ref.current;
+    const el = elementRef.current;
     if (!el) return;
-
     function handleMove(e: MouseEvent) {
       const rect = el!.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       const dx = e.clientX - cx;
       const dy = e.clientY - cy;
-      const distance = Math.hypot(dx, dy);
-      if (distance < padding) {
-        setTransition("transform 0.3s ease-out");
-        setTransform(`translate3d(${dx / strength}px, ${dy / strength}px, 0)`);
+      if (Math.hypot(dx, dy) < padding) {
+        x.set(dx / safeStrength);
+        y.set(dy / safeStrength);
       } else {
-        setTransition("transform 0.6s ease-in-out");
-        setTransform("translate3d(0,0,0)");
+        x.set(0);
+        y.set(0);
       }
     }
     function handleLeave() {
-      setTransition("transform 0.6s ease-in-out");
-      setTransform("translate3d(0,0,0)");
+      x.set(0);
+      y.set(0);
     }
-
     window.addEventListener("mousemove", handleMove);
     el.addEventListener("mouseleave", handleLeave);
     return () => {
       window.removeEventListener("mousemove", handleMove);
       el.removeEventListener("mouseleave", handleLeave);
     };
-  }, [padding, strength, prefersReducedMotion]);
+  }, [padding, safeStrength, prefersReducedMotion, x, y, isLink]);
 
-  const style = { transform, transition };
-
-  if (href) {
+  if (isLink) {
+    const { href, external = true } = props;
     return (
-      <a
-        ref={ref as React.RefObject<HTMLAnchorElement>}
+      <motion.a
+        ref={elementRef as React.RefObject<HTMLAnchorElement>}
         href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`inline-block ${className}`}
-        style={style}
+        target={external ? "_blank" : "_self"}
+        rel={external ? "noopener noreferrer" : undefined}
+        aria-label={ariaLabel}
+        className={`inline-block focus-visible:outline focus-visible:outline-2 focus-visible:outline-foreground focus-visible:outline-offset-4 ${className}`}
+        style={{ x: sx, y: sy }}
       >
         {children}
-      </a>
+      </motion.a>
     );
   }
   return (
-    <button
-      ref={ref as React.RefObject<HTMLButtonElement>}
+    <motion.button
+      ref={elementRef as React.RefObject<HTMLButtonElement>}
       type="button"
-      onClick={onClick}
-      className={`inline-block ${className}`}
-      style={style}
+      onClick={props.onClick}
+      aria-label={ariaLabel}
+      className={`inline-block focus-visible:outline focus-visible:outline-2 focus-visible:outline-foreground focus-visible:outline-offset-4 ${className}`}
+      style={{ x: sx, y: sy }}
     >
       {children}
-    </button>
+    </motion.button>
   );
 }

@@ -1,5 +1,14 @@
 # Day 3 Investigation Brief — TeeML Custom Code + Phala Scout + SDK Diagnosis
 
+> **2026-05-07 INVERSION (read first):** the central conclusion below
+> ("TeeML is OpenAI-compatible LLM only [CONFIRMED]") was overturned the
+> same day by 0G compute team's TG response: **TeeML attests arbitrary
+> Docker code; the OpenAI API requirement is broker-routing only, not a
+> TDX measurement constraint.** REPORTDATA is also supported via
+> standard dstack TDX flow. Phala scaffold demoted to Day-15 escape
+> hatch. Authoritative architecture lives in `docs/honest-limits.md`
+> §5b. The investigation method below is preserved for reference.
+
 **Date:** 2026-05-07 (Day 2 — pre-emptive Day-3 work after the Phase 6.0 verdict)
 **Trigger:** Codex stress-test BLOCKER 6.1 — "TeeML may sign only LLM output, not Compass evaluator code"
 **Method:** doc fetch + raw `eth_getCode` against SDK-hardcoded ledger CA + Phala docs scout

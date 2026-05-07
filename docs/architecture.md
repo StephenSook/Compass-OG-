@@ -18,8 +18,8 @@
 │   • SD-JWT VC issuer (mocked NGOs)                          │
 │   • SD-JWT VC verifier + policy evaluator                   │
 │   • 0G Storage upload (AES-256-GCM client-side encrypted)   │
-│   • 0G Sealed Inference broker (TeeML — implicit-trust      │
-│     Plan B; REPORTDATA unsupported on 0G, see honest-limits)│
+│   • 0G Sealed Inference broker (TeeML / dstack TDX —        │
+│     receipt key bound into REPORTDATA, see honest-limits §5b)│
 │   • Receipt construction per docs/schemas/receipt-v1.json   │
 └──────────────┬──────────────────────────────┬───────────────┘
                │                              │
@@ -27,9 +27,9 @@
 ┌──────────────────────────┐    ┌──────────────────────────────┐
 │ 0G Storage               │    │ 0G Compute (Sealed Inference)│
 │ • Encrypted VC vaults    │    │ • TEE policy evaluation      │
-│ • Merkle-rooted permanent│    │ • Receipt signed by enclave  │
-│   archive                │    │   key (Docker-hash + signer  │
-│ • Off-chain content      │    │   attested, not REPORTDATA)  │
+│ • Merkle-rooted permanent│    │ • Receipt signed by key      │
+│   archive                │    │   bound into TDX REPORTDATA  │
+│ • Off-chain content      │    │   (recovered signer match)   │
 └──────────────────────────┘    └──────────────────────────────┘
                                                 │
                                                 ▼
@@ -84,16 +84,20 @@ same principal" from public on-chain data + the VC.
 5. Enclave loads canonical policy JSON from `docs/policies/<policyId>.json`
 6. Enclave evaluates predicate
 7. Enclave constructs receipt per `docs/schemas/receipt-v1.json`
-8. Enclave signs the canonicalized receipt with the configured Compass signer
-   key running inside the TeeML-attested image
-9. Provider calls `broker.inference.verifyService(...)` to confirm the TEE
-   signer address + Docker Compose hash match the 0G-published TeeML
-   deployment (REPORTDATA-bound enclave-born-key proof is not exposed by
-   0G — see honest-limits.md §5b)
+8. Enclave signs the canonicalized receipt with the key derived inside the
+   dstack TDX VM. The corresponding Ethereum address is bound into the TDX
+   quote's `report_data` field on boot.
+9. Provider calls `broker.inference.verifyService(...)`; consumer-side
+   verifier runs Intel DCAP (or dstack verifier) on the quote, then asserts
+   the signer recovered from the receipt signature equals the Ethereum
+   address embedded in `report_data` — proves the key was generated inside
+   this exact attested image. See honest-limits.md §5b.
 10. Provider calls `CompassHub.issueReceipt(receiptId, policyId, resultHash,
-    expiry, attestationDigest)` — emits event with bucketed timestamp
-11. Receipt is now public-readable but non-identifying. The `/clinic/subpoena`
-    page renders this exact event log
+    expiry, attestationDigest)` — emits event with bucketed timestamp.
+    Same tx emits `GrantConsumed` carrying agentIdCommitment (NOT raw
+    tokenId — fixed Day 3 to prevent on-chain correlation to Maria).
+11. Receipt is now public-readable but non-identifying. The
+    `/clinic/subpoena` page renders this exact event log
 
 ## What's deployed where
 
