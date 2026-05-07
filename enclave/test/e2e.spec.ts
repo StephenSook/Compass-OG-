@@ -261,6 +261,9 @@ describe("Compass — full SD-JWT VC issuer→holder→verifier round-trip", () 
       result: eligibleResult,
       expiry: 1717592000,
       issuedAt: 1715000000,
+      // Sentinel for canonicalization stability test — real signing would
+      // pass sha256(quoteHex) here.
+      quoteCommitment: "0x" + "00".repeat(32),
     };
     const docA = buildReceiptDocument(inputs);
     const docB = buildReceiptDocument(inputs);

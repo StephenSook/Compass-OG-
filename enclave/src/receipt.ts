@@ -23,7 +23,7 @@ export type ReceiptResult = {
 };
 
 export type ReceiptDocument = {
-  version: "compass-receipt-1.0.0";
+  version: "compass-receipt-1.1.0";
   receiptId: string;
   challenge: string;
   policyHash: string;
@@ -34,7 +34,22 @@ export type ReceiptDocument = {
   resultHash: string;
   expiry: number;
   issuedAt: number;
+  /**
+   * sha256 of the dstack TDX quote that was current when this receipt was
+   * signed. Binds the receipt to a specific attested image instance so a key
+   * rotation or pod restart can't break verification — verifiers archive the
+   * quote at signing time, recompute sha256 later, must match.
+   *
+   * Env-mode receipts use ENV_MODE_QUOTE_COMMITMENT as a distinguishable
+   * sentinel; verifiers MUST reject them in production.
+   */
+  quoteCommitment: string;
 };
+
+export const ENV_MODE_QUOTE_COMMITMENT = (() => {
+  const digest = sha256(new TextEncoder().encode("compass-env-mode-no-attestation"));
+  return "0x" + Array.from(digest).map((b) => b.toString(16).padStart(2, "0")).join("");
+})();
 
 class CanonicalizationError extends Error {}
 
@@ -101,7 +116,11 @@ export function buildReceiptDocument(opts: {
   result: EligibilityResult;
   expiry: number;
   issuedAt: number;
+  quoteCommitment: string;
 }): ReceiptDocument {
+  if (!/^0x[0-9a-f]{64}$/.test(opts.quoteCommitment)) {
+    throw new Error("quoteCommitment must be 32-byte 0x-hex");
+  }
   const result: ReceiptResult = {
     eligible: opts.result.eligible,
     reason: opts.result.reason,
@@ -112,7 +131,7 @@ export function buildReceiptDocument(opts: {
     sha256(new TextEncoder().encode(canonicalize(result))),
   );
   return {
-    version: "compass-receipt-1.0.0",
+    version: "compass-receipt-1.1.0",
     receiptId: opts.receiptId,
     challenge: opts.challenge,
     policyHash: opts.policyHash,
@@ -123,5 +142,16 @@ export function buildReceiptDocument(opts: {
     resultHash,
     expiry: opts.expiry,
     issuedAt: opts.issuedAt,
+    quoteCommitment: opts.quoteCommitment,
   };
+}
+
+export function quoteCommitmentFromQuoteHex(quoteHex: string): string {
+  const hex = quoteHex.replace(/^0x/, "");
+  if (hex.length === 0) throw new Error("quoteHex must not be empty");
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return hexlify(sha256(bytes));
 }

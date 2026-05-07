@@ -23,7 +23,9 @@ export type VerificationCode =
   | "ETH_ADDRESS_LENGTH"
   | "COMPOSE_HASH_LENGTH"
   | "REPORT_DATA_MISMATCH"
-  | "REPORT_DATA_PADDING_NONZERO";
+  | "REPORT_DATA_PADDING_NONZERO"
+  | "QUOTE_COMMITMENT_MISMATCH"
+  | "ENV_MODE_RECEIPT";
 
 export class VerificationError extends Error {
   constructor(public readonly code: VerificationCode, message: string) {
@@ -95,6 +97,38 @@ export function buildExpectedReportData(
   buf.set(addr, 0);
   buf.set(cmp, addr.length);
   return sha256(buf);
+}
+
+/**
+ * Asserts the receipt's quoteCommitment commits to the supplied quote.
+ * Receivers archive `quoteHex` at receipt-mint time and call this later to
+ * prove the receipt was signed by a key inside that exact attested image,
+ * even after the live /v1/attestation endpoint has rotated.
+ *
+ * Env-mode receipts carry ENV_MODE_QUOTE_COMMITMENT — explicit reject so
+ * dev-mode receipts cannot accidentally pass production verification.
+ */
+export function verifyQuoteCommitment(opts: {
+  receiptQuoteCommitment: string;
+  quoteHex: string;
+  envSentinel: string;
+}): void {
+  if (opts.receiptQuoteCommitment === opts.envSentinel) {
+    throw new VerificationError(
+      "ENV_MODE_RECEIPT",
+      "receipt was signed in env mode (dev only); cannot be verified in production",
+    );
+  }
+  const quoteBytes = hexToBytes(opts.quoteHex, "quoteHex");
+  const expected = "0x" + Array.from(sha256(quoteBytes))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  if (opts.receiptQuoteCommitment !== expected) {
+    throw new VerificationError(
+      "QUOTE_COMMITMENT_MISMATCH",
+      "receipt.quoteCommitment does not match sha256(quoteHex)",
+    );
+  }
 }
 
 export function verifyReportDataBinding(args: VerifyBindingArgs): void {

@@ -11,6 +11,7 @@ import {
   type SignerContext,
 } from "../src/server";
 import { deriveEthAddressFromUncompressed } from "../src/eth-address";
+import { ENV_MODE_QUOTE_COMMITMENT } from "../src/receipt";
 
 const TEST_PRIV = Uint8Array.from(Buffer.from("1".padStart(64, "0"), "hex"));
 const TEST_PUB = secp256k1.getPublicKey(TEST_PRIV, false);
@@ -251,12 +252,16 @@ describe("buildApp HTTP routes", () => {
       signature: string;
       signerAddress: string;
       attestationDigest: string;
-      receipt: { receiptId: string };
+      receipt: { receiptId: string; quoteCommitment: string; version: string };
     };
     expect(inner.signerAddress).toBe(TEST_ADDR);
     expect(inner.signature).toMatch(/^0x[0-9a-f]+$/);
     expect(inner.attestationDigest).toMatch(/^0x[0-9a-f]{64}$/);
     expect(inner.receipt.receiptId).toBe(payload.receiptId);
+    // Env-mode receipts carry the env sentinel quoteCommitment; verifier
+    // detects this and rejects the receipt for production use.
+    expect(inner.receipt.quoteCommitment).toBe(ENV_MODE_QUOTE_COMMITMENT);
+    expect(inner.receipt.version).toBe("compass-receipt-1.1.0");
   });
 
   it("body too large triggers JSON error middleware (not HTML stack)", async () => {

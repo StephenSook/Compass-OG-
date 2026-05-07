@@ -8,7 +8,12 @@ import express, { type Request, type Response, type NextFunction } from "express
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { randomUUID } from "node:crypto";
 import { evaluatePolicy } from "./policy";
-import { attestationDigest, buildReceiptDocument } from "./receipt";
+import {
+  attestationDigest,
+  buildReceiptDocument,
+  ENV_MODE_QUOTE_COMMITMENT,
+  quoteCommitmentFromQuoteHex,
+} from "./receipt";
 import type { ClaimSet, CompassPolicy } from "./types";
 import { tryLoadAttestedSigner, type AttestedSignerBundle } from "./dstack";
 import { deriveEthAddressFromUncompressed } from "./eth-address";
@@ -190,6 +195,11 @@ export function buildApp(signer: SignerContext) {
 
       const evalResult = evaluatePolicy(payload.policy, payload.claims, payload.policyHash);
 
+      const quoteCommitment =
+        signer.source === "tee"
+          ? quoteCommitmentFromQuoteHex(signer.attestation.quoteHex)
+          : ENV_MODE_QUOTE_COMMITMENT;
+
       const receiptDoc = buildReceiptDocument({
         receiptId: payload.receiptId,
         challenge: payload.challenge,
@@ -200,6 +210,7 @@ export function buildApp(signer: SignerContext) {
         result: evalResult,
         expiry: payload.expiry,
         issuedAt: payload.issuedAt,
+        quoteCommitment,
       });
 
       const digest = attestationDigest(receiptDoc);

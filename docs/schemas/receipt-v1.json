@@ -15,14 +15,15 @@
     "result",
     "resultHash",
     "expiry",
-    "issuedAt"
+    "issuedAt",
+    "quoteCommitment"
   ],
   "additionalProperties": false,
   "properties": {
     "version": {
       "type": "string",
-      "const": "compass-receipt-1.0.0",
-      "description": "Schema version. Bump on any field add/remove/rename."
+      "const": "compass-receipt-1.1.0",
+      "description": "Schema version. 1.1.0 added required quoteCommitment field for freshness binding."
     },
     "receiptId": {
       "type": "string",
@@ -87,6 +88,11 @@
       "type": "integer",
       "minimum": 0,
       "description": "Unix timestamp (seconds) when the enclave produced the receipt. Floor-bucketed to 15-min on-chain (timestampBucket field) per threat-model section 1b."
+    },
+    "quoteCommitment": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "sha256 of the dstack TDX quote that was current when the receipt was signed. Pins the receipt to a specific attested image instance — verifier archives quoteHex at receipt-mint time, recomputes sha256 later, asserts match. Env-mode dev receipts carry sha256('compass-env-mode-no-attestation') as a sentinel; verifiers MUST reject this value in production."
     }
   },
   "_canonicalization": {

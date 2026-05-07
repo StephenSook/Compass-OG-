@@ -7,9 +7,15 @@ import {
   buildExpectedReportData,
   extractReportData,
   parseQuoteVersion,
+  verifyQuoteCommitment,
   verifyReportDataBinding,
 } from "../src/verify-attestation";
 import { deriveEthAddressFromUncompressed } from "../src/eth-address";
+import {
+  ENV_MODE_QUOTE_COMMITMENT,
+  buildReceiptDocument,
+  quoteCommitmentFromQuoteHex,
+} from "../src/receipt";
 
 const ZERO_ADDR = "0x" + "00".repeat(20);
 const ZERO_COMPOSE = "0x" + "00".repeat(32);
@@ -177,6 +183,98 @@ describe("dstack.buildReportDataInput", () => {
     expect(() =>
       dstackTesting.buildReportDataInput("0x" + "00".repeat(20), "0x" + "00".repeat(31)),
     ).toThrow(/compose hash/);
+  });
+});
+
+describe("quoteCommitment + freshness mitigation", () => {
+  const fakeQuoteHex = "0x" + "ab".repeat(632);
+
+  it("ENV_MODE_QUOTE_COMMITMENT is the sha256 of the marker string", () => {
+    const expected = "0x" + Array.from(
+      sha256(new TextEncoder().encode("compass-env-mode-no-attestation")),
+    ).map((b) => b.toString(16).padStart(2, "0")).join("");
+    expect(ENV_MODE_QUOTE_COMMITMENT).toBe(expected);
+  });
+
+  it("quoteCommitmentFromQuoteHex is deterministic", () => {
+    const a = quoteCommitmentFromQuoteHex(fakeQuoteHex);
+    const b = quoteCommitmentFromQuoteHex(fakeQuoteHex);
+    expect(a).toBe(b);
+    expect(a).toMatch(/^0x[0-9a-f]{64}$/);
+  });
+
+  it("verifyQuoteCommitment accepts matching commitment", () => {
+    const commitment = quoteCommitmentFromQuoteHex(fakeQuoteHex);
+    expect(() =>
+      verifyQuoteCommitment({
+        receiptQuoteCommitment: commitment,
+        quoteHex: fakeQuoteHex,
+        envSentinel: ENV_MODE_QUOTE_COMMITMENT,
+      }),
+    ).not.toThrow();
+  });
+
+  it("verifyQuoteCommitment throws QUOTE_COMMITMENT_MISMATCH on substituted quote", () => {
+    const commitment = quoteCommitmentFromQuoteHex(fakeQuoteHex);
+    const otherQuote = "0x" + "cd".repeat(632);
+    try {
+      verifyQuoteCommitment({
+        receiptQuoteCommitment: commitment,
+        quoteHex: otherQuote,
+        envSentinel: ENV_MODE_QUOTE_COMMITMENT,
+      });
+      throw new Error("should have thrown");
+    } catch (e) {
+      expect(e).toBeInstanceOf(VerificationError);
+      expect((e as VerificationError).code).toBe("QUOTE_COMMITMENT_MISMATCH");
+    }
+  });
+
+  it("verifyQuoteCommitment throws ENV_MODE_RECEIPT on env sentinel", () => {
+    try {
+      verifyQuoteCommitment({
+        receiptQuoteCommitment: ENV_MODE_QUOTE_COMMITMENT,
+        quoteHex: fakeQuoteHex,
+        envSentinel: ENV_MODE_QUOTE_COMMITMENT,
+      });
+      throw new Error("should have thrown");
+    } catch (e) {
+      expect((e as VerificationError).code).toBe("ENV_MODE_RECEIPT");
+    }
+  });
+
+  it("buildReceiptDocument rejects malformed quoteCommitment", () => {
+    const inputs = {
+      receiptId: "0x" + "01".repeat(32),
+      challenge: "0x" + "02".repeat(32),
+      policyHash: "0x" + "03".repeat(32),
+      agentIdCommitment: "0x" + "04".repeat(32),
+      verifierPubKey: "0x" + "05".repeat(32),
+      credentialBundleHash: "0x" + "06".repeat(32),
+      result: { eligible: true, reason: "ok" as const, policyId: "p", disclosedClaims: [] },
+      expiry: 2_000_000_000,
+      issuedAt: 1_000_000_000,
+      quoteCommitment: "0xnotenoughhex",
+    };
+    expect(() => buildReceiptDocument(inputs)).toThrow(/quoteCommitment must be 32-byte/);
+  });
+
+  it("buildReceiptDocument emits version 1.1.0 with the field", () => {
+    const inputs = {
+      receiptId: "0x" + "01".repeat(32),
+      challenge: "0x" + "02".repeat(32),
+      policyHash: "0x" + "03".repeat(32),
+      agentIdCommitment: "0x" + "04".repeat(32),
+      verifierPubKey: "0x" + "05".repeat(32),
+      credentialBundleHash: "0x" + "06".repeat(32),
+      result: { eligible: true, reason: "ok" as const, policyId: "p", disclosedClaims: [] },
+      expiry: 2_000_000_000,
+      issuedAt: 1_000_000_000,
+      quoteCommitment: "0x" + "ab".repeat(32),
+    };
+    const doc = buildReceiptDocument(inputs);
+    expect(doc.version).toBe("compass-receipt-1.1.0");
+    expect(doc.quoteCommitment).toBe("0x" + "ab".repeat(32));
   });
 });
 
