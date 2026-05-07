@@ -1,0 +1,17 @@
+# Local-dev compose for Compass receipt-signer.
+# Phala/dstack-specific compose lives at phala/docker-compose.yaml — that
+# one mounts /var/run/dstack.sock so the runtime can request TDX quotes.
+services:
+  compass-server:
+    image: compass-enclave:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      # 32-byte secp256k1 dev key — DO NOT use in production. dstack
+      # derives the real key inside the TEE on Phala deploy.
+      COMPASS_RECEIPT_SIGNER_KEY: ${COMPASS_RECEIPT_SIGNER_KEY:-0x0000000000000000000000000000000000000000000000000000000000000001}
+    restart: unless-stopped
