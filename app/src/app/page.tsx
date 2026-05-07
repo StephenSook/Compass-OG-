@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BlurText } from "@/components/primitives/BlurText";
 import { LiquidGlass } from "@/components/primitives/LiquidGlass";
 
@@ -29,6 +30,13 @@ export default function HomePage() {
           free legal help, she should not have to hand over her passport, her
           contract, and her HKID just to ask the question.
         </p>
+
+        <Link
+          href="/clinic/subpoena"
+          className="mt-12 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+        >
+          See the disclosure log →
+        </Link>
       </section>
     </main>
   );

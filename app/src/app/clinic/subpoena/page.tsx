@@ -2,10 +2,10 @@ import { LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { RevealText } from "@/components/primitives/RevealText";
 import { MagneticButton } from "@/components/primitives/MagneticButton";
 
+// Pinned to the Day-3 mint tx. Swap when CompassHub.issueReceipt fires
+// in Phase 6.
 const RECEIPT_TX_HASH =
-  process.env.NEXT_PUBLIC_COMPASS_RECEIPT_TX_HASH ??
   "0x03b8fd7bb2ff8907a5cf0b7948617618b12ad0f25d869f9e85adaac4eb910e3c";
-const RECEIPT_IS_DEMO_PLACEHOLDER = !process.env.NEXT_PUBLIC_COMPASS_RECEIPT_TX_HASH;
 
 export default function SubpoenaPage() {
   return (
@@ -38,12 +38,8 @@ export default function SubpoenaPage() {
             That&apos;s all that exists.
           </p>
 
-          <p className="mt-12 text-sm text-muted-foreground md:text-base">
-            No name. No HKID. No employer. No documents. The on-chain log
-            carries hashes, a nullifier, an expiry, and an attestation digest —
-            the agent ID is committed as keccak256(tokenId, owner) so the
-            event cannot be correlated to the applicant&apos;s wallet without
-            knowing both halves of the commitment.
+          <p className="mt-12 text-base leading-relaxed text-muted-foreground md:text-lg">
+            No name. No HKID. No employer. No documents.
           </p>
 
           <div className="mt-16 flex justify-center">
@@ -55,11 +51,6 @@ export default function SubpoenaPage() {
               Verify on chain →
             </MagneticButton>
           </div>
-          {RECEIPT_IS_DEMO_PLACEHOLDER && (
-            <p className="mt-6 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/40 uppercase">
-              (demo placeholder — points at mint tx until Phase 6 wires CompassHub.issueReceipt)
-            </p>
-          )}
         </div>
       </section>
 
