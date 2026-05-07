@@ -1,0 +1,12 @@
+{
+  "pinnedAt": "2026-05-07T18:41:15.370Z",
+  "provider": "0xa48f01287233509FD694a22Bf840225062E67836",
+  "url": "https://compute-network-6.integratenetwork.work",
+  "model": "qwen/qwen-2.5-7b-instruct",
+  "serviceType": "chatbot",
+  "verifiability": "TeeML",
+  "inputPrice": "50000000000",
+  "outputPrice": "100000000000",
+  "allServices": 2,
+  "teemlServices": 2
+}
