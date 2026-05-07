@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { LiquidGlass } from "@/components/primitives/LiquidGlass";
+import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { RevealText } from "@/components/primitives/RevealText";
 import { MagneticButton } from "@/components/primitives/MagneticButton";
+import { CANONICAL_RECEIPT_ID } from "@/lib/fixtures/receipts";
 
 // Day-3 mint w/ live 0G Storage rootHash 0x4d188a35...c115b7 in the
 // AgentMinted event. Swap to a real ReceiptIssued tx once
@@ -52,12 +53,12 @@ export default function SubpoenaPage() {
             <MagneticButton
               href={`https://chainscan-galileo.0g.ai/tx/${RECEIPT_TX_HASH}`}
               ariaLabel="Verify receipt transaction on chainscan-galileo (opens new tab)"
-              className="liquid-glass-border bg-white/[0.02] backdrop-blur-md backdrop-saturate-150 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase"
+              className={`${GLASS_BASE} rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase`}
             >
               Verify on chain →
             </MagneticButton>
             <Link
-              href="/receipt/1"
+              href={`/receipt/${CANONICAL_RECEIPT_ID}`}
               className="self-center font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
             >
               See the receipt →

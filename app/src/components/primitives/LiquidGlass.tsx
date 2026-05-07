@@ -15,7 +15,10 @@ const radiusMap: Record<NonNullable<LiquidGlassProps["radius"]>, string> = {
   full: "rounded-full",
 };
 
-const GLASS_BASE =
+// Single source of truth for the liquid-glass recipe. Imported by
+// LiquidGlass, TEEBadge, MagneticButton callsites that need the chrome.
+// One edit propagates to every glass surface.
+export const GLASS_BASE =
   "liquid-glass-border bg-white/[0.02] backdrop-blur-md backdrop-saturate-150 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]";
 
 export function LiquidGlass({

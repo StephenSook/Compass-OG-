@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TEEBadge } from "@/components/primitives/TEEBadge";
-import { LiquidGlass } from "@/components/primitives/LiquidGlass";
+import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { MagneticButton } from "@/components/primitives/MagneticButton";
 import {
   RECEIPTS,
@@ -97,7 +97,7 @@ export default async function ReceiptPage({
             <MagneticButton
               href={`https://chainscan-galileo.0g.ai/tx/${r.mintTxHash}`}
               ariaLabel="Verify receipt transaction on chainscan-galileo (opens new tab)"
-              className="liquid-glass-border bg-white/[0.02] backdrop-blur-md backdrop-saturate-150 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase"
+              className={`${GLASS_BASE} rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase`}
             >
               Verify on chain →
             </MagneticButton>
