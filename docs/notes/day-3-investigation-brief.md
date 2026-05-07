@@ -114,3 +114,64 @@ None code-side. This is a banked decision point for the user. If user approves p
 - Update `docs/honest-limits.md` §5b to reflect Phala TEE
 - Update `docs/architecture.md` trust-boundary table
 - Update README "Architecture (at a glance)" to show Phala node
+
+## Deeper investigation pass (Firecrawl + GitHub API + raw eth_call) — added 2026-05-07
+
+User flagged that the first pass under-used research tools (single WebFetch + one WebSearch). Redid with proper tools.
+
+### Smoking gun #2 — ALL THREE compute SDK addresses are empty bytecode on V3
+
+`eth_getCode` against `evmrpc-testnet.0g.ai` for the three CAs hardcoded in `@0glabs/0g-serving-broker@2.0.0` (`broker.js:createZGComputeNetworkBroker` defaults):
+
+| SDK constant | Address | bytecode length on V3 |
+|---|---|---|
+| `ledgerCA` | `0x0c0D02e4E849C711B2388A829366B5bf3f9c53e7` | 2 chars (`0x` — empty) |
+| `inferenceCA` | `0x46e8a02d609CaEfC1747197da1F38272d5E46c77` | 2 chars (`0x` — empty) |
+| `fineTuningCA` | `0x35A5d96569867fE6534D823268337888229533dE` | 2 chars (`0x` — empty) |
+
+**Compute SDK 2.0.0 is fully orphaned on Galileo V3.** Not a bug in one call path — every contract address it expects to exist points at empty space. V3 redeployed everything to new addresses; SDK has not caught up.
+
+DIY direct-RPC fallback now requires not just rebuilding ledger/deposit flows but also locating all three V3 contract redeployments. The `0g-serving-broker` GitHub repo (Go backend at `0glabs/0g-serving-broker`) does NOT carry deployment-address constants in any file we could find via `api.github.com` content listing — the addresses are likely environment-config-driven on the team's deploy side, NOT pinned in the open-source SDK. We should ask 0G for the canonical V3 addresses in the same TG ping.
+
+### Partial good news from inference-provider docs
+
+Verbatim from `docs.0g.ai/developer-hub/building-on-0g/compute-network/inference-provider` (Firecrawl JSON extraction):
+
+> "TEE (Trusted Execution Environment) verification ensures your computations are tamper-proof. Services running in TEE: - Generate signing keys within the secure environment - Provide CPU and GPU attestations - Sign all inference results. **These attestations should include the public key of the signing key, verifying its creation within the TEE.** All inference results must be signed with this signing key."
+
+This says the attestation SHOULD include the signing-key pubkey. So 0G's TeeML attestation MAY support pubkey binding via some mechanism (compose hash inclusion? a non-REPORTDATA quote field?). Worth asking in the same TG ping — could collapse the entire pivot need if true.
+
+But: the docs ALSO say verbatim "Your AI service must implement the OpenAI API Interface for compatibility." That constraint stands. Even if pubkey binding is supported, custom Compass evaluator code must masquerade as an OpenAI-compatible inference endpoint. Possible but constrains the architecture.
+
+### Phala Cloud — confirmed free signup + free first CVM
+
+Verbatim from `docs.phala.com/phala-cloud/getting-started/sign-up-for-cloud-account`:
+
+> "Sign up with GitHub, Google, or email and password. Registration takes under a minute. After registration, you'll receive free credits to deploy your first CVM. No payment method required for the free tier."
+
+Plus from dstack getting-started: TDX quote retrieval inside a Docker container is one curl call to `/var/run/dstack.sock`:
+
+> ```
+> curl -X POST --unix-socket /var/run/dstack.sock \
+>   -H 'Content-Type: application/json' \
+>   -d '{"reportData": "0x1234deadbeef..."}' \
+>   http://dstack/GetQuote | jq .
+> ```
+
+Max 64 bytes reportData. For larger data (Compass needs `sha256(pubkey || nonce)` = 32 bytes), pad to 64. Implementation in `enclave/phala/src/attestation.ts`.
+
+### Updated pivot estimate
+
+Phala Cloud signup is 1 min. First "hello world" CVM deploy from the dashboard: under 30 minutes per Phala docs. Compass-specific scaffold (Dockerfile + docker-compose + reportData binding + verifier): ~6-8 hours of focused work.
+
+Realistic Day-3 pivot if user approves Fork 1: a Phala-deployed Compass enclave with reportData-bound receipt signing live by end of Day 5. That preserves the original 28-day timeline.
+
+### Tools used this pass (lesson logged)
+
+- `mcp__firecrawl__firecrawl_map` — discovered 0G doc URL inventory
+- `mcp__firecrawl__firecrawl_scrape` with JSON-mode extraction — pulled verbatim quotes from JS-rendered docs (WebFetch returned terse summaries)
+- Raw `curl + eth_getCode` JSON-RPC — confirmed all three SDK CAs empty on V3
+- `api.github.com` REST — probed `0glabs/0g-serving-broker` repo for canonical contract addresses (not present)
+- Phala docs proper scrape — confirmed signup flow + reportData mechanics
+
+The first investigation pass did NOT use Firecrawl, did NOT use eth_getCode parallel, did NOT probe GitHub. The user correctly flagged this. Lesson: for SPA-rendered docs, default to Firecrawl. For SDK-version-vs-deployed-state diagnostics, always run raw eth_getCode in parallel with the GitHub probe. WebFetch is for static HTML.
