@@ -45,14 +45,17 @@ export class CompassStorage {
     return `CompassStorage { signer: ${this.signer.address}, rpcUrl: ${this.rpcUrl} }`;
   }
 
-  async upload(bytes: Uint8Array): Promise<UploadResult> {
+  async upload(bytes: Uint8Array, opts?: { fee?: bigint }): Promise<UploadResult> {
     if (bytes.length === 0) throw new Error("cannot upload empty buffer");
     const file = new MemData(bytes);
+    const uploadOpts = opts?.fee !== undefined
+      ? { ...defaultUploadOption, fee: opts.fee }
+      : defaultUploadOption;
     const [result, err] = await this.indexer.upload(
       file,
       this.rpcUrl,
       this.signer,
-      defaultUploadOption,
+      uploadOpts,
     );
     if (err) throw new Error(`0G upload failed: ${sdkErrorMessage(err)}`, { cause: err });
     return { rootHash: result.rootHash, txHash: result.txHash };
