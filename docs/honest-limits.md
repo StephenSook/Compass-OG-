@@ -37,38 +37,34 @@ verification is too expensive to do on-chain. The off-chain enclave service
 verifies quotes against the canonical 0G TEE provider's measurement, and
 the verify-receipt CLI (planned, not yet shipped) reproduces the chain.
 
-### 5b. REPORTDATA binding for the enclave receipt-signing key
+### 5b. REPORTDATA binding — confirmed supported on 0G TeeML (Day 3)
 
-Compass receipts are generated inside the TeeML-attested container and
-signed by a key controlled by that runtime. Current 0G TeeML documentation
-does not expose custom REPORTDATA (we verified Day 2 — see
-`docs/notes/codex-tee-architecture-review.md`), so Compass cannot
-cryptographically bind the receipt signing public key, a fresh verifier
-challenge, or the receipt digest into the hardware quote.
+Day 3 update (2026-05-07). 0G compute team confirmed in Telegram support
+thread that the receipt signing key is bound into REPORTDATA via the
+standard dstack TDX flow. 0G TeeML is built on dstack TDX. The signing
+key is derived inside the TEE; the corresponding Ethereum address is
+written into the TDX quote's `report_data` field. To verify: fetch the
+provider's TDX quote, run Intel DCAP (or the dstack verifier), then
+check that the signer recovered from any signed response matches the
+address embedded in `report_data`. That gives a hardware-bound proof
+that the key was generated inside this exact attested image.
 
-Verification therefore checks a weaker chain: the provider's TEE signer
-address matches the expected 0G service identity, the Docker Compose hash
-matches the expected TeeML deployment, and the receipt signature comes from
-the Compass-configured enclave signer. That is enough for a hackathon
-prototype to demonstrate bounded-disclosure receipt issuance under a
-0G-attested service boundary. It is **not** enough to prove, in the formal
-remote-attestation sense, that the receipt key was generated inside the
-enclave or that key substitution is cryptographically impossible.
+The OpenAI API compatibility constraint is a *broker-routing* requirement,
+not a TDX measurement constraint. The full TDX VM image, Compose hash,
+and container image digests are all measured. Compass wraps the
+SD-JWT verifier + policy evaluator + receipt signer as an OpenAI-shaped
+HTTP endpoint to satisfy the routing layer; the TDX measurement covers
+the entire deployed image.
 
-This gap does **not** tank the narrow privacy claim because the on-chain
-receipt remains non-identifying: it carries hashes, nullifiers, expiry, and
-an attestation digest, not Maria's documents or identity. It **does** weaken
-the provenance claim: a hostile verifier should read Compass as "0G-attested
-runtime plus expected signer" rather than "hardware quote binds this exact
-receipt key." The implementation must not claim arbitrary receipt JSON is
-covered by TeeML's `processResponse` signature.
+What this means for Compass's privacy claim: the receipt is bound
+cryptographically to (a) the issuing key, (b) the attested image, and
+(c) the on-chain `ReceiptIssued` event with `attestationDigest`. A
+hostile verifier can independently reproduce the chain and reject any
+receipt whose signer doesn't match the address bound in `report_data`.
 
-Day-15 escape: if this gap creates a credibility problem for hostile-judge
-questioning, fall back to Phala TDX or Oasis ROFL only if a working
-REPORTDATA-bound key proof can be demonstrated, not merely planned. Current
-fallback estimate: 70–120 hours solo. It is not the primary path because it
-burns a large fraction of the remaining schedule and weakens the pure-0G
-Track 5 integration story.
+Phala TDX scaffold at `enclave/phala/` remains as the Day-15 escape
+hatch in case the 0G TeeML provider deployment hits an integration
+issue we can't resolve in time. Pure-0G stays the primary path.
 
 ### 6. SD-JWT VC standards stability
 

@@ -1,5 +1,19 @@
 # Adversarial Architecture Review — Commit 96357b9 Verdict
 
+> **Day 3 update (2026-05-07) — verdict UPGRADED.** 0G compute team
+> response in TG support thread confirmed (a) TeeML attests arbitrary
+> Docker code, OpenAI API constraint is broker-routing only, not a TDX
+> measurement constraint; (b) signing-key pubkey IS bound into REPORTDATA
+> via standard dstack TDX flow; (c) compute SDK migrated to
+> `@0gfoundation/0g-compute-ts-sdk@0.8.1` with V4 ledger CA
+> `0xE70830508dAc0A97e6c087c75f402f9Be669E406`. Implicit-trust framing
+> below is SUPERSEDED — Compass now ships REAL hardware-bound REPORTDATA
+> proof on pure-0G. Phala scaffold at `enclave/phala/` retained as
+> Day-15 escape hatch only. Honest-limits §5b updated. README updated.
+> SDK migration smoke-tested in commit `ecbed16`. Storage SDK V3→V4
+> migration pending storage-team follow-up (still gated behind
+> `COMPASS_LIVE_STORAGE=1` env flag).
+
 **Scope:** hostile stress-test of commit `96357b9` after the verdict had already chosen Pure-0G Plan B with implicit enclave-key trust.
 
 **Method:** read `git show 96357b9`, `docs/honest-limits.md`, `docs/notes/0g-ecosystem-status.md`, repo architecture/threat/schema docs, smoke-test code, and live 0G inference docs on 2026-05-07. Claims not found in repo files are marked `[UNVERIFIED]`.

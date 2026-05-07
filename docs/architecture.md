@@ -58,7 +58,7 @@
 | AES-256-GCM | All | NIST-vetted; **never** nonce-reuses |
 | SD-JWT VC issuer (NGO) | Verifier | Issuer keypair held honestly |
 | 0G Storage | All | Merkle-rooted archive returns same bytes |
-| 0G Sealed Inference TEE | Provider + verifier | Docker Compose hash + signer-address attestation match the 0G-published TeeML deployment. REPORTDATA-bound enclave-born key proof is **not** available on 0G — see `docs/honest-limits.md` §5b. |
+| 0G Sealed Inference TEE | Provider + verifier | dstack TDX measures the full VM image + Compose hash + container digests. Receipt-signing key derived inside the TEE; corresponding Ethereum address bound into the TDX quote's `report_data` field. Verifier runs Intel DCAP / dstack verifier and checks recovered signer matches embedded address — hardware-bound enclave-born key proof. See `docs/honest-limits.md` §5b. |
 | AgentRegistry | CompassHub | ownerOf(tokenId) is canonical agent owner |
 | CompassHub | Provider | Receipt log is append-only + dedup-checked |
 

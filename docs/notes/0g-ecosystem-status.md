@@ -42,9 +42,25 @@ SDK: @0glabs/0g-serving-broker@0.7.5 (older — we use 2.0.0)
 
 This is a candidate to pin as `ZG_BROKER_PROVIDER_ADDRESS` once the Day-1 smoke test confirms it's still live + has non-zero pricing.
 
-## Confirmed SDK Failures on Galileo V3 (May 7 2026)
+## SDK Migration — @0glabs deprecated, @0gfoundation now canonical (Day 3, 2026-05-07)
 
-Two of three 0G integration surfaces we planned to use are broken on the active testnet. Filed for 0G dev follow-up; track in TG. Chain access through plain ethers v6 + Hardhat still works.
+0G dev support confirmed: `@0glabs/0g-serving-broker` and `@0glabs/0g-ts-sdk` are deprecated. All 0G SDKs now under `@0gfoundation/*` namespace via devrel.
+
+| Old (deprecated) | New (canonical) |
+|---|---|
+| `@0glabs/0g-serving-broker@2.0.0` | `@0gfoundation/0g-compute-ts-sdk@0.8.1` |
+| `@0glabs/0g-ts-sdk@0.3.3` | `@0gfoundation/0g-storage-ts-sdk@1.2.9` |
+
+V4 contract addresses (Galileo testnet) baked into the new compute SDK constants:
+- ledger: `0xE70830508dAc0A97e6c087c75f402f9Be669E406`
+- inference: `0xa79F4c8311FF93C06b8CfB403690cc987c93F91E`
+- fineTuning: `0xC6C075D8039763C8f1EbE580be5ADdf2fd6941bA`
+
+Migration smoke-tested in commit `ecbed16`. New ledger CA is reachable; previous `BAD_DATA: getLedger` error replaced with a useful message ("Minimum balance to create a ledger is 3 0G"). Ledger creation deferred until ready to commit 3 OG.
+
+## Earlier V3 Failures (resolved by SDK migration above)
+
+The following were observed against the deprecated `@0glabs` SDKs on Galileo V3 and are no longer expected to recur on `@0gfoundation` SDKs against V4. Kept for archaeological reference and for the storage SDK whose V4 fix is still pending storage-team follow-up.
 
 ### Storage — `@0glabs/0g-ts-sdk@0.3.3`
 
