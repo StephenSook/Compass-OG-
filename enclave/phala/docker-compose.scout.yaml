@@ -1,0 +1,39 @@
+# Phala scout — minimal deploy to confirm:
+#   1. Phala Cloud account works
+#   2. /var/run/dstack.sock exposes GetQuote
+#   3. reportData round-trips through the TDX quote
+#
+# Uses public alpine image (no local build context). On startup, requests
+# a TDX quote with a test reportData and prints to logs. View the result
+# in the Phala Cloud dashboard → Logs.
+#
+# Cost: ~$0.06/hr while running. Tear down within 5 min once logs confirm
+# the quote came back.
+services:
+  scout:
+    image: alpine:latest
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        apk add --no-cache curl jq > /dev/null 2>&1
+        echo "=== Compass Phala Scout ==="
+        echo "Requesting TDX quote with test reportData..."
+        REPORT_DATA="0x436f6d706173732d70686174612d73636f75742d76310000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        QUOTE=$(curl -s -X POST --unix-socket /var/run/dstack.sock \
+          -H "Content-Type: application/json" \
+          -d "{\"reportData\": \"$REPORT_DATA\"}" \
+          http://dstack/GetQuote)
+        echo "Raw response:"
+        echo "$QUOTE" | jq . || echo "$QUOTE"
+        echo ""
+        echo "=== Quote received. Scout success. ==="
+        echo "Length of quote field: $(echo "$QUOTE" | jq -r '.quote' | wc -c)"
+        echo "Compose hash field: $(echo "$QUOTE" | jq -r '.compose_hash // .composeHash // "absent"')"
+        echo ""
+        echo "Sleeping forever — tear down via Phala dashboard."
+        tail -f /dev/null
+    restart: "no"
