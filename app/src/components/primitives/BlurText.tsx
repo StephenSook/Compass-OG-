@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { motion, useReducedMotion } from "motion/react";
 
 type BlurTextProps = {
@@ -27,37 +28,38 @@ export function BlurText({
         const isItalic = italicSet.has(word.toLowerCase().replace(/[^a-z]/g, ""));
         const wordClass = isItalic ? "inline-block font-serif italic" : "inline-block";
         return (
-          <motion.span
-            key={`${word}-${i}`}
-            className={wordClass}
-            initial={
-              prefersReducedMotion
-                ? false
-                : { filter: "blur(10px)", opacity: 0, y: 50 }
-            }
-            animate={
-              prefersReducedMotion
-                ? { opacity: 1 }
-                : {
-                    filter: ["blur(10px)", "blur(5px)", "blur(0px)"],
-                    opacity: [0, 0.5, 1],
-                    y: [50, -5, 0],
-                  }
-            }
-            transition={
-              prefersReducedMotion
-                ? { duration: 0 }
-                : {
-                    duration: 0.7,
-                    delay: (delayMs + i * staggerMs) / 1000,
-                    ease: [0.16, 1, 0.3, 1],
-                    times: [0, 0.5, 1],
-                  }
-            }
-          >
-            {word}
-            {i < words.length - 1 && " "}
-          </motion.span>
+          <Fragment key={`${word}-${i}`}>
+            <motion.span
+              className={wordClass}
+              initial={
+                prefersReducedMotion
+                  ? false
+                  : { filter: "blur(10px)", opacity: 0, y: 50 }
+              }
+              animate={
+                prefersReducedMotion
+                  ? { opacity: 1 }
+                  : {
+                      filter: ["blur(10px)", "blur(5px)", "blur(0px)"],
+                      opacity: [0, 0.5, 1],
+                      y: [50, -5, 0],
+                    }
+              }
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : {
+                      duration: 0.7,
+                      delay: (delayMs + i * staggerMs) / 1000,
+                      ease: [0.16, 1, 0.3, 1],
+                      times: [0, 0.5, 1],
+                    }
+              }
+            >
+              {word}
+            </motion.span>
+            {i < words.length - 1 && " "}
+          </Fragment>
         );
       })}
     </span>

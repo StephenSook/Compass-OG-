@@ -23,8 +23,12 @@ export default function SubpoenaPage() {
         <LiquidGlass
           radius="xl"
           aria-hidden="true"
-          className="mb-16 h-[280px] w-full max-w-[800px] md:h-[400px]"
-        />
+          className="mb-16 flex h-[280px] w-full max-w-[800px] items-center justify-center motion-safe:animate-pulse md:h-[400px]"
+        >
+          <span className="font-mono text-[10px] tracking-[0.4em] text-muted-foreground/30 uppercase">
+            [ no data ]
+          </span>
+        </LiquidGlass>
 
         <div className="max-w-3xl text-center">
           <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
