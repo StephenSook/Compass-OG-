@@ -37,6 +37,26 @@ verification is too expensive to do on-chain. The off-chain enclave service
 verifies quotes against the canonical 0G TEE provider's measurement, and
 the verify-receipt CLI (Phase 10.5.5 — coming Day 24) reproduces the chain.
 
+### 5b. REPORTDATA binding for the enclave receipt-signing key
+
+Compass receipts are generated inside the TeeML-attested container and
+signed by a key controlled by that runtime. Current 0G TeeML documentation
+does not expose custom REPORTDATA (we verified Day 2 — see
+`docs/notes/codex-tee-architecture-review.md`), so Compass cannot
+cryptographically bind the receipt signing key into the hardware quote.
+Verification instead checks that the execution environment matches the
+0G-published Docker Compose hash and expected TEE signer address. This
+means the prototype demonstrates TEE-gated receipt issuance under 0G
+attestation, but **not** a formally complete enclave-born-key proof. The
+implementation rejects any claim that arbitrary receipt JSON is covered by
+TeeML's `processResponse` signature.
+
+Day-15 escape: if this gap creates a credibility problem for hostile-judge
+questioning, fall back to Phala TDX or Oasis ROFL where REPORTDATA-bound
+key proofs are first-class. Estimated cost: 70–120 hours solo. Currently
+not chosen because it burns half the remaining schedule and weakens the
+pure-0G ecosystem-citizenship narrative for Track 5.
+
 ### 6. SD-JWT VC standards stability
 
 We pin `@sd-jwt/sd-jwt-vc` to a draft-stage IETF profile. The underlying

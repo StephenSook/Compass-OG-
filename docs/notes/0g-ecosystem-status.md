@@ -42,6 +42,28 @@ SDK: @0glabs/0g-serving-broker@0.7.5 (older — we use 2.0.0)
 
 This is a candidate to pin as `ZG_BROKER_PROVIDER_ADDRESS` once the Day-1 smoke test confirms it's still live + has non-zero pricing.
 
+## Confirmed SDK Failures on Galileo V3 (May 7 2026)
+
+Two of three 0G SDKs we depend on are broken on the active testnet. Filed for 0G dev follow-up; track in TG.
+
+### Storage — `@0glabs/0g-ts-sdk@0.3.3`
+
+`Indexer.upload` → `Flow.submit(submission, {value: fee})` reverts with raw `require(false)` regardless of fee size (tested SDK-calculated fee 30 gwei AND explicit override 0.001 OG). Pre-checked: `Flow.market()` resolves, `Flow.paused()` returns false, submission struct well-formed. Cause likely: V3 added permission/pre-deposit/market-reward shape change not in SDK 0.3.3.
+
+Workaround: gated behind `COMPASS_LIVE_STORAGE=1` env flag with a `compass-skipped://placeholder` URI scheme. Wire-up proven; flipping the flag once SDK is patched lights up live storage with no code changes.
+
+### Compute — `@0glabs/0g-serving-broker@2.0.0`
+
+`broker.ledger.addLedger("0.01")` reverts with `BAD_DATA: could not decode result data (value="0x", info={method: "getLedger", signature: "getLedger(address)"})`. The SDK calls `getLedger(address)` and the deployed contract returns empty bytes. Wallet had 5.088 OG balance, RPC reachable, chainId 16602 confirmed, all other broker setup steps OK.
+
+Most likely cause: SDK 2.0.0 has stale ABI vs the V3 Galileo deployment, OR ledger contract address in SDK is wrong, OR the wallet has no ledger entry yet AND the SDK's "no-entry" code path is broken.
+
+Phase 6 implementation depends on this SDK being fixed (or us using a direct-RPC path against the broker contracts). Real schedule risk; flag at Day-15 gate per `codex-tee-architecture-review.md`.
+
+### Chain — ethers v6 + Hardhat (no SDK)
+
+WORKING. Both AgentRegistry + CompassHub deployed to Galileo. Maria agents 1 & 2 minted. Events emit. Mint flow proven end-to-end on chain.
+
 ## Known SDK Bugs (banked for awareness)
 
 ### Bug #1 — Fine-tune binary path traversal (HIGH, doesn't affect us)
