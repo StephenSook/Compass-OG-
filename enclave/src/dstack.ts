@@ -1,15 +1,16 @@
 /**
- * Thin wrapper around @phala/dstack-sdk used at boot to derive an
- * enclave-bound secp256k1 receipt-signer key + TDX quote whose report_data
- * commits to (ethAddress || composeHash).
- *
- * In dev (no /var/run/dstack.sock) `tryLoadAttestedSigner` returns null and
- * the caller falls back to env-var keys.
+ * dstack TDX boot helper. Derives an enclave-bound secp256k1 receipt-signer
+ * key, then issues a TDX quote whose report_data commits to
+ * sha256(ethAddress || composeHash). Returns null when /var/run/dstack.sock
+ * is absent so callers can fall back to env-var keys (dev only — server.ts
+ * gates this behind COMPASS_FORCE_LOCAL).
  */
 import { existsSync } from "node:fs";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { DstackClient } from "@phala/dstack-sdk";
 import { deriveEthAddressFromUncompressed } from "./eth-address";
+import { verifyReportDataBinding } from "./verify-attestation";
 
 export type AttestedSignerBundle = {
   source: "tee";
@@ -53,34 +54,52 @@ export async function tryLoadAttestedSigner(opts?: {
 
   const info = await client.info();
   if (!info.compose_hash) {
-    throw new Error("dstack info() returned no compose_hash; refusing to boot in TEE mode");
+    throw new Error("dstack info() returned no compose_hash; refusing TEE boot");
   }
+  const composeHash = info.compose_hash.startsWith("0x")
+    ? info.compose_hash
+    : "0x" + info.compose_hash;
 
   const keyResp = await client.getKey(KEY_PATH);
   const privKey = keyResp.key;
   if (privKey.length !== 32) {
     throw new Error(`dstack getKey returned ${privKey.length}-byte key, expected 32`);
   }
+  if (!keyResp.signature_chain || keyResp.signature_chain.length === 0) {
+    throw new Error("dstack returned empty signature_chain; cannot prove key authenticity");
+  }
   const pubKeyUncompressed = secp256k1.getPublicKey(privKey, false);
   const ethAddress = deriveEthAddressFromUncompressed(pubKeyUncompressed);
 
-  const reportDataInput = buildReportDataInput(ethAddress, info.compose_hash);
-  const quoteResp = await client.getQuote(reportDataInput);
+  const reportDataInput = buildReportDataInput(ethAddress, composeHash);
+  // SDK v0.5+ does not auto-hash; we hand getQuote a 32-byte commitment.
+  const reportDataHash = sha256(reportDataInput);
+  const quoteResp = await client.getQuote(reportDataHash);
+
+  if (typeof quoteResp.quote !== "string" || quoteResp.quote.length < 100) {
+    throw new Error(`dstack getQuote returned malformed quote: ${quoteResp.quote?.slice(0, 32)}...`);
+  }
+
+  // Self-verify: if dstack/driver behavior diverges from our verifier
+  // (version/offset/padding), fail at boot rather than at receipt-mint time.
+  verifyReportDataBinding({
+    quoteHex: quoteResp.quote,
+    expectedEthAddress: ethAddress,
+    expectedComposeHash: composeHash,
+  });
 
   return {
     source: "tee",
     privKey,
     pubKeyUncompressed,
     ethAddress,
-    composeHash: info.compose_hash.startsWith("0x")
-      ? info.compose_hash
-      : "0x" + info.compose_hash,
+    composeHash,
     appId: info.app_id,
     instanceId: info.instance_id,
     reportDataInput,
     quoteHex: quoteResp.quote,
     eventLog: quoteResp.event_log,
-    signatureChain: keyResp.signature_chain ?? [],
+    signatureChain: keyResp.signature_chain,
     boundAt: Math.floor(Date.now() / 1000),
   };
 }

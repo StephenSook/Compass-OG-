@@ -1,22 +1,14 @@
 /**
  * Compass receipt-signer HTTP server. Wraps signed receipts in OpenAI
- * completion shape because the 0G broker forwards the user-message
- * content verbatim, then signs the response — that's what binds the
- * receipt to the TEE-attested execution boundary.
- *
- * Boot precedence:
- *   1. /var/run/dstack.sock present (and !COMPASS_FORCE_LOCAL): TEE mode.
- *      Signer key is derived inside the enclave via dstack getKey, public
- *      eth address is committed into report_data of a TDX quote.
- *   2. COMPASS_RECEIPT_SIGNER_KEY env var: dev mode. Insecure; never use
- *      in production.
+ * completion shape because the 0G broker forwards the user-message content
+ * verbatim, then signs the response — that's what binds the receipt to the
+ * TEE-attested execution boundary.
  */
-import express, { type Request, type Response } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { sha256 } from "@noble/hashes/sha2.js";
 import { randomUUID } from "node:crypto";
 import { evaluatePolicy } from "./policy";
-import { attestationDigest, buildReceiptDocument, canonicalize } from "./receipt";
+import { attestationDigest, buildReceiptDocument } from "./receipt";
 import type { ClaimSet, CompassPolicy } from "./types";
 import { tryLoadAttestedSigner, type AttestedSignerBundle } from "./dstack";
 import { deriveEthAddressFromUncompressed } from "./eth-address";
@@ -25,6 +17,7 @@ const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.COMPASS_BIND_HOST ?? "127.0.0.1";
 const HEX32 = /^0x[0-9a-fA-F]{64}$/;
 const HEX_ANY = /^0x[0-9a-fA-F]+$/;
+const FORCE_LOCAL_LITERALS = new Set(["1", "true"]);
 
 type CompassPayload = {
   receiptId: string;
@@ -39,19 +32,27 @@ type CompassPayload = {
   issuedAt: number;
 };
 
-type SignerContext = {
-  source: "tee" | "env";
-  privKey: Uint8Array;
-  ethAddress: string;
-  attestation: AttestedSignerBundle | null;
-};
+export type SignerContext =
+  | { source: "tee"; privKey: Uint8Array; ethAddress: string; attestation: AttestedSignerBundle }
+  | { source: "env"; privKey: Uint8Array; ethAddress: string; attestation: null };
 
 class PayloadValidationError extends Error {}
+
+function isForceLocal(): boolean {
+  const raw = process.env.COMPASS_FORCE_LOCAL;
+  if (raw === undefined) return false;
+  if (!FORCE_LOCAL_LITERALS.has(raw)) {
+    throw new Error(
+      `COMPASS_FORCE_LOCAL must be literal "1" or "true"; got "${raw}". Refusing to boot to avoid silent mode flip.`,
+    );
+  }
+  return true;
+}
 
 function loadEnvSigner(): SignerContext {
   const hex = process.env.COMPASS_RECEIPT_SIGNER_KEY;
   if (!hex) {
-    throw new Error("COMPASS_RECEIPT_SIGNER_KEY required when /var/run/dstack.sock absent");
+    throw new Error("COMPASS_RECEIPT_SIGNER_KEY required for env-mode boot");
   }
   if (!HEX32.test(hex)) {
     throw new Error(
@@ -64,17 +65,21 @@ function loadEnvSigner(): SignerContext {
   return { source: "env", privKey, ethAddress, attestation: null };
 }
 
-async function loadSigner(): Promise<SignerContext> {
-  if (!process.env.COMPASS_FORCE_LOCAL) {
+export async function loadSigner(): Promise<SignerContext> {
+  const forceLocal = isForceLocal();
+  if (!forceLocal) {
     const bundle = await tryLoadAttestedSigner();
     if (bundle) {
       return { source: "tee", privKey: bundle.privKey, ethAddress: bundle.ethAddress, attestation: bundle };
     }
+    throw new Error(
+      "TEE mode required but /var/run/dstack.sock is absent or unreachable. Set COMPASS_FORCE_LOCAL=1 explicitly to boot in env mode (dev only).",
+    );
   }
   return loadEnvSigner();
 }
 
-function signReceipt(privKey: Uint8Array, digestHex: string): string {
+export function signReceipt(privKey: Uint8Array, digestHex: string): string {
   const hex = digestHex.replace(/^0x/, "");
   if (!/^[0-9a-f]{64}$/i.test(hex)) {
     throw new Error(`signReceipt: digest must be 32-byte hex, got ${hex.length} chars`);
@@ -84,7 +89,7 @@ function signReceipt(privKey: Uint8Array, digestHex: string): string {
   return "0x" + Buffer.from(sig).toString("hex");
 }
 
-function validateCompassPayload(raw: unknown): CompassPayload {
+export function validateCompassPayload(raw: unknown): CompassPayload {
   if (typeof raw !== "object" || raw === null) {
     throw new PayloadValidationError("payload must be an object");
   }
@@ -115,6 +120,8 @@ function validateCompassPayload(raw: unknown): CompassPayload {
   return o as unknown as CompassPayload;
 }
 
+export { PayloadValidationError };
+
 export function buildApp(signer: SignerContext) {
   const app = express();
   app.use(express.json({ limit: "1mb" }));
@@ -124,8 +131,10 @@ export function buildApp(signer: SignerContext) {
   });
 
   app.get("/v1/attestation", (_req: Request, res: Response) => {
-    if (!signer.attestation) {
-      return res.status(404).json({ error: "no attestation: server booted in env mode", code: "E_NO_ATTESTATION" });
+    if (signer.source !== "tee") {
+      return res
+        .status(404)
+        .json({ error: "no attestation: server booted in env mode", code: "E_NO_ATTESTATION" });
     }
     const a = signer.attestation;
     res.json({
@@ -136,6 +145,8 @@ export function buildApp(signer: SignerContext) {
       reportDataHex: "0x" + Buffer.from(a.reportDataInput).toString("hex"),
       quoteHex: a.quoteHex,
       eventLog: a.eventLog,
+      // signatureChainHex is dstack's KMS attestation chain over the public
+      // key derivation, not signing material — safe to publish.
       signatureChainHex: a.signatureChain.map((b) => "0x" + Buffer.from(b).toString("hex")),
       boundAt: a.boundAt,
     });
@@ -221,6 +232,19 @@ export function buildApp(signer: SignerContext) {
     }
   });
 
+  // JSON error middleware — Express default is HTML w/ stack trace, which
+  // leaks internal paths and module versions on body-parse / size errors.
+  app.use((err: Error & { status?: number; type?: string }, _req: Request, res: Response, _next: NextFunction) => {
+    const errorId = randomUUID();
+    console.error(`[compass-server] [${errorId}] middleware:`, err.message);
+    const status = err.status ?? 400;
+    const code =
+      err.type === "entity.too.large" ? "E_BODY_TOO_LARGE"
+      : err.type === "entity.parse.failed" ? "E_BODY_PARSE"
+      : "E_REQUEST";
+    res.status(status).json({ error: err.message, code, errorId });
+  });
+
   return app;
 }
 
@@ -229,7 +253,7 @@ async function bootstrap() {
   const signer = await loadSigner();
   console.log(`[compass-server] signer source: ${signer.source}`);
   console.log(`[compass-server] signer eth address: ${signer.ethAddress}`);
-  if (signer.attestation) {
+  if (signer.source === "tee") {
     console.log(`[compass-server] composeHash: ${signer.attestation.composeHash}`);
     console.log(`[compass-server] appId: ${signer.attestation.appId}`);
   }
@@ -239,8 +263,8 @@ async function bootstrap() {
     console.log(`[compass-server] listening on ${HOST}:${PORT}`);
   });
 
-  const shutdown = (signal: string) => {
-    console.log(`[compass-server] received ${signal}, draining`);
+  const shutdown = (sig: string) => {
+    console.log(`[compass-server] received ${sig}, draining`);
     httpServer.close((err) => {
       if (err) console.error("[compass-server] close error:", err);
       process.exit(err ? 1 : 0);
@@ -260,6 +284,3 @@ if (require.main === module) {
     process.exit(1);
   });
 }
-
-void sha256;
-void canonicalize;

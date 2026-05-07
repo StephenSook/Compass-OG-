@@ -11,8 +11,9 @@ services:
       - "8080:8080"
     environment:
       PORT: 8080
-      # Dev-only key. DO NOT use in production.
+      # Local-dev compose has no /var/run/dstack.sock; explicit env-mode
+      # opt-in is required after the TEE-required gate.
+      COMPASS_FORCE_LOCAL: "1"
       COMPASS_RECEIPT_SIGNER_KEY: ${COMPASS_RECEIPT_SIGNER_KEY:-0x0000000000000000000000000000000000000000000000000000000000000001}
-      # Bind 0.0.0.0 inside container so docker port-mapping reaches the server.
       COMPASS_BIND_HOST: 0.0.0.0
     restart: unless-stopped
