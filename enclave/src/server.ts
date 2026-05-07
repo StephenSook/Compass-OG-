@@ -3,41 +3,28 @@
  * completion shape because the 0G broker forwards the user-message
  * content verbatim, then signs the response — that's what binds the
  * receipt to the TEE-attested execution boundary.
+ *
+ * Boot precedence:
+ *   1. /var/run/dstack.sock present (and !COMPASS_FORCE_LOCAL): TEE mode.
+ *      Signer key is derived inside the enclave via dstack getKey, public
+ *      eth address is committed into report_data of a TDX quote.
+ *   2. COMPASS_RECEIPT_SIGNER_KEY env var: dev mode. Insecure; never use
+ *      in production.
  */
 import express, { type Request, type Response } from "express";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { keccak_256 } from "@noble/hashes/sha3.js";
 import { randomUUID } from "node:crypto";
 import { evaluatePolicy } from "./policy";
 import { attestationDigest, buildReceiptDocument, canonicalize } from "./receipt";
 import type { ClaimSet, CompassPolicy } from "./types";
+import { tryLoadAttestedSigner, type AttestedSignerBundle } from "./dstack";
+import { deriveEthAddressFromUncompressed } from "./eth-address";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.COMPASS_BIND_HOST ?? "127.0.0.1";
-const SIGNER_KEY_HEX = process.env.COMPASS_RECEIPT_SIGNER_KEY;
 const HEX32 = /^0x[0-9a-fA-F]{64}$/;
 const HEX_ANY = /^0x[0-9a-fA-F]+$/;
-
-if (!SIGNER_KEY_HEX) {
-  console.error("ERROR: COMPASS_RECEIPT_SIGNER_KEY required");
-  process.exit(1);
-}
-if (!HEX32.test(SIGNER_KEY_HEX)) {
-  console.error(
-    `ERROR: COMPASS_RECEIPT_SIGNER_KEY must be 32-byte hex (0x + 64 chars); got ${SIGNER_KEY_HEX.length} chars`,
-  );
-  process.exit(1);
-}
-
-const signerPrivKey = Uint8Array.from(
-  Buffer.from(SIGNER_KEY_HEX.replace(/^0x/, ""), "hex"),
-);
-const signerPubKeyUncompressed = secp256k1.getPublicKey(signerPrivKey, false);
-const signerEthereumAddress = deriveEthAddress(signerPubKeyUncompressed);
-
-console.log(`[compass-server] starting`);
-console.log(`[compass-server] signer eth address: ${signerEthereumAddress}`);
 
 type CompassPayload = {
   receiptId: string;
@@ -52,31 +39,50 @@ type CompassPayload = {
   issuedAt: number;
 };
 
-function deriveEthAddress(uncompressedPubKey: Uint8Array): string {
-  // EIP-55 Ethereum address: keccak256(pubkey[1:65]) → last 20 bytes.
-  // dstack TDX writes this exact address into report_data on Day-5 deploy;
-  // sha256 here would silently mismatch.
-  if (uncompressedPubKey.length !== 65 || uncompressedPubKey[0] !== 0x04) {
+type SignerContext = {
+  source: "tee" | "env";
+  privKey: Uint8Array;
+  ethAddress: string;
+  attestation: AttestedSignerBundle | null;
+};
+
+class PayloadValidationError extends Error {}
+
+function loadEnvSigner(): SignerContext {
+  const hex = process.env.COMPASS_RECEIPT_SIGNER_KEY;
+  if (!hex) {
+    throw new Error("COMPASS_RECEIPT_SIGNER_KEY required when /var/run/dstack.sock absent");
+  }
+  if (!HEX32.test(hex)) {
     throw new Error(
-      `expected 65-byte uncompressed secp256k1 pubkey, got ${uncompressedPubKey.length} bytes`,
+      `COMPASS_RECEIPT_SIGNER_KEY must be 32-byte hex (0x + 64 chars); got ${hex.length} chars`,
     );
   }
-  const xy = uncompressedPubKey.slice(1);
-  const hash = keccak_256(xy);
-  return "0x" + Buffer.from(hash.slice(-20)).toString("hex");
+  const privKey = Uint8Array.from(Buffer.from(hex.replace(/^0x/, ""), "hex"));
+  const pub = secp256k1.getPublicKey(privKey, false);
+  const ethAddress = deriveEthAddressFromUncompressed(pub);
+  return { source: "env", privKey, ethAddress, attestation: null };
 }
 
-function signReceipt(digestHex: string): string {
+async function loadSigner(): Promise<SignerContext> {
+  if (!process.env.COMPASS_FORCE_LOCAL) {
+    const bundle = await tryLoadAttestedSigner();
+    if (bundle) {
+      return { source: "tee", privKey: bundle.privKey, ethAddress: bundle.ethAddress, attestation: bundle };
+    }
+  }
+  return loadEnvSigner();
+}
+
+function signReceipt(privKey: Uint8Array, digestHex: string): string {
   const hex = digestHex.replace(/^0x/, "");
   if (!/^[0-9a-f]{64}$/i.test(hex)) {
     throw new Error(`signReceipt: digest must be 32-byte hex, got ${hex.length} chars`);
   }
-  const digestBytes = Uint8Array.from(Buffer.from(hex, "hex"));
-  const sig = secp256k1.sign(digestBytes, signerPrivKey, { prehash: false, lowS: true });
+  const digest = Uint8Array.from(Buffer.from(hex, "hex"));
+  const sig = secp256k1.sign(digest, privKey, { prehash: false, lowS: true });
   return "0x" + Buffer.from(sig).toString("hex");
 }
-
-class PayloadValidationError extends Error {}
 
 function validateCompassPayload(raw: unknown): CompassPayload {
   if (typeof raw !== "object" || raw === null) {
@@ -109,110 +115,151 @@ function validateCompassPayload(raw: unknown): CompassPayload {
   return o as unknown as CompassPayload;
 }
 
-const app = express();
-app.use(express.json({ limit: "1mb" }));
+export function buildApp(signer: SignerContext) {
+  const app = express();
+  app.use(express.json({ limit: "1mb" }));
 
-app.get("/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok", signer: signerEthereumAddress });
-});
-
-app.post("/v1/chat/completions", (req: Request, res: Response) => {
-  const errorId = randomUUID();
-  try {
-    const body = req.body;
-    if (!body?.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
-      return res.status(400).json({ error: "messages[] required", code: "E_REQ_SHAPE" });
-    }
-    const userMessage = body.messages.find((m: { role: string }) => m.role === "user");
-    if (!userMessage?.content || typeof userMessage.content !== "string") {
-      return res.status(400).json({ error: "user message required", code: "E_REQ_USER_MSG" });
-    }
-
-    let decoded: string;
-    try {
-      decoded = Buffer.from(userMessage.content, "base64").toString("utf8");
-    } catch {
-      return res.status(400).json({ error: "invalid base64", code: "E_DECODE_B64" });
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(decoded);
-    } catch {
-      return res.status(400).json({ error: "invalid JSON in user content", code: "E_DECODE_JSON" });
-    }
-
-    let payload: CompassPayload;
-    try {
-      payload = validateCompassPayload(parsed);
-    } catch (e) {
-      return res.status(400).json({
-        error: (e as PayloadValidationError).message,
-        code: "E_PAYLOAD_VALIDATION",
-      });
-    }
-
-    const evalResult = evaluatePolicy(payload.policy, payload.claims, payload.policyHash);
-
-    const receiptDoc = buildReceiptDocument({
-      receiptId: payload.receiptId,
-      challenge: payload.challenge,
-      policyHash: payload.policyHash,
-      agentIdCommitment: payload.agentIdCommitment,
-      verifierPubKey: payload.verifierPubKey,
-      credentialBundleHash: payload.credentialBundleHash,
-      result: evalResult,
-      expiry: payload.expiry,
-      issuedAt: payload.issuedAt,
-    });
-
-    const digest = attestationDigest(receiptDoc);
-    const signature = signReceipt(digest);
-
-    const responseContent = JSON.stringify({
-      receipt: receiptDoc,
-      attestationDigest: digest,
-      signature,
-      signerAddress: signerEthereumAddress,
-    });
-
-    res.json({
-      id: `compass-${payload.receiptId.slice(0, 12)}`,
-      object: "chat.completion",
-      created: Math.floor(Date.now() / 1000),
-      model: typeof body.model === "string" ? body.model.slice(0, 256) : "compass:unknown",
-      choices: [
-        {
-          index: 0,
-          message: { role: "assistant", content: responseContent },
-          finish_reason: "stop",
-        },
-      ],
-      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
-    });
-  } catch (e) {
-    console.error(`[compass-server] [${errorId}] unhandled:`, e);
-    res.status(500).json({ error: "internal error", errorId, code: "E_INTERNAL" });
-  }
-});
-
-const httpServer = app.listen(PORT, HOST, () => {
-  console.log(`[compass-server] listening on ${HOST}:${PORT}`);
-});
-
-const shutdown = (signal: string) => {
-  console.log(`[compass-server] received ${signal}, draining`);
-  httpServer.close((err) => {
-    if (err) console.error("[compass-server] close error:", err);
-    process.exit(err ? 1 : 0);
+  app.get("/health", (_req: Request, res: Response) => {
+    res.json({ status: "ok", signer: signer.ethAddress, source: signer.source });
   });
-  setTimeout(() => {
-    console.error("[compass-server] forced exit after 10s drain");
-    process.exit(1);
-  }, 10_000).unref();
-};
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
 
-// Suppress unused-import warning for `sha256` retained for receipt.ts dep coupling.
+  app.get("/v1/attestation", (_req: Request, res: Response) => {
+    if (!signer.attestation) {
+      return res.status(404).json({ error: "no attestation: server booted in env mode", code: "E_NO_ATTESTATION" });
+    }
+    const a = signer.attestation;
+    res.json({
+      ethAddress: a.ethAddress,
+      composeHash: a.composeHash,
+      appId: a.appId,
+      instanceId: a.instanceId,
+      reportDataHex: "0x" + Buffer.from(a.reportDataInput).toString("hex"),
+      quoteHex: a.quoteHex,
+      eventLog: a.eventLog,
+      signatureChainHex: a.signatureChain.map((b) => "0x" + Buffer.from(b).toString("hex")),
+      boundAt: a.boundAt,
+    });
+  });
+
+  app.post("/v1/chat/completions", (req: Request, res: Response) => {
+    const errorId = randomUUID();
+    try {
+      const body = req.body;
+      if (!body?.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
+        return res.status(400).json({ error: "messages[] required", code: "E_REQ_SHAPE" });
+      }
+      const userMessage = body.messages.find((m: { role: string }) => m.role === "user");
+      if (!userMessage?.content || typeof userMessage.content !== "string") {
+        return res.status(400).json({ error: "user message required", code: "E_REQ_USER_MSG" });
+      }
+
+      let decoded: string;
+      try {
+        decoded = Buffer.from(userMessage.content, "base64").toString("utf8");
+      } catch {
+        return res.status(400).json({ error: "invalid base64", code: "E_DECODE_B64" });
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(decoded);
+      } catch {
+        return res.status(400).json({ error: "invalid JSON in user content", code: "E_DECODE_JSON" });
+      }
+
+      let payload: CompassPayload;
+      try {
+        payload = validateCompassPayload(parsed);
+      } catch (e) {
+        return res.status(400).json({
+          error: (e as PayloadValidationError).message,
+          code: "E_PAYLOAD_VALIDATION",
+        });
+      }
+
+      const evalResult = evaluatePolicy(payload.policy, payload.claims, payload.policyHash);
+
+      const receiptDoc = buildReceiptDocument({
+        receiptId: payload.receiptId,
+        challenge: payload.challenge,
+        policyHash: payload.policyHash,
+        agentIdCommitment: payload.agentIdCommitment,
+        verifierPubKey: payload.verifierPubKey,
+        credentialBundleHash: payload.credentialBundleHash,
+        result: evalResult,
+        expiry: payload.expiry,
+        issuedAt: payload.issuedAt,
+      });
+
+      const digest = attestationDigest(receiptDoc);
+      const signature = signReceipt(signer.privKey, digest);
+
+      const responseContent = JSON.stringify({
+        receipt: receiptDoc,
+        attestationDigest: digest,
+        signature,
+        signerAddress: signer.ethAddress,
+      });
+
+      res.json({
+        id: `compass-${payload.receiptId.slice(0, 12)}`,
+        object: "chat.completion",
+        created: Math.floor(Date.now() / 1000),
+        model: typeof body.model === "string" ? body.model.slice(0, 256) : "compass:unknown",
+        choices: [
+          {
+            index: 0,
+            message: { role: "assistant", content: responseContent },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      });
+    } catch (e) {
+      console.error(`[compass-server] [${errorId}] unhandled:`, e);
+      res.status(500).json({ error: "internal error", errorId, code: "E_INTERNAL" });
+    }
+  });
+
+  return app;
+}
+
+async function bootstrap() {
+  console.log("[compass-server] starting");
+  const signer = await loadSigner();
+  console.log(`[compass-server] signer source: ${signer.source}`);
+  console.log(`[compass-server] signer eth address: ${signer.ethAddress}`);
+  if (signer.attestation) {
+    console.log(`[compass-server] composeHash: ${signer.attestation.composeHash}`);
+    console.log(`[compass-server] appId: ${signer.attestation.appId}`);
+  }
+
+  const app = buildApp(signer);
+  const httpServer = app.listen(PORT, HOST, () => {
+    console.log(`[compass-server] listening on ${HOST}:${PORT}`);
+  });
+
+  const shutdown = (signal: string) => {
+    console.log(`[compass-server] received ${signal}, draining`);
+    httpServer.close((err) => {
+      if (err) console.error("[compass-server] close error:", err);
+      process.exit(err ? 1 : 0);
+    });
+    setTimeout(() => {
+      console.error("[compass-server] forced exit after 10s drain");
+      process.exit(1);
+    }, 10_000).unref();
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+}
+
+if (require.main === module) {
+  bootstrap().catch((e) => {
+    console.error("[compass-server] boot failed:", e);
+    process.exit(1);
+  });
+}
+
 void sha256;
+void canonicalize;

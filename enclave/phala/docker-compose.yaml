@@ -1,10 +1,10 @@
 # Phala dstack docker-compose for Compass enclave.
-# Deploy via Phala Cloud dashboard (cloud.phala.com) or local dstack-vmm.
+# Deploy via Phala Cloud dashboard or local dstack-vmm.
 #
-# Mounts /var/run/dstack.sock so the container can request TDX quotes with
-# Compass-supplied reportData. The reportData carries
-# H(receiptSignerPubKey || policyHash || nonce) so a verifier can prove the
-# signing key was generated inside this attested image.
+# /var/run/dstack.sock mount triggers TEE-mode boot: server derives
+# secp256k1 receipt-signer key inside the enclave via dstack getKey, then
+# requests a TDX quote whose report_data commits to (ethAddress ||
+# composeHash). Verifier extracts and confirms the binding.
 services:
   compass-enclave:
     image: compass-enclave:latest
@@ -16,9 +16,8 @@ services:
     volumes:
       - /var/run/dstack.sock:/var/run/dstack.sock
     environment:
-      # Set via Phala Cloud encrypted env or dstack secret manager — never
-      # bake into image. The signer key is generated inside the CVM on boot
-      # and never leaves; we pass policy + trust list config only.
+      COMPASS_BIND_HOST: 0.0.0.0
+      # Compass-side config; signer key is NOT here — derived inside enclave.
       COMPASS_POLICY_REGISTRY_URL: ${COMPASS_POLICY_REGISTRY_URL}
       COMPASS_TRUST_LIST_ROOT: ${COMPASS_TRUST_LIST_ROOT}
       COMPASS_AGENT_REGISTRY_ADDR: ${COMPASS_AGENT_REGISTRY_ADDR}
