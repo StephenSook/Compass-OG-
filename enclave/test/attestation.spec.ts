@@ -7,6 +7,7 @@ import {
   buildExpectedReportData,
   extractReportData,
   parseQuoteVersion,
+  verifyPerReceiptQuoteBinding,
   verifyQuoteCommitment,
   verifyReportDataBinding,
 } from "../src/verify-attestation";
@@ -30,7 +31,7 @@ function fakeQuote(reportData: Uint8Array, version = 4): string {
 }
 
 function syntheticReportData(ethAddress: string, composeHash: string): Uint8Array {
-  const input = dstackTesting.buildReportDataInput(ethAddress, composeHash);
+  const input = dstackTesting.bootReportDataInput(ethAddress, composeHash);
   const digest = sha256(input);
   const out = new Uint8Array(64);
   out.set(digest, 0);
@@ -165,24 +166,32 @@ describe("dstack.tryLoadAttestedSigner", () => {
   });
 });
 
-describe("dstack.buildReportDataInput", () => {
-  it("concatenates 20-byte address + 32-byte compose to 52 bytes", () => {
-    const out = dstackTesting.buildReportDataInput("0x" + "aa".repeat(20), "0x" + "bb".repeat(32));
+describe("dstack reportData input builders", () => {
+  it("bootReportDataInput: 20 + 32 = 52 bytes", () => {
+    const out = dstackTesting.bootReportDataInput("0x" + "aa".repeat(20), "0x" + "bb".repeat(32));
     expect(out.length).toBe(52);
+  });
+
+  it("buildPerReceiptReportDataInput: 20 + 32 + 32 = 84 bytes", () => {
+    const out = dstackTesting.buildPerReceiptReportDataInput(
+      "0x" + "aa".repeat(20),
+      "0x" + "bb".repeat(32),
+      "0x" + "cc".repeat(32),
+    );
+    expect(out.length).toBe(84);
     expect(Buffer.from(out.slice(0, 20)).toString("hex")).toBe("aa".repeat(20));
-    expect(Buffer.from(out.slice(20)).toString("hex")).toBe("bb".repeat(32));
+    expect(Buffer.from(out.slice(20, 52)).toString("hex")).toBe("bb".repeat(32));
+    expect(Buffer.from(out.slice(52)).toString("hex")).toBe("cc".repeat(32));
   });
 
-  it("throws on wrong-size eth address", () => {
+  it("rejects wrong-size receiptId", () => {
     expect(() =>
-      dstackTesting.buildReportDataInput("0x" + "00".repeat(19), "0x" + "00".repeat(32)),
-    ).toThrow(/eth address/);
-  });
-
-  it("throws on wrong-size compose hash", () => {
-    expect(() =>
-      dstackTesting.buildReportDataInput("0x" + "00".repeat(20), "0x" + "00".repeat(31)),
-    ).toThrow(/compose hash/);
+      dstackTesting.buildPerReceiptReportDataInput(
+        "0x" + "aa".repeat(20),
+        "0x" + "bb".repeat(32),
+        "0x" + "cc".repeat(31),
+      ),
+    ).toThrow(/receiptId/);
   });
 });
 
@@ -209,7 +218,6 @@ describe("quoteCommitment + freshness mitigation", () => {
       verifyQuoteCommitment({
         receiptQuoteCommitment: commitment,
         quoteHex: fakeQuoteHex,
-        envSentinel: ENV_MODE_QUOTE_COMMITMENT,
       }),
     ).not.toThrow();
   });
@@ -221,7 +229,6 @@ describe("quoteCommitment + freshness mitigation", () => {
       verifyQuoteCommitment({
         receiptQuoteCommitment: commitment,
         quoteHex: otherQuote,
-        envSentinel: ENV_MODE_QUOTE_COMMITMENT,
       });
       throw new Error("should have thrown");
     } catch (e) {
@@ -235,7 +242,6 @@ describe("quoteCommitment + freshness mitigation", () => {
       verifyQuoteCommitment({
         receiptQuoteCommitment: ENV_MODE_QUOTE_COMMITMENT,
         quoteHex: fakeQuoteHex,
-        envSentinel: ENV_MODE_QUOTE_COMMITMENT,
       });
       throw new Error("should have thrown");
     } catch (e) {
@@ -259,7 +265,7 @@ describe("quoteCommitment + freshness mitigation", () => {
     expect(() => buildReceiptDocument(inputs)).toThrow(/quoteCommitment must be 32-byte/);
   });
 
-  it("buildReceiptDocument emits version 1.1.0 with the field", () => {
+  it("buildReceiptDocument emits version 1.2.0 with the field", () => {
     const inputs = {
       receiptId: "0x" + "01".repeat(32),
       challenge: "0x" + "02".repeat(32),
@@ -273,8 +279,83 @@ describe("quoteCommitment + freshness mitigation", () => {
       quoteCommitment: "0x" + "ab".repeat(32),
     };
     const doc = buildReceiptDocument(inputs);
-    expect(doc.version).toBe("compass-receipt-1.1.0");
+    expect(doc.version).toBe("compass-receipt-1.2.0");
     expect(doc.quoteCommitment).toBe("0x" + "ab".repeat(32));
+  });
+});
+
+describe("per-receipt quote binding", () => {
+  const receiptId = "0x" + "9a".repeat(32);
+  const composeHash2 = "0x" + "ab".repeat(32);
+
+  function fakePerReceiptQuote(addr: string, cmp: string, rid: string): string {
+    const input = dstackTesting.buildPerReceiptReportDataInput(addr, cmp, rid);
+    const digest = sha256(input);
+    const out = new Uint8Array(64);
+    out.set(digest, 0);
+    return fakeQuote(out, 4);
+  }
+
+  it("accepts a correctly-bound per-receipt quote", () => {
+    const quote = fakePerReceiptQuote(ethAddress, composeHash2, receiptId);
+    expect(() =>
+      verifyPerReceiptQuoteBinding({
+        quoteHex: quote,
+        expectedEthAddress: ethAddress,
+        expectedComposeHash: composeHash2,
+        expectedReceiptId: receiptId,
+      }),
+    ).not.toThrow();
+  });
+
+  it("throws REPORT_DATA_MISMATCH on substituted receiptId", () => {
+    const quote = fakePerReceiptQuote(ethAddress, composeHash2, receiptId);
+    const otherReceiptId = "0x" + "ff".repeat(32);
+    try {
+      verifyPerReceiptQuoteBinding({
+        quoteHex: quote,
+        expectedEthAddress: ethAddress,
+        expectedComposeHash: composeHash2,
+        expectedReceiptId: otherReceiptId,
+      });
+      throw new Error("should have thrown");
+    } catch (e) {
+      expect((e as VerificationError).code).toBe("REPORT_DATA_MISMATCH");
+    }
+  });
+
+  it("throws RECEIPT_ID_LENGTH on 31-byte receiptId", () => {
+    try {
+      verifyPerReceiptQuoteBinding({
+        quoteHex: fakeQuote(new Uint8Array(64), 4),
+        expectedEthAddress: ethAddress,
+        expectedComposeHash: composeHash2,
+        expectedReceiptId: "0x" + "11".repeat(31),
+      });
+      throw new Error("should have thrown");
+    } catch (e) {
+      expect((e as VerificationError).code).toBe("RECEIPT_ID_LENGTH");
+    }
+  });
+});
+
+describe("quoteCommitmentFromQuoteHex hardening", () => {
+  it("rejects odd-length hex", () => {
+    expect(() => quoteCommitmentFromQuoteHex("0xabc")).toThrow(/even-length/);
+  });
+
+  it("rejects non-hex chars", () => {
+    expect(() => quoteCommitmentFromQuoteHex("0xzzzz")).toThrow(/non-hex/);
+  });
+
+  it("accepts uppercase 0X prefix", () => {
+    const lower = quoteCommitmentFromQuoteHex("0xabcdef");
+    const upper = quoteCommitmentFromQuoteHex("0XABCDEF");
+    expect(lower).toBe(upper);
+  });
+
+  it("rejects empty input", () => {
+    expect(() => quoteCommitmentFromQuoteHex("0x")).toThrow(/empty/);
   });
 });
 

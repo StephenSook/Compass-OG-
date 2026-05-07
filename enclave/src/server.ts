@@ -157,7 +157,7 @@ export function buildApp(signer: SignerContext) {
     });
   });
 
-  app.post("/v1/chat/completions", (req: Request, res: Response) => {
+  app.post("/v1/chat/completions", async (req: Request, res: Response) => {
     const errorId = randomUUID();
     try {
       const body = req.body;
@@ -195,10 +195,21 @@ export function buildApp(signer: SignerContext) {
 
       const evalResult = evaluatePolicy(payload.policy, payload.claims, payload.policyHash);
 
-      const quoteCommitment =
-        signer.source === "tee"
-          ? quoteCommitmentFromQuoteHex(signer.attestation.quoteHex)
-          : ENV_MODE_QUOTE_COMMITMENT;
+      // TEE mode: fetch a fresh per-receipt quote whose report_data binds
+      // (ethAddress || composeHash || receiptId). Defeats quote-replay
+      // attacks where an archived boot quote is bound to receipts minted
+      // after a key extraction.
+      let quoteCommitment: string;
+      let perReceiptQuoteHex: string | null = null;
+      let perReceiptEventLog: string | null = null;
+      if (signer.source === "tee") {
+        const fresh = await signer.attestation.requestPerReceiptQuote(payload.receiptId);
+        perReceiptQuoteHex = fresh.quoteHex;
+        perReceiptEventLog = fresh.eventLog;
+        quoteCommitment = quoteCommitmentFromQuoteHex(fresh.quoteHex);
+      } else {
+        quoteCommitment = ENV_MODE_QUOTE_COMMITMENT;
+      }
 
       const receiptDoc = buildReceiptDocument({
         receiptId: payload.receiptId,
@@ -221,6 +232,8 @@ export function buildApp(signer: SignerContext) {
         attestationDigest: digest,
         signature,
         signerAddress: signer.ethAddress,
+        perReceiptQuoteHex,
+        perReceiptEventLog,
       });
 
       res.json({

@@ -23,7 +23,7 @@ export type ReceiptResult = {
 };
 
 export type ReceiptDocument = {
-  version: "compass-receipt-1.1.0";
+  version: "compass-receipt-1.2.0";
   receiptId: string;
   challenge: string;
   policyHash: string;
@@ -35,17 +35,15 @@ export type ReceiptDocument = {
   expiry: number;
   issuedAt: number;
   /**
-   * sha256 of the dstack TDX quote that was current when this receipt was
-   * signed. Binds the receipt to a specific attested image instance so a key
-   * rotation or pod restart can't break verification — verifiers archive the
-   * quote at signing time, recompute sha256 later, must match.
-   *
-   * Env-mode receipts use ENV_MODE_QUOTE_COMMITMENT as a distinguishable
-   * sentinel; verifiers MUST reject them in production.
+   * sha256 of the per-receipt TDX quote whose report_data binds
+   * (ethAddress || composeHash || receiptId). Defeats quote replay across
+   * deployments. v1.2.0 semantics; v1.1.0 bound the boot quote and is no
+   * longer accepted.
    */
   quoteCommitment: string;
 };
 
+// MUST stay literal — verifier hardcodes against this exact sha256.
 export const ENV_MODE_QUOTE_COMMITMENT = (() => {
   const digest = sha256(new TextEncoder().encode("compass-env-mode-no-attestation"));
   return "0x" + Array.from(digest).map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -131,7 +129,7 @@ export function buildReceiptDocument(opts: {
     sha256(new TextEncoder().encode(canonicalize(result))),
   );
   return {
-    version: "compass-receipt-1.1.0",
+    version: "compass-receipt-1.2.0",
     receiptId: opts.receiptId,
     challenge: opts.challenge,
     policyHash: opts.policyHash,
@@ -147,11 +145,13 @@ export function buildReceiptDocument(opts: {
 }
 
 export function quoteCommitmentFromQuoteHex(quoteHex: string): string {
-  const hex = quoteHex.replace(/^0x/, "");
-  if (hex.length === 0) throw new Error("quoteHex must not be empty");
-  const bytes = new Uint8Array(hex.length / 2);
+  const stripped = quoteHex.replace(/^0x/i, "");
+  if (stripped.length === 0) throw new Error("quoteHex must not be empty");
+  if (stripped.length % 2 !== 0) throw new Error("quoteHex must be even-length");
+  if (!/^[0-9a-fA-F]+$/.test(stripped)) throw new Error("quoteHex contains non-hex chars");
+  const bytes = new Uint8Array(stripped.length / 2);
   for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    bytes[i] = parseInt(stripped.slice(i * 2, i * 2 + 2), 16);
   }
   return hexlify(sha256(bytes));
 }

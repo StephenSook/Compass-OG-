@@ -1,16 +1,15 @@
 /**
  * dstack TDX boot helper. Derives an enclave-bound secp256k1 receipt-signer
- * key, then issues a TDX quote whose report_data commits to
- * sha256(ethAddress || composeHash). Returns null when /var/run/dstack.sock
- * is absent so callers can fall back to env-var keys (dev only — server.ts
- * gates this behind COMPASS_FORCE_LOCAL).
+ * key, requests a boot-time quote (informational, served from /v1/attestation),
+ * and exposes requestPerReceiptQuote() for fresh per-request binding to a
+ * specific receiptId. Returns null when /var/run/dstack.sock is absent.
  */
 import { existsSync } from "node:fs";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { DstackClient } from "@phala/dstack-sdk";
 import { deriveEthAddressFromUncompressed } from "./eth-address";
-import { verifyReportDataBinding } from "./verify-attestation";
+import { verifyPerReceiptQuoteBinding, verifyReportDataBinding } from "./verify-attestation";
 
 export type AttestedSignerBundle = {
   source: "tee";
@@ -25,12 +24,19 @@ export type AttestedSignerBundle = {
   eventLog: string;
   signatureChain: Uint8Array[];
   boundAt: number;
+  /**
+   * Issues a fresh quote whose report_data commits to
+   * sha256(ethAddress || composeHash || receiptId). Used per-receipt so a
+   * verifier can prove the quote was current AT signing time, not just an
+   * archived boot quote being replayed.
+   */
+  requestPerReceiptQuote: (receiptId: string) => Promise<{ quoteHex: string; eventLog: string }>;
 };
 
 const DEFAULT_SOCK = "/var/run/dstack.sock";
 const KEY_PATH = "compass-receipt-signer";
 
-function buildReportDataInput(ethAddress: string, composeHash: string): Uint8Array {
+function bootReportDataInput(ethAddress: string, composeHash: string): Uint8Array {
   const addr = Buffer.from(ethAddress.replace(/^0x/, ""), "hex");
   const cmp = Buffer.from(composeHash.replace(/^0x/, ""), "hex");
   if (addr.length !== 20) throw new Error(`eth address must be 20 bytes, got ${addr.length}`);
@@ -38,6 +44,24 @@ function buildReportDataInput(ethAddress: string, composeHash: string): Uint8Arr
   const out = new Uint8Array(addr.length + cmp.length);
   out.set(addr, 0);
   out.set(cmp, addr.length);
+  return out;
+}
+
+export function buildPerReceiptReportDataInput(
+  ethAddress: string,
+  composeHash: string,
+  receiptId: string,
+): Uint8Array {
+  const addr = Buffer.from(ethAddress.replace(/^0x/, ""), "hex");
+  const cmp = Buffer.from(composeHash.replace(/^0x/, ""), "hex");
+  const rid = Buffer.from(receiptId.replace(/^0x/, ""), "hex");
+  if (addr.length !== 20) throw new Error(`eth address must be 20 bytes, got ${addr.length}`);
+  if (cmp.length !== 32) throw new Error(`compose hash must be 32 bytes, got ${cmp.length}`);
+  if (rid.length !== 32) throw new Error(`receiptId must be 32 bytes, got ${rid.length}`);
+  const out = new Uint8Array(addr.length + cmp.length + rid.length);
+  out.set(addr, 0);
+  out.set(cmp, addr.length);
+  out.set(rid, addr.length + cmp.length);
   return out;
 }
 
@@ -71,22 +95,35 @@ export async function tryLoadAttestedSigner(opts?: {
   const pubKeyUncompressed = secp256k1.getPublicKey(privKey, false);
   const ethAddress = deriveEthAddressFromUncompressed(pubKeyUncompressed);
 
-  const reportDataInput = buildReportDataInput(ethAddress, composeHash);
-  // SDK v0.5+ does not auto-hash; we hand getQuote a 32-byte commitment.
-  const reportDataHash = sha256(reportDataInput);
-  const quoteResp = await client.getQuote(reportDataHash);
+  const reportDataInput = bootReportDataInput(ethAddress, composeHash);
+  const bootReportDataHash = sha256(reportDataInput);
+  const bootQuoteResp = await client.getQuote(bootReportDataHash);
 
-  if (typeof quoteResp.quote !== "string" || quoteResp.quote.length < 100) {
-    throw new Error(`dstack getQuote returned malformed quote: ${quoteResp.quote?.slice(0, 32)}...`);
+  if (typeof bootQuoteResp.quote !== "string" || bootQuoteResp.quote.length < 100) {
+    throw new Error(`dstack getQuote returned malformed quote: ${bootQuoteResp.quote?.slice(0, 32)}...`);
   }
 
-  // Self-verify: if dstack/driver behavior diverges from our verifier
-  // (version/offset/padding), fail at boot rather than at receipt-mint time.
   verifyReportDataBinding({
-    quoteHex: quoteResp.quote,
+    quoteHex: bootQuoteResp.quote,
     expectedEthAddress: ethAddress,
     expectedComposeHash: composeHash,
   });
+
+  const requestPerReceiptQuote = async (receiptId: string) => {
+    const input = buildPerReceiptReportDataInput(ethAddress, composeHash, receiptId);
+    const hash = sha256(input);
+    const resp = await client.getQuote(hash);
+    if (typeof resp.quote !== "string" || resp.quote.length < 100) {
+      throw new Error(`dstack getQuote returned malformed per-receipt quote`);
+    }
+    verifyPerReceiptQuoteBinding({
+      quoteHex: resp.quote,
+      expectedEthAddress: ethAddress,
+      expectedComposeHash: composeHash,
+      expectedReceiptId: receiptId,
+    });
+    return { quoteHex: resp.quote, eventLog: resp.event_log };
+  };
 
   return {
     source: "tee",
@@ -97,11 +134,15 @@ export async function tryLoadAttestedSigner(opts?: {
     appId: info.app_id,
     instanceId: info.instance_id,
     reportDataInput,
-    quoteHex: quoteResp.quote,
-    eventLog: quoteResp.event_log,
+    quoteHex: bootQuoteResp.quote,
+    eventLog: bootQuoteResp.event_log,
     signatureChain: keyResp.signature_chain,
     boundAt: Math.floor(Date.now() / 1000),
+    requestPerReceiptQuote,
   };
 }
 
-export const __testing = { buildReportDataInput };
+export const __testing = {
+  bootReportDataInput,
+  buildPerReceiptReportDataInput,
+};

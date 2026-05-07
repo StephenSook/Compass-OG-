@@ -22,6 +22,7 @@ export type VerificationCode =
   | "BAD_INPUT_HEX"
   | "ETH_ADDRESS_LENGTH"
   | "COMPOSE_HASH_LENGTH"
+  | "RECEIPT_ID_LENGTH"
   | "REPORT_DATA_MISMATCH"
   | "REPORT_DATA_PADDING_NONZERO"
   | "QUOTE_COMMITMENT_MISMATCH"
@@ -100,20 +101,16 @@ export function buildExpectedReportData(
 }
 
 /**
- * Asserts the receipt's quoteCommitment commits to the supplied quote.
- * Receivers archive `quoteHex` at receipt-mint time and call this later to
- * prove the receipt was signed by a key inside that exact attested image,
- * even after the live /v1/attestation endpoint has rotated.
- *
- * Env-mode receipts carry ENV_MODE_QUOTE_COMMITMENT — explicit reject so
- * dev-mode receipts cannot accidentally pass production verification.
+ * Asserts receipt.quoteCommitment commits to the supplied per-receipt quote.
+ * SECURITY: env-sentinel check MUST be first — reordering would let an
+ * attacker craft a quoteHex whose sha256 matches the sentinel and bypass
+ * the production-mode reject.
  */
 export function verifyQuoteCommitment(opts: {
   receiptQuoteCommitment: string;
   quoteHex: string;
-  envSentinel: string;
 }): void {
-  if (opts.receiptQuoteCommitment === opts.envSentinel) {
+  if (opts.receiptQuoteCommitment === ENV_MODE_QUOTE_COMMITMENT_VALUE) {
     throw new VerificationError(
       "ENV_MODE_RECEIPT",
       "receipt was signed in env mode (dev only); cannot be verified in production",
@@ -128,6 +125,61 @@ export function verifyQuoteCommitment(opts: {
       "QUOTE_COMMITMENT_MISMATCH",
       "receipt.quoteCommitment does not match sha256(quoteHex)",
     );
+  }
+}
+
+export const ENV_MODE_QUOTE_COMMITMENT_VALUE = (() => {
+  const digest = sha256(new TextEncoder().encode("compass-env-mode-no-attestation"));
+  return "0x" + Array.from(digest).map((b) => b.toString(16).padStart(2, "0")).join("");
+})();
+
+/**
+ * Asserts a per-receipt quote's report_data binds to
+ * sha256(ethAddress || composeHash || receiptId). This is the freshness-
+ * proof primitive: a quote captured at boot won't satisfy this for a
+ * receipt minted later, so a malicious operator cannot replay a stale
+ * quote for new receipts.
+ */
+export function verifyPerReceiptQuoteBinding(args: {
+  quoteHex: string;
+  expectedEthAddress: string;
+  expectedComposeHash: string;
+  expectedReceiptId: string;
+}): void {
+  const reportData = extractReportData(args.quoteHex);
+  const addr = hexToBytes(args.expectedEthAddress, "ethAddress");
+  if (addr.length !== 20) {
+    throw new VerificationError("ETH_ADDRESS_LENGTH", `eth address must be 20 bytes, got ${addr.length}`);
+  }
+  const cmp = hexToBytes(args.expectedComposeHash, "composeHash");
+  if (cmp.length !== 32) {
+    throw new VerificationError("COMPOSE_HASH_LENGTH", `compose hash must be 32 bytes, got ${cmp.length}`);
+  }
+  const rid = hexToBytes(args.expectedReceiptId, "receiptId");
+  if (rid.length !== 32) {
+    throw new VerificationError("RECEIPT_ID_LENGTH", `receiptId must be 32 bytes, got ${rid.length}`);
+  }
+  const buf = new Uint8Array(addr.length + cmp.length + rid.length);
+  buf.set(addr, 0);
+  buf.set(cmp, addr.length);
+  buf.set(rid, addr.length + cmp.length);
+  const expected = sha256(buf);
+
+  for (let i = 0; i < SHA256_LEN; i++) {
+    if (reportData[i] !== expected[i]) {
+      throw new VerificationError(
+        "REPORT_DATA_MISMATCH",
+        "per-receipt quote report_data does not commit to sha256(ethAddress || composeHash || receiptId)",
+      );
+    }
+  }
+  for (let i = SHA256_LEN; i < TDX_REPORT_DATA_LEN; i++) {
+    if (reportData[i] !== 0) {
+      throw new VerificationError(
+        "REPORT_DATA_PADDING_NONZERO",
+        `report_data byte ${i} non-zero; dstack padding behavior unexpected`,
+      );
+    }
   }
 }
 

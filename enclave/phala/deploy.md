@@ -70,7 +70,7 @@ The values pinned here will be referenced from the top-level README and from the
 |---|---|---|
 | `/health` returns `source: "env"` | dstack.sock didn't mount, server fell back to env (only possible if `COMPASS_FORCE_LOCAL=1` got set somewhere) | Inspect Phala CVM env, remove `COMPASS_FORCE_LOCAL`; restart |
 | `/v1/attestation` 404 with `E_NO_ATTESTATION` | TEE mode not active | Same as above |
-| `verifyReportDataBinding` throws `QUOTE_VERSION_UNSUPPORTED` | Phala emits TDX v5 quotes; current verifier hard-codes v4 offset | Capture `quoteHex` bytes 0–4, calibrate v5 offset, update `verify-attestation.ts` (Phase 6 Day-7 work) |
+| `verifyReportDataBinding` throws `QUOTE_VERSION_UNSUPPORTED` | Phala emits TDX v5 quotes; current verifier hard-codes v4 offset | Capture `quoteHex` bytes 0–4, calibrate v5 offset, update `verify-attestation.ts` |
 | `verifyReportDataBinding` throws `REPORT_DATA_MISMATCH` | dstack v0.5 + getQuote semantics changed (auto-hashing came back, padding semantics shifted) | Inspect raw 64 bytes of report_data; reconcile against current SDK source at `node_modules/@phala/dstack-sdk/dist/node/index.js` |
 | `npm ci` build fails inside Phala builder | Phala's Node 22 toolchain rejects `--legacy-peer-deps` | Pin SDK and remove the flag (peer-dep clash needs to be resolved upstream) |
 

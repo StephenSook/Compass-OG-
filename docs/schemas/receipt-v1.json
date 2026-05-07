@@ -22,8 +22,8 @@
   "properties": {
     "version": {
       "type": "string",
-      "const": "compass-receipt-1.1.0",
-      "description": "Schema version. 1.1.0 added required quoteCommitment field for freshness binding."
+      "const": "compass-receipt-1.2.0",
+      "description": "Schema version. 1.2.0: quoteCommitment now binds the per-receipt TDX quote (whose report_data is sha256(ethAddress || composeHash || receiptId)) — defeats archived-quote replay across deployments."
     },
     "receiptId": {
       "type": "string",
@@ -92,7 +92,7 @@
     "quoteCommitment": {
       "type": "string",
       "pattern": "^0x[0-9a-f]{64}$",
-      "description": "sha256 of the dstack TDX quote that was current when the receipt was signed. Pins the receipt to a specific attested image instance — verifier archives quoteHex at receipt-mint time, recomputes sha256 later, asserts match. Env-mode dev receipts carry sha256('compass-env-mode-no-attestation') as a sentinel; verifiers MUST reject this value in production."
+      "description": "sha256 of a per-receipt TDX quote whose report_data binds sha256(ethAddress || composeHash || receiptId). Defeats quote-replay: an archived boot quote cannot be reused to sign a different receiptId. Env-mode dev receipts carry sha256('compass-env-mode-no-attestation') as a sentinel; verifiers MUST reject this value in production."
     }
   },
   "_canonicalization": {

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { LiquidGlass } from "@/components/primitives/LiquidGlass";
+import { ClinicHeader } from "@/components/clinic/ClinicHeader";
+import { StatusBadge } from "@/components/clinic/StatusBadge";
 import {
   RECEIPTS,
   formatExpiry,
@@ -10,20 +11,15 @@ import {
 export default function ClinicInboxPage() {
   const rows = Object.entries(RECEIPTS)
     .map(([id, r]) => ({ id, ...r }))
-    .sort((a, b) => b.timestampBucketSec - a.timestampBucketSec);
+    .sort(
+      (a, b) =>
+        b.timestampBucketSec - a.timestampBucketSec ||
+        a.receiptId.localeCompare(b.receiptId),
+    );
 
   return (
     <main className="relative flex min-h-screen flex-col bg-background">
-      <header className="fixed top-6 left-1/2 z-50 -translate-x-1/2">
-        <LiquidGlass radius="full" className="px-6 py-2">
-          <Link
-            href="/clinic"
-            className="font-mono text-xs tracking-[0.3em] text-foreground uppercase"
-          >
-            ← CLINIC
-          </Link>
-        </LiquidGlass>
-      </header>
+      <ClinicHeader href="/clinic" label="← CLINIC" />
 
       <section className="flex flex-1 flex-col items-center px-6 pt-32 pb-24">
         <div className="w-full max-w-5xl">
@@ -60,12 +56,12 @@ export default function ClinicInboxPage() {
           </div>
 
           <p className="mt-16 max-w-2xl text-sm text-muted-foreground/70">
-            Want to see what a subpoenaed snapshot looks like?{" "}
+            The disclosure scene shows what a subpoenaed snapshot looks like.{" "}
             <Link
               href="/clinic/subpoena"
               className="text-foreground underline-offset-4 hover:underline"
             >
-              Open the disclosure scene →
+              Open it →
             </Link>
           </p>
         </div>
@@ -104,15 +100,10 @@ function Row({ row }: { row: ReceiptFixture & { id: string } }) {
       </td>
       <td className="py-4 pr-4 text-sm text-foreground">{row.policyName}</td>
       <td className="py-4 pr-4">
-        <span
-          className={`rounded-full border px-3 py-1 font-mono text-[10px] tracking-[0.2em] uppercase ${
-            row.eligible
-              ? "border-green-400/30 text-green-400/80"
-              : "border-amber-400/30 text-amber-400/80"
-          }`}
-        >
-          {row.eligible ? "eligible" : "denied"}
-        </span>
+        <StatusBadge
+          tone={row.eligible ? "positive" : "warning"}
+          label={row.eligible ? "eligible" : "denied"}
+        />
       </td>
       <td className="py-4 pr-4 font-mono text-xs text-muted-foreground">{bucket} UTC</td>
       <td className="py-4 pr-4 font-mono text-xs text-muted-foreground">

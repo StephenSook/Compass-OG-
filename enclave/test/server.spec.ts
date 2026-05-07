@@ -1,6 +1,7 @@
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import {
   buildApp,
@@ -11,7 +12,11 @@ import {
   type SignerContext,
 } from "../src/server";
 import { deriveEthAddressFromUncompressed } from "../src/eth-address";
-import { ENV_MODE_QUOTE_COMMITMENT } from "../src/receipt";
+import { ENV_MODE_QUOTE_COMMITMENT, quoteCommitmentFromQuoteHex } from "../src/receipt";
+import {
+  __testing as dstackTesting,
+  type AttestedSignerBundle,
+} from "../src/dstack";
 
 const TEST_PRIV = Uint8Array.from(Buffer.from("1".padStart(64, "0"), "hex"));
 const TEST_PUB = secp256k1.getPublicKey(TEST_PRIV, false);
@@ -19,6 +24,52 @@ const TEST_ADDR = deriveEthAddressFromUncompressed(TEST_PUB);
 
 function fakeEnvSigner(): SignerContext {
   return { source: "env", privKey: TEST_PRIV, ethAddress: TEST_ADDR, attestation: null };
+}
+
+function fakeQuoteV4ForReceipt(receiptId: string, composeHash: string): string {
+  const input = dstackTesting.buildPerReceiptReportDataInput(TEST_ADDR, composeHash, receiptId);
+  const digest = sha256(input);
+  const buf = new Uint8Array(568 + 64);
+  buf[0] = 0x04;
+  buf.set(digest, 568);
+  return "0x" + Buffer.from(buf).toString("hex");
+}
+
+function fakeBootQuoteV4(composeHash: string): string {
+  const addr = Buffer.from(TEST_ADDR.replace(/^0x/, ""), "hex");
+  const cmp = Buffer.from(composeHash.replace(/^0x/, ""), "hex");
+  const input = new Uint8Array(addr.length + cmp.length);
+  input.set(addr, 0);
+  input.set(cmp, addr.length);
+  const digest = sha256(input);
+  const buf = new Uint8Array(568 + 64);
+  buf[0] = 0x04;
+  buf.set(digest, 568);
+  return "0x" + Buffer.from(buf).toString("hex");
+}
+
+function fakeTeeSigner(): SignerContext {
+  const composeHash = "0x" + "cd".repeat(32);
+  const bootQuote = fakeBootQuoteV4(composeHash);
+  const bundle: AttestedSignerBundle = {
+    source: "tee",
+    privKey: TEST_PRIV,
+    pubKeyUncompressed: TEST_PUB,
+    ethAddress: TEST_ADDR,
+    composeHash,
+    appId: "test-app",
+    instanceId: "test-instance",
+    reportDataInput: new Uint8Array(52),
+    quoteHex: bootQuote,
+    eventLog: "",
+    signatureChain: [new Uint8Array(64)],
+    boundAt: 1_700_000_000,
+    requestPerReceiptQuote: async (receiptId: string) => ({
+      quoteHex: fakeQuoteV4ForReceipt(receiptId, composeHash),
+      eventLog: "fake-event-log",
+    }),
+  };
+  return { source: "tee", privKey: TEST_PRIV, ethAddress: TEST_ADDR, attestation: bundle };
 }
 
 function validPayload() {
@@ -261,7 +312,40 @@ describe("buildApp HTTP routes", () => {
     // Env-mode receipts carry the env sentinel quoteCommitment; verifier
     // detects this and rejects the receipt for production use.
     expect(inner.receipt.quoteCommitment).toBe(ENV_MODE_QUOTE_COMMITMENT);
-    expect(inner.receipt.version).toBe("compass-receipt-1.1.0");
+    expect(inner.receipt.version).toBe("compass-receipt-1.2.0");
+  });
+
+  it("/v1/chat/completions in TEE mode emits per-receipt quote + matching commitment", async () => {
+    const teeApp = buildApp(fakeTeeSigner());
+    let teeServer: Server | undefined;
+    let teeUrl = "";
+    await new Promise<void>((resolve) => {
+      teeServer = teeApp.listen(0, "127.0.0.1", () => resolve());
+    });
+    try {
+      const addr = teeServer!.address() as AddressInfo;
+      teeUrl = `http://127.0.0.1:${addr.port}`;
+      const payload = validPayload();
+      const content = Buffer.from(JSON.stringify(payload)).toString("base64");
+      const res = await fetch(`${teeUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content }] }),
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { choices: Array<{ message: { content: string } }> };
+      const inner = JSON.parse(body.choices[0].message.content) as {
+        receipt: { quoteCommitment: string; receiptId: string };
+        perReceiptQuoteHex: string | null;
+      };
+      expect(inner.perReceiptQuoteHex).toBeTruthy();
+      expect(inner.receipt.quoteCommitment).not.toBe(ENV_MODE_QUOTE_COMMITMENT);
+      expect(inner.receipt.quoteCommitment).toBe(
+        quoteCommitmentFromQuoteHex(inner.perReceiptQuoteHex as string),
+      );
+    } finally {
+      await new Promise<void>((resolve) => teeServer!.close(() => resolve()));
+    }
   });
 
   it("body too large triggers JSON error middleware (not HTML stack)", async () => {

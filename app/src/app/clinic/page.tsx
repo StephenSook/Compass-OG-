@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
+import { ClinicHeader } from "@/components/clinic/ClinicHeader";
+import { GLASS_BASE } from "@/components/primitives/LiquidGlass";
 import { POLICIES } from "@/lib/fixtures/policies";
 import { RECEIPTS } from "@/lib/fixtures/receipts";
 
@@ -9,16 +10,7 @@ export default function ClinicIndexPage() {
 
   return (
     <main className="relative flex min-h-screen flex-col bg-background">
-      <header className="fixed top-6 left-1/2 z-50 -translate-x-1/2">
-        <LiquidGlass radius="full" className="px-6 py-2">
-          <Link
-            href="/"
-            className="font-mono text-xs tracking-[0.3em] text-foreground uppercase"
-          >
-            COMPASS
-          </Link>
-        </LiquidGlass>
-      </header>
+      <ClinicHeader href="/" label="COMPASS" />
 
       <section className="flex flex-1 flex-col items-center px-6 pt-32 pb-24">
         <div className="w-full max-w-4xl">
@@ -30,8 +22,8 @@ export default function ClinicIndexPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
             Compass clinics never see names, HKIDs, or contracts. They see
-            non-identifying eligibility receipts — enough to extend service,
-            and the entire log a subpoena can reach.
+            non-identifying receipts. Enough to extend service. The entire log a
+            subpoena can reach.
           </p>
 
           <div className="mt-16 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -65,8 +57,8 @@ export default function ClinicIndexPage() {
               </p>
               <p className="mt-3 text-2xl text-foreground">Policy registry</p>
               <p className="mt-3 text-sm text-muted-foreground">
-                Three demo policies covering free legal aid, emergency shelter
-                intake, and free public-hospital care for FDHs.
+                Free legal aid, emergency shelter intake, and free
+                public-hospital care for FDHs.
               </p>
               <p className="mt-6 font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase transition-colors group-hover:text-foreground">
                 Open registry →
@@ -81,8 +73,8 @@ export default function ClinicIndexPage() {
               </p>
               <p className="mt-3 text-2xl text-foreground">Receipt inbox</p>
               <p className="mt-3 text-sm text-muted-foreground">
-                Public fields only. Bucketed timestamps. The exact log a
-                subpoena under PDPO §57 would reach.
+                Public fields only. Bucketed timestamps. The exact log a PDPO
+                §57 subpoena reaches.
               </p>
               <p className="mt-6 font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase transition-colors group-hover:text-foreground">
                 Open inbox →
