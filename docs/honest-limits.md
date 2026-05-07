@@ -35,7 +35,7 @@ for adding/removing trusted issuers. We document the gap; we don't fix it.
 bytes and otherwise returns true. Real TDX Remote Attestation quote
 verification is too expensive to do on-chain. The off-chain enclave service
 verifies quotes against the canonical 0G TEE provider's measurement, and
-the verify-receipt CLI (Phase 10.5.5 — coming Day 24) reproduces the chain.
+the verify-receipt CLI (planned, not yet shipped) reproduces the chain.
 
 ### 5b. REPORTDATA binding for the enclave receipt-signing key
 
@@ -43,19 +43,32 @@ Compass receipts are generated inside the TeeML-attested container and
 signed by a key controlled by that runtime. Current 0G TeeML documentation
 does not expose custom REPORTDATA (we verified Day 2 — see
 `docs/notes/codex-tee-architecture-review.md`), so Compass cannot
-cryptographically bind the receipt signing key into the hardware quote.
-Verification instead checks that the execution environment matches the
-0G-published Docker Compose hash and expected TEE signer address. This
-means the prototype demonstrates TEE-gated receipt issuance under 0G
-attestation, but **not** a formally complete enclave-born-key proof. The
-implementation rejects any claim that arbitrary receipt JSON is covered by
-TeeML's `processResponse` signature.
+cryptographically bind the receipt signing public key, a fresh verifier
+challenge, or the receipt digest into the hardware quote.
+
+Verification therefore checks a weaker chain: the provider's TEE signer
+address matches the expected 0G service identity, the Docker Compose hash
+matches the expected TeeML deployment, and the receipt signature comes from
+the Compass-configured enclave signer. That is enough for a hackathon
+prototype to demonstrate bounded-disclosure receipt issuance under a
+0G-attested service boundary. It is **not** enough to prove, in the formal
+remote-attestation sense, that the receipt key was generated inside the
+enclave or that key substitution is cryptographically impossible.
+
+This gap does **not** tank the narrow privacy claim because the on-chain
+receipt remains non-identifying: it carries hashes, nullifiers, expiry, and
+an attestation digest, not Maria's documents or identity. It **does** weaken
+the provenance claim: a hostile verifier should read Compass as "0G-attested
+runtime plus expected signer" rather than "hardware quote binds this exact
+receipt key." The implementation must not claim arbitrary receipt JSON is
+covered by TeeML's `processResponse` signature.
 
 Day-15 escape: if this gap creates a credibility problem for hostile-judge
-questioning, fall back to Phala TDX or Oasis ROFL where REPORTDATA-bound
-key proofs are first-class. Estimated cost: 70–120 hours solo. Currently
-not chosen because it burns half the remaining schedule and weakens the
-pure-0G ecosystem-citizenship narrative for Track 5.
+questioning, fall back to Phala TDX or Oasis ROFL only if a working
+REPORTDATA-bound key proof can be demonstrated, not merely planned. Current
+fallback estimate: 70–120 hours solo. It is not the primary path because it
+burns a large fraction of the remaining schedule and weakens the pure-0G
+Track 5 integration story.
 
 ### 6. SD-JWT VC standards stability
 

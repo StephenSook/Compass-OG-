@@ -18,8 +18,8 @@
 │   • SD-JWT VC issuer (mocked NGOs)                          │
 │   • SD-JWT VC verifier + policy evaluator                   │
 │   • 0G Storage upload (AES-256-GCM client-side encrypted)   │
-│   • 0G Sealed Inference broker (TeeML — Plan B primary,     │
-│     Plan A explored)                                        │
+│   • 0G Sealed Inference broker (TeeML — implicit-trust      │
+│     Plan B; REPORTDATA unsupported on 0G, see honest-limits)│
 │   • Receipt construction per docs/schemas/receipt-v1.json   │
 └──────────────┬──────────────────────────────┬───────────────┘
                │                              │
@@ -27,9 +27,9 @@
 ┌──────────────────────────┐    ┌──────────────────────────────┐
 │ 0G Storage               │    │ 0G Compute (Sealed Inference)│
 │ • Encrypted VC vaults    │    │ • TEE policy evaluation      │
-│ • Merkle-rooted permanent│    │ • Receipt-hash bound into    │
-│   archive                │    │   TDX REPORTDATA (Plan B)    │
-│ • Off-chain content      │    │ • Provider attestation quote │
+│ • Merkle-rooted permanent│    │ • Receipt signed by enclave  │
+│   archive                │    │   key (Docker-hash + signer  │
+│ • Off-chain content      │    │   attested, not REPORTDATA)  │
 └──────────────────────────┘    └──────────────────────────────┘
                                                 │
                                                 ▼
@@ -58,7 +58,7 @@
 | AES-256-GCM | All | NIST-vetted; **never** nonce-reuses |
 | SD-JWT VC issuer (NGO) | Verifier | Issuer keypair held honestly |
 | 0G Storage | All | Merkle-rooted archive returns same bytes |
-| 0G Sealed Inference TEE | Provider + verifier | TDX attestation valid; no >1-day side-channel exploits |
+| 0G Sealed Inference TEE | Provider + verifier | Docker Compose hash + signer-address attestation match the 0G-published TeeML deployment. REPORTDATA-bound enclave-born key proof is **not** available on 0G — see `docs/honest-limits.md` §5b. |
 | AgentRegistry | CompassHub | ownerOf(tokenId) is canonical agent owner |
 | CompassHub | Provider | Receipt log is append-only + dedup-checked |
 
@@ -84,14 +84,15 @@ same principal" from public on-chain data + the VC.
 5. Enclave loads canonical policy JSON from `docs/policies/<policyId>.json`
 6. Enclave evaluates predicate
 7. Enclave constructs receipt per `docs/schemas/receipt-v1.json`
-8. Enclave-born signing key signs the canonicalized receipt
-9. Receipt-hash + enclave pubkey embedded into `processResponse` content (Plan B)
-10. 0G TEE signature covers the content; attestation quote returned
-11. Provider verifies enclave key was bound into TEE REPORTDATA, then
-    enclave-key signature, then 0G TEE signature
-12. Provider calls `CompassHub.issueReceipt(receiptId, policyId, resultHash,
+8. Enclave signs the canonicalized receipt with the configured Compass signer
+   key running inside the TeeML-attested image
+9. Provider calls `broker.inference.verifyService(...)` to confirm the TEE
+   signer address + Docker Compose hash match the 0G-published TeeML
+   deployment (REPORTDATA-bound enclave-born-key proof is not exposed by
+   0G — see honest-limits.md §5b)
+10. Provider calls `CompassHub.issueReceipt(receiptId, policyId, resultHash,
     expiry, attestationDigest)` — emits event with bucketed timestamp
-13. Receipt is now public-readable but non-identifying. The `/clinic/subpoena`
+11. Receipt is now public-readable but non-identifying. The `/clinic/subpoena`
     page renders this exact event log
 
 ## What's deployed where

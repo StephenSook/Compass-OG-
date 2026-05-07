@@ -60,7 +60,7 @@ Build-in-public:
 
 ## Architecture (at a glance)
 
-User device (Privy embedded wallet) → AES-256-GCM encrypts SD-JWT VC → uploaded to 0G Storage. Provider sends fresh challenge + policyId. Maria signs an Authwit grant via Privy. Provider passes the grant to the enclave; the enclave decrypts the VC inside the TEE, evaluates the policy predicate, signs the receipt with an enclave-born key bound into the TEE attestation custom-data, and returns it. Provider posts grant + receipt in a single `consumeGrantAndIssueReceipt` call — atomic, no half-state. The clinic sees the on-chain `ReceiptIssued` event; the clinic never sees Maria.
+User device (Privy embedded wallet) → AES-256-GCM encrypts SD-JWT VC → uploaded to 0G Storage. Provider sends fresh challenge + policyId. Maria signs an Authwit grant via Privy. Provider passes the grant to the enclave; the enclave decrypts the VC inside the 0G TeeML-attested image, evaluates the policy predicate, signs the receipt with the Compass signer key inside that image, and returns it. Verification matches the TEE signer address + Docker Compose hash against the 0G-published TeeML deployment (0G does not expose REPORTDATA, so the receipt-key-to-quote binding is implicit — see `docs/honest-limits.md` §5b). Provider posts grant + receipt in a single `consumeGrantAndIssueReceipt` call — atomic, no half-state. The clinic sees the on-chain `ReceiptIssued` event; the clinic never sees Maria.
 
 ## Honest limits
 
@@ -68,6 +68,7 @@ This is hackathon-grade. Read `docs/honest-limits.md` for the full disclosure li
 - Three demo issuers (HELP for Domestic Workers, Bethune House, MFMW) are **mocked** local fixtures, not real NGOs
 - Trust list governance is **stubbed** — owner-managed for v1, needs DAO for production
 - On-chain `verifyAttestation` is a **stub** — RA quote verification too expensive on-chain, real verification happens off-chain in the enclave service
+- Receipt-key-to-quote binding is **implicit** — 0G TeeML does not expose REPORTDATA, so verification anchors on Docker Compose hash + expected TEE signer address rather than a hardware-bound enclave-born key proof. See `docs/honest-limits.md` §5b for the full caveat and Day-15 escape to Phala/Oasis if the gap creates judging credibility issues.
 - SD-JWT VC pinned to draft-ietf-oauth-sd-jwt-vc-15 (the underlying SD-JWT primitive is RFC 9901 stable, but the VC profile is in flux)
 
 ## Replicate a receipt yourself — *roadmap*

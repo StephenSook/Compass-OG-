@@ -44,7 +44,7 @@ This is a candidate to pin as `ZG_BROKER_PROVIDER_ADDRESS` once the Day-1 smoke 
 
 ## Confirmed SDK Failures on Galileo V3 (May 7 2026)
 
-Two of three 0G SDKs we depend on are broken on the active testnet. Filed for 0G dev follow-up; track in TG.
+Two of three 0G integration surfaces we planned to use are broken on the active testnet. Filed for 0G dev follow-up; track in TG. Chain access through plain ethers v6 + Hardhat still works.
 
 ### Storage — `@0glabs/0g-ts-sdk@0.3.3`
 
@@ -58,21 +58,21 @@ Workaround: gated behind `COMPASS_LIVE_STORAGE=1` env flag with a `compass-skipp
 
 Most likely cause: SDK 2.0.0 has stale ABI vs the V3 Galileo deployment, OR ledger contract address in SDK is wrong, OR the wallet has no ledger entry yet AND the SDK's "no-entry" code path is broken.
 
-Phase 6 implementation depends on this SDK being fixed (or us using a direct-RPC path against the broker contracts). Real schedule risk; flag at Day-15 gate per `codex-tee-architecture-review.md`.
+Phase 6 implementation depends on this SDK being fixed or on a direct-RPC fallback. This is not a cosmetic SDK issue: if `addLedger` fails, the smoke test exits before provider listing, provider funding, request-header generation, and response verification.
+
+DIY direct-RPC fallback requires all of the following before it is credible:
+- locate the deployed V3 broker/ledger/inference contract addresses for Galileo
+- obtain or reconstruct the V3 ABIs for ledger creation, deposit, provider sub-account transfer, acknowledgement, and inference metadata
+- reproduce request-header/auth-token generation without SDK helpers
+- call provider endpoints directly and capture `ZG-Res-Key` / chat IDs
+- reproduce signer-address and Docker Compose hash verification artifacts that `verifyService` would normally produce
+- document every raw RPC and provider HTTP call so a judge can replay it
+
+Realistic solo fallback cost: 24–45 hours if ABIs and endpoint semantics are discoverable; higher or blocked if they are not. Treat this as a Day-10 schedule gate, not a small Day-15 contingency.
 
 ### Chain — ethers v6 + Hardhat (no SDK)
 
 WORKING. Both AgentRegistry + CompassHub deployed to Galileo. Maria agents 1 & 2 minted. Events emit. Mint flow proven end-to-end on chain.
-
-## Known SDK Bugs (banked for awareness)
-
-### Bug #1 — Fine-tune binary path traversal (HIGH, doesn't affect us)
-
-`@0glabs/0g-serving-broker@0.7.5` `fineTuning.acknowledgeModel` has an off-by-one path traversal in the bundled `0g-storage-client` binary spawn. Resolves to `node_modules/@0glabs/binary/0g-storage-client` (does not exist) instead of `node_modules/@0glabs/0g-serving-broker/binary/0g-storage-client`.
-
-**Affects:** anyone calling `broker.fineTuning.acknowledgeModel(...)`.
-**Doesn't affect us:** Compass uses `broker.inference.listService` + `broker.inference.processResponse` — not the fine-tuning surface.
-**Resolution:** may be fixed in 2.0.0 (our installed version). Verify if we ever touch fine-tuning.
 
 ## Useful Links (ecosystem)
 
