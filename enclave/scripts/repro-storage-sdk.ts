@@ -11,7 +11,7 @@
  * real tx to land. Captures the revert tx hash for support.
  */
 import { JsonRpcProvider, Wallet, Contract, parseEther } from "ethers";
-import { Indexer, MemData, defaultUploadOption } from "@0glabs/0g-ts-sdk";
+import { Indexer, MemData, defaultUploadOption } from "@0gfoundation/0g-storage-ts-sdk";
 
 const FLOW_CA = "0x22E03a6A89B950F1c82ec5e74F8eCa321a105296";
 const FLOW_ABI = [

@@ -10,7 +10,7 @@
  * SDK-hardcoded ledgerCA 0x0c0D02e4...c53e7 has empty bytecode on V3.
  */
 import { JsonRpcProvider, Wallet } from "ethers";
-import { createZGComputeNetworkBroker } from "@0glabs/0g-serving-broker";
+import { createZGComputeNetworkBroker } from "@0gfoundation/0g-compute-ts-sdk";
 
 async function main() {
   const rpcUrl = process.env.ZEROG_TESTNET_RPC_URL!;

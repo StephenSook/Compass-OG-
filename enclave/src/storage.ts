@@ -7,7 +7,7 @@ import { Wallet, JsonRpcProvider } from "ethers";
 // `resolve.conditions: [require, node]` and at the type level via the
 // ambient redirect at src/types/0g-ts-sdk.d.ts. Both halves required —
 // SDK ships only an "exports" map.
-import { Indexer, MemData, defaultUploadOption } from "@0glabs/0g-ts-sdk";
+import { Indexer, MemData, defaultUploadOption } from "@0gfoundation/0g-storage-ts-sdk";
 
 const ROOT_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
 
@@ -62,6 +62,11 @@ export class CompassStorage {
       uploadOpts,
     );
     if (err) throw new Error(`0G upload failed: ${sdkErrorMessage(err)}`, { cause: err });
+    // SDK 1.2.9 unions single-file vs batch upload returns; narrow on the
+    // single-file shape since we always pass one MemData.
+    if (!("rootHash" in result)) {
+      throw new Error("0G upload returned batch result for single-file upload");
+    }
     return { rootHash: result.rootHash, txHash: result.txHash };
   }
 

@@ -13,7 +13,7 @@
  * Expected output: at least 1 TeeML provider listed with non-zero pricing.
  * Saves results to ../docs/notes/0g-tee-smoke.md per Phase 1.10.
  */
-import { createZGComputeNetworkBroker } from "@0glabs/0g-serving-broker";
+import { createZGComputeNetworkBroker } from "@0gfoundation/0g-compute-ts-sdk";
 import { JsonRpcProvider, Wallet } from "ethers";
 import * as fs from "fs";
 import * as path from "path";
