@@ -18,9 +18,10 @@ export default function HomePage() {
         </p>
 
         <h1 className="max-w-4xl text-center text-4xl leading-tight font-medium text-foreground md:text-7xl">
-          <BlurText text="Prove eligibility, not" />
-          <span className="font-serif italic"> identity</span>
-          <span>.</span>
+          <BlurText
+            text="Prove eligibility, not identity."
+            italicWords={["identity"]}
+          />
         </h1>
 
         <p className="mt-10 max-w-2xl text-center text-base text-muted-foreground md:text-lg">

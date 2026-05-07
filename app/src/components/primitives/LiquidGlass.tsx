@@ -1,8 +1,9 @@
-import { type HTMLAttributes, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
-type LiquidGlassProps = HTMLAttributes<HTMLDivElement> & {
-  children: ReactNode;
+type LiquidGlassProps = {
+  children?: ReactNode;
   radius?: "sm" | "md" | "lg" | "xl" | "full";
+  className?: string;
 };
 
 const radiusMap: Record<NonNullable<LiquidGlassProps["radius"]>, string> = {
@@ -17,10 +18,9 @@ export function LiquidGlass({
   children,
   radius = "lg",
   className = "",
-  ...rest
 }: LiquidGlassProps) {
   return (
-    <div className={`liquid-glass ${radiusMap[radius]} ${className}`} {...rest}>
+    <div className={`liquid-glass ${radiusMap[radius]} ${className}`}>
       {children}
     </div>
   );
