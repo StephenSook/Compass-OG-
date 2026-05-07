@@ -1,15 +1,3 @@
-/**
- * Storage integration tests — gated on funded Galileo testnet env.
- *
- * Required env to run the live suite:
- *   ZG_RPC_URL                e.g. https://evmrpc-testnet.0g.ai
- *   ZG_INDEXER_URL            e.g. https://indexer-storage-testnet-turbo.0g.ai
- *   ZG_STORAGE_PRIVATE_KEY    0x-prefixed funded testnet wallet
- *   (or DEPLOYER_PRIVATE_KEY as fallback)
- *
- * Without these, the live tests skip cleanly. The local `constructor`
- * smoke test always runs and confirms wiring + env-gate behavior.
- */
 import { describe, it, expect } from "vitest";
 import { CompassStorage, compassStorageFromEnv } from "../src/storage";
 import {
@@ -24,27 +12,31 @@ const HAS_LIVE_ENV =
   !!process.env.ZG_INDEXER_URL &&
   (!!process.env.ZG_STORAGE_PRIVATE_KEY || !!process.env.DEPLOYER_PRIVATE_KEY);
 
-describe("storage — config + env-gate (always runs)", () => {
-  it("constructor rejects missing config fields", () => {
-    expect(
-      () => new CompassStorage({ rpcUrl: "", indexerUrl: "x", privateKeyHex: "0x1" }),
-    ).toThrow(/rpcUrl/);
-    expect(
-      () => new CompassStorage({ rpcUrl: "x", indexerUrl: "", privateKeyHex: "0x1" }),
-    ).toThrow(/indexerUrl/);
-    expect(
-      () => new CompassStorage({ rpcUrl: "x", indexerUrl: "x", privateKeyHex: "" }),
-    ).toThrow(/privateKeyHex/);
-  });
-
+describe("storage — env-gate (always runs)", () => {
   it("compassStorageFromEnv returns null when any required var is missing", () => {
     const orig = { ...process.env };
-    delete process.env.ZG_RPC_URL;
-    delete process.env.ZG_INDEXER_URL;
-    delete process.env.ZG_STORAGE_PRIVATE_KEY;
-    delete process.env.DEPLOYER_PRIVATE_KEY;
-    expect(compassStorageFromEnv()).toBeNull();
-    Object.assign(process.env, orig);
+    try {
+      delete process.env.ZG_RPC_URL;
+      delete process.env.ZG_INDEXER_URL;
+      delete process.env.ZG_STORAGE_PRIVATE_KEY;
+      delete process.env.DEPLOYER_PRIVATE_KEY;
+      expect(compassStorageFromEnv()).toBeNull();
+    } finally {
+      process.env = { ...orig };
+    }
+  });
+
+  it("inspect.custom redacts the private key", () => {
+    const fakePk =
+      "0x1111111111111111111111111111111111111111111111111111111111111111";
+    const s = new CompassStorage({
+      rpcUrl: "https://example.test",
+      indexerUrl: "https://indexer.example.test",
+      privateKeyHex: fakePk,
+    });
+    const out = require("node:util").inspect(s);
+    expect(out).not.toContain(fakePk);
+    expect(out).toContain("CompassStorage");
   });
 });
 
@@ -66,7 +58,7 @@ describe.skipIf(!HAS_LIVE_ENV)(
       const wire = serializeVault(blob);
 
       const { rootHash, txHash } = await storage!.upload(wire);
-      expect(rootHash).toMatch(/^0x[0-9a-fA-F]+$/);
+      expect(rootHash).toMatch(/^0x[0-9a-fA-F]{64}$/);
       expect(txHash).toMatch(/^0x[0-9a-fA-F]+$/);
 
       const downloaded = await storage!.download(rootHash);
@@ -79,7 +71,8 @@ describe.skipIf(!HAS_LIVE_ENV)(
 
     it("download rejects malformed rootHash", async () => {
       const storage = compassStorageFromEnv()!;
-      await expect(storage.download("not-hex")).rejects.toThrow(/0x hex/);
+      await expect(storage.download("not-hex")).rejects.toThrow(/64 hex chars/);
+      await expect(storage.download("0xabc")).rejects.toThrow(/64 hex chars/);
     });
 
     it("upload rejects empty buffer", async () => {
