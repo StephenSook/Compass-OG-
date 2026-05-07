@@ -26,7 +26,8 @@ export type UploadResult = {
 };
 
 function sdkErrorMessage(err: Error): string {
-  return err.message || `${err.constructor.name}`;
+  const name = err.constructor.name;
+  return err.message ? `${name}: ${err.message}` : name;
 }
 
 export class CompassStorage {
@@ -47,10 +48,13 @@ export class CompassStorage {
 
   async upload(bytes: Uint8Array, opts?: { fee?: bigint }): Promise<UploadResult> {
     if (bytes.length === 0) throw new Error("cannot upload empty buffer");
+    if (opts?.fee !== undefined && opts.fee < 0n) {
+      throw new Error(`fee must be >= 0n, got ${opts.fee}`);
+    }
     const file = new MemData(bytes);
-    const uploadOpts = opts?.fee !== undefined
-      ? { ...defaultUploadOption, fee: opts.fee }
-      : defaultUploadOption;
+    // Always spread — never alias the SDK singleton so a future SDK mutation
+    // of defaultUploadOption can't leak across uploads.
+    const uploadOpts = { ...defaultUploadOption, ...(opts?.fee !== undefined && { fee: opts.fee }) };
     const [result, err] = await this.indexer.upload(
       file,
       this.rpcUrl,
