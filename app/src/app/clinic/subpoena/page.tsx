@@ -50,7 +50,7 @@ export default function SubpoenaPage() {
             <MagneticButton
               href={`https://chainscan-galileo.0g.ai/tx/${RECEIPT_TX_HASH}`}
               ariaLabel="Verify receipt transaction on chainscan-galileo (opens new tab)"
-              className="liquid-glass rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase"
+              className="liquid-glass-border bg-white/[0.02] backdrop-blur-md backdrop-saturate-150 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase"
             >
               Verify on chain →
             </MagneticButton>

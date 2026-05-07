@@ -27,24 +27,23 @@ export function RevealText({ text, className = "" }: RevealTextProps) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // SSR + reduced-motion + no-scroll-needed → render plain text at full
-  // opacity. Without this, tall viewports leave the headline at 15%.
-  if (!mounted || prefersReducedMotion || !hasScroll) {
-    return (
-      <span className={className} aria-label={text}>
-        {text}
-      </span>
-    );
-  }
+  // Always render the wrapper span with ref attached so useScroll has a
+  // stable target. Conditionally render the inner content: plain text on
+  // SSR / reduced-motion / no-scroll viewport, per-char motion otherwise.
+  const useMotion = mounted && !prefersReducedMotion && hasScroll;
+  const chars = useMotion ? Array.from(text) : null;
 
-  const chars = Array.from(text);
   return (
     <span ref={ref} className={className} aria-label={text}>
-      {chars.map((ch, i) => (
-        <Char key={i} index={i} total={chars.length} progress={scrollYProgress}>
-          {ch}
-        </Char>
-      ))}
+      {chars ? (
+        chars.map((ch, i) => (
+          <Char key={i} index={i} total={chars.length} progress={scrollYProgress}>
+            {ch}
+          </Char>
+        ))
+      ) : (
+        <span aria-hidden="true">{text}</span>
+      )}
     </span>
   );
 }
