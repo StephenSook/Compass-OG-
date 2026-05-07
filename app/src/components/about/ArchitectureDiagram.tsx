@@ -1,15 +1,12 @@
-/**
- * Four-layer view of the Compass data flow. Embedded inline so colors track
- * the Cinematic Privacy palette without an external SVG asset.
- */
+// Inline JSX (not external SVG) so layer chrome inherits Tailwind tokens.
 const LAYERS = [
   {
     id: "device",
     title: "User device",
-    subtitle: "Next.js · Privy embedded wallet",
+    subtitle: "Next.js · user-controlled EOA",
     bullets: [
-      "secp256k1 key (Privy)",
-      "AES-256-GCM vault encryption",
+      "secp256k1 key (Privy embedded wallet — v1 roadmap)",
+      "AES-256-GCM vault encryption (Node CLI in v1, browser in v2)",
       "SD-JWT VC selective disclosure",
     ],
   },
@@ -20,7 +17,7 @@ const LAYERS = [
     bullets: [
       "ciphertext SD-JWT bundle",
       "Merkle root → AgentRegistry.encryptedURI",
-      "client-only decryption key",
+      "user-held decryption key, never on-chain",
     ],
   },
   {

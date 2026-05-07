@@ -7,7 +7,7 @@ const INTEGRATION = [
   {
     component: "Agent ID",
     network: "0G Chain (AgentRegistry)",
-    role: "Soulbound INFT bound to user's Privy wallet; carries encrypted vault URI",
+    role: "Soulbound INFT bound to the user's EOA; carries encrypted vault URI (Privy embedded-wallet integration in progress)",
   },
   {
     component: "Encrypted vault",
@@ -17,28 +17,30 @@ const INTEGRATION = [
   {
     component: "Sealed inference",
     network: "0G TeeML / Phala dstack TDX",
-    role: "Decrypts vault inside enclave; evaluates policy; signs receipt",
+    role: "Receives selectively-disclosed claims; evaluates policy; signs receipt with sealed key",
   },
   {
     component: "Receipt log",
     network: "0G Chain (CompassHub)",
-    role: "ReceiptIssued event with hashes only; 15-min timestamp bucket",
+    role: "ReceiptIssued: receiptId, policyId, nullifier, agentIdCommitment, resultHash, attestationDigest, expiry, 15-min timestamp bucket — no name, HKID, employer, or document fields",
   },
 ] as const;
 
-const REALITY = [
+type RealityState = "real" | "draft" | "mocked" | "stubbed";
+
+const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: string }> = [
   { component: "AgentRegistry contract", state: "real", note: "ERC-7857 stripped, Galileo deployed" },
   { component: "CompassHub contract", state: "real", note: "policies + Authwit + receipts, Galileo deployed" },
   { component: "0G Storage encrypted vaults", state: "real", note: "AES-256-GCM round-trip" },
   { component: "Receipt-signer service", state: "real", note: "dstack TDX dual-boot; per-receipt quote freshness binding" },
   { component: "Phala Cloud TDX deploy", state: "draft", note: "runbook ready; user-side dashboard step pending" },
-  { component: "SD-JWT VC issuers (HELP, Bethune, Hospital)", state: "mocked", note: "Ed25519 fixture issuers; not real NGOs" },
+  { component: "SD-JWT VC issuers (HELP, Bethune, Hospital)", state: "mocked", note: "real NGOs; signing keys are local Ed25519 fixtures, not endorsed by the NGOs" },
   { component: "Trust list governance", state: "stubbed", note: "owner-managed for v1; production needs DAO" },
   { component: "On-chain verifyAttestation", state: "stubbed", note: "off-chain enclave verification only" },
   { component: "0G broker processResponse co-signature", state: "draft", note: "out of scope for v1; receipt has its own signature chain" },
-] as const;
+];
 
-const REALITY_TONE: Record<string, "positive" | "warning" | "neutral"> = {
+const REALITY_TONE: Record<RealityState, "positive" | "warning" | "neutral"> = {
   real: "positive",
   draft: "warning",
   mocked: "warning",
@@ -48,28 +50,28 @@ const REALITY_TONE: Record<string, "positive" | "warning" | "neutral"> = {
 const CHAIN = [
   {
     n: 1,
-    title: "User encrypts SD-JWT VC client-side",
-    detail: "AES-256-GCM with PBKDF2-derived key (600k iter); ciphertext uploaded to 0G Storage.",
+    title: "SD-JWT VC encrypted with user-derived key",
+    detail: "AES-256-GCM with PBKDF2(600k iter); ciphertext uploaded to 0G Storage. v1 encryption runs from a Node CLI; browser-side encryption is on the v2 roadmap.",
   },
   {
     n: 2,
     title: "Receipt-signer derives sealed key inside TDX",
-    detail: "dstack.getKey('compass-receipt-signer') returns deterministic secp256k1 priv bound to MR_TD.",
+    detail: "dstack.getKey('compass-receipt-signer') returns a deterministic secp256k1 priv sealed to the attested image; composeHash is the externally-verifiable binding.",
   },
   {
     n: 3,
     title: "Per-receipt quote binds (signer, image, receiptId)",
-    detail: "report_data = sha256(ethAddress || composeHash || receiptId) — defeats archived-quote replay.",
+    detail: "report_data = sha256(ethAddress || composeHash || receiptId). Defeats archived-quote replay across deployments.",
   },
   {
     n: 4,
     title: "Receipt signed with sealed key, digest covers quoteCommitment",
-    detail: "secp256k1 lowS over canonicalized receipt; verifier recovers signer, matches against quote.",
+    detail: "secp256k1 lowS over canonicalized receipt; verifier recovers signer, matches against quote, validates the chain.",
   },
   {
     n: 5,
     title: "ReceiptIssued event on 0G Chain",
-    detail: "Public fields only: receiptId, policyId, resultHash, attestationDigest, 15-min timestamp bucket.",
+    detail: "receiptId, policyId, nullifier, agentIdCommitment, resultHash, attestationDigest, expiry, 15-min timestampBucket. No name, HKID, employer, or document fields.",
   },
 ];
 
@@ -96,11 +98,9 @@ export default function AboutPage() {
             <span className="font-serif italic">Bounded</span> disclosure, on the wire.
           </h1>
           <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-            Compass is a private eligibility firewall on 0G. An autonomous
-            agent reads encrypted credentials inside a TEE, evaluates a
-            policy, and emits a non-identifying receipt. Clinics extend
-            service. Subpoenas reach a log of bucketed timestamps and
-            cryptographic hashes. No identity fields anywhere.
+            Compass is a private eligibility firewall on 0G. Clinics extend
+            service. Subpoenas reach bucketed timestamps and cryptographic
+            commitments. No name, HKID, employer, or document fields.
           </p>
 
           <Section title="Architecture">
@@ -181,11 +181,13 @@ export default function AboutPage() {
               issues. See{" "}
               <a
                 href="https://github.com/StephenSook/Compass-OG-/blob/main/docs/honest-limits.md"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-foreground underline-offset-4 hover:underline"
               >
                 docs/honest-limits.md
               </a>{" "}
-              for the full list and the Phase 6 deferred-work tracker.
+              for the full list.
             </p>
           </Section>
 
