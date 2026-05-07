@@ -1,25 +1,10 @@
 /**
- * AES-256-GCM + PBKDF2-SHA-256 for Compass encrypted credential vaults.
+ * AES-256-GCM + PBKDF2-SHA-256 for encrypted credential vaults.
  *
- * Threat model: Maria's SD-JWT VCs are encrypted client-side BEFORE upload to
- * 0G Storage. Only Maria's device (or the TEE, on grant consumption) holds
- * the passphrase. The 0G Storage layer sees ciphertext only.
- *
- * Output format is a flat byte buffer:
- *
- *   [1 byte version=1][16 byte salt][12 byte iv][N byte ciphertext+tag]
- *
- * The trailing 16 bytes of ciphertext+tag is the GCM auth tag, matching
- * WebCrypto's `subtle.encrypt` output convention so the same blob can later
- * be decrypted in-browser without reframing.
- *
- * PBKDF2 iterations are pinned at 600,000 (OWASP 2023 baseline for
- * SHA-256). Random salt per encrypt, random 96-bit IV per encrypt — so
- * passphrase reuse across encrypts cannot leak via key/IV collision.
- *
- * AAD binds the ciphertext to a context string (typically the agent ID
- * commitment) — replaying a credential blob into a different agent's slot
- * fails decrypt with auth-tag mismatch.
+ * Wire format: [1B version=1][16B salt][12B iv][N B ciphertext||authTag]
+ * The trailing 16 bytes of ciphertext||authTag is the GCM auth tag —
+ * matches WebCrypto subtle.encrypt output so blobs decrypt in-browser
+ * without reframing.
  */
 import { randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from "node:crypto";
 
@@ -55,9 +40,11 @@ export function deriveKey(passphrase: string, salt: Uint8Array): Uint8Array {
 export function encryptVault(opts: {
   plaintext: Uint8Array;
   passphrase: string;
-  /** Context binding — typically agentIdCommitment. Replay-protects the blob. */
+  /** AAD binds blob to caller context (e.g. agentIdCommitment). Empty AAD = no binding. */
   aad: Uint8Array;
 }): EncryptedVault {
+  if (opts.passphrase.length === 0) throw new Error("passphrase must be non-empty");
+  if (opts.plaintext.length === 0) throw new Error("plaintext must be non-empty");
   const salt = randomBytes(SALT_LEN);
   const iv = randomBytes(IV_LEN);
   const key = deriveKey(opts.passphrase, salt);
@@ -78,6 +65,7 @@ export function decryptVault(opts: {
   passphrase: string;
   aad: Uint8Array;
 }): Uint8Array {
+  if (opts.passphrase.length === 0) throw new Error("passphrase must be non-empty");
   const { blob } = opts;
   if (blob.version !== 1) throw new Error(`unknown vault version: ${blob.version}`);
   if (blob.salt.length !== SALT_LEN) throw new Error("bad salt length");
@@ -90,11 +78,19 @@ export function decryptVault(opts: {
   const ct = Buffer.from(blob.ciphertextAndTag.slice(0, ctLen));
   const tag = Buffer.from(blob.ciphertextAndTag.slice(ctLen));
   decipher.setAuthTag(tag);
-  const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
-  return Uint8Array.from(pt);
+  try {
+    const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
+    return Uint8Array.from(pt);
+  } catch (e) {
+    // GCM auth-tag mismatch — list candidate causes without leaking which check
+    // failed (would be a padding-oracle-style channel).
+    throw new Error(
+      "vault decryption failed: wrong passphrase, wrong AAD, or tampered ciphertext",
+      { cause: e },
+    );
+  }
 }
 
-/** Pack an EncryptedVault to a single byte buffer for storage upload. */
 export function serializeVault(v: EncryptedVault): Uint8Array {
   const total = 1 + SALT_LEN + IV_LEN + v.ciphertextAndTag.length;
   const out = new Uint8Array(total);
@@ -110,12 +106,15 @@ export function deserializeVault(bytes: Uint8Array): EncryptedVault {
   if (bytes.length < minLen) {
     throw new Error(`vault buffer too short: ${bytes.length} < ${minLen}`);
   }
-  const version = bytes[0];
-  if (version !== VERSION_BYTE) throw new Error(`unknown version byte: ${version}`);
+  if (bytes[0] !== VERSION_BYTE) throw new Error(`unknown version byte: ${bytes[0]}`);
+  // Uint8Array.from(...subarray) forces a copy. Buffer.prototype.slice (which
+  // dispatches when bytes is a Node Buffer) returns a VIEW sharing the parent
+  // ArrayBuffer — caller mutation or pooled-buffer recycling would silently
+  // corrupt the returned vault.
   return {
     version: 1,
-    salt: bytes.slice(1, 1 + SALT_LEN),
-    iv: bytes.slice(1 + SALT_LEN, 1 + SALT_LEN + IV_LEN),
-    ciphertextAndTag: bytes.slice(1 + SALT_LEN + IV_LEN),
+    salt: Uint8Array.from(bytes.subarray(1, 1 + SALT_LEN)),
+    iv: Uint8Array.from(bytes.subarray(1 + SALT_LEN, 1 + SALT_LEN + IV_LEN)),
+    ciphertextAndTag: Uint8Array.from(bytes.subarray(1 + SALT_LEN + IV_LEN)),
   };
 }
