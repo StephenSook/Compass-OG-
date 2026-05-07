@@ -58,9 +58,17 @@ V4 contract addresses (Galileo testnet) baked into the new compute SDK constants
 
 Migration smoke-tested in commit `ecbed16`. New ledger CA is reachable; previous `BAD_DATA: getLedger` error replaced with a useful message ("Minimum balance to create a ledger is 3 0G"). Ledger creation deferred until ready to commit 3 OG.
 
-## Earlier V3 Failures (resolved by SDK migration above)
+## Earlier V3 Failures (RESOLVED by SDK migration above)
 
-The following were observed against the deprecated `@0glabs` SDKs on Galileo V3 and are no longer expected to recur on `@0gfoundation` SDKs against V4. Kept for archaeological reference and for the storage SDK whose V4 fix is still pending storage-team follow-up.
+All previous V3-era SDK failures resolved by the `@0gfoundation/*` migration. Confirmed live on Galileo:
+
+- **Compute SDK** — `broker.ledger.addLedger` reaches the V4 contract; failure now reports min-deposit semantics (3 OG required), not BAD_DATA.
+- **Storage SDK** — `Indexer.upload` end-to-end succeeds. Day-3 vault upload tx
+  `0x57dd1c5357d5a75a01a87a8d91ad7755e8c6cf38d66cba84f10f3522a848e318`,
+  rootHash `0x4d188a35cc928455debe5b34b6455fbdce37880662bd01b141e3c60c5cc115b7`,
+  txSeq 94374. Download round-trip + GCM decrypt verified via `vitest run test/storage.spec.ts` (5/5 pass).
+
+Sections below preserved for archaeological reference.
 
 ### Storage — `@0glabs/0g-ts-sdk@0.3.3`
 

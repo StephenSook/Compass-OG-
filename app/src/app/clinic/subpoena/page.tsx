@@ -2,10 +2,11 @@ import { LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { RevealText } from "@/components/primitives/RevealText";
 import { MagneticButton } from "@/components/primitives/MagneticButton";
 
-// Pinned to the Day-3 mint tx. Swap when CompassHub.issueReceipt fires
-// in Phase 6.
+// Day-3 mint w/ live 0G Storage rootHash 0x4d188a35...c115b7 in the
+// AgentMinted event. Swap to a real ReceiptIssued tx once
+// CompassHub.issueReceipt fires in Phase 6.
 const RECEIPT_TX_HASH =
-  "0x03b8fd7bb2ff8907a5cf0b7948617618b12ad0f25d869f9e85adaac4eb910e3c";
+  "0xfcbe4a4d3afc742c8683ab1a45eb1512329e42ae5b466271863c961788fc8e41";
 
 export default function SubpoenaPage() {
   return (
