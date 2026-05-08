@@ -8,9 +8,9 @@ const LAYERS = [
     title: "User device",
     subtitle: "Next.js · user-controlled EOA",
     bullets: [
-      "secp256k1 key (Privy v1 roadmap)",
-      "AES-256-GCM vault encryption",
-      "SD-JWT VC selective disclosure",
+      "secp256k1 key (Privy fixture today)",
+      "AES-256-GCM vault (Node CLI v1, browser v2)",
+      "SD-JWT VC (selective disclosure capable)",
     ],
   },
   {
@@ -21,7 +21,7 @@ const LAYERS = [
     bullets: [
       "ciphertext SD-JWT bundle",
       "Merkle root → AgentRegistry.encryptedURI",
-      "user-held decryption key",
+      "user-held decryption key, never on-chain",
     ],
   },
   {
@@ -42,15 +42,15 @@ const LAYERS = [
     subtitle: "AgentRegistry · CompassHub",
     bullets: [
       "soulbound INFT (agent identity)",
-      "Authwit grants + nullifier",
+      "single-use grant + nullifier (contract primitives)",
       "ReceiptIssued event (15-min bucket)",
     ],
   },
 ] as const;
 
 const ARROWS = [
-  { from: 0, to: 1, label: "encrypted vault upload" },
-  { from: 1, to: 2, label: "selectively-disclosed claims" },
+  { from: 0, to: 1, label: "encrypted vault → 0G Storage" },
+  { from: 1, to: 2, label: "policy-relevant claims" },
   { from: 2, to: 3, label: "ReceiptIssued" },
 ] as const;
 
@@ -77,9 +77,11 @@ export function ArchitectureDiagram() {
     >
       <title id="arch-title">Compass four-layer architecture</title>
       <desc id="arch-desc">
-        User device encrypts SD-JWT VC and uploads to 0G Storage. Sealed
-        inference (Phala dstack TDX) receives selectively-disclosed claims,
-        evaluates policy, signs receipt. ReceiptIssued event lands on 0G Chain.
+        User holds an SD-JWT credential. The vault is AES-256-GCM-encrypted
+        and uploaded to 0G Storage. The receipt-signer inside Phala dstack
+        TDX receives the policy-relevant claims, evaluates the predicate,
+        and signs a receipt with a key sealed inside the attested image.
+        ReceiptIssued lands on 0G Chain — public fields only.
       </desc>
 
       <defs>
