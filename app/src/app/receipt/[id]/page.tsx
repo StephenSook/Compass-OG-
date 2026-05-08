@@ -102,11 +102,11 @@ export default async function ReceiptPage({
               Verify on chain →
             </MagneticButton>
             <MagneticButton
-              href={`https://storagescan-galileo.0g.ai/tx/${r.storageRootHash}`}
-              ariaLabel="Inspect encrypted vault on 0G storage explorer (opens new tab)"
+              href="https://storagescan-galileo.0g.ai/"
+              ariaLabel="Open 0G Storage explorer on Galileo testnet (opens new tab)"
               className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
             >
-              Inspect 0G Storage →
+              0G Storage explorer →
             </MagneticButton>
             <Link
               href="/clinic/subpoena"
