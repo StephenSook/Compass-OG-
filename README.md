@@ -59,6 +59,7 @@ Maria is a composite — built from research, not a real person. The persona is 
 | On-chain `verifyAttestation` | stubbed | off-chain enclave verification only |
 | 0G broker `processResponse` co-signature | draft | out of scope for v1; receipt has its own signature chain |
 | Privy embedded wallet integration | draft | wired in `/onboard` step 1 + root provider; live behind `NEXT_PUBLIC_PRIVY_APP_ID`, fixture timer in default build (see `docs/privy-setup.md`) |
+| `/onboard` step 2 — live `mintAgent` | draft | Privy embedded wallet → `AgentRegistry.mintAgent` on Galileo (`0x461eda…3C2D8`), gated on user-funded gas via faucet; fixture timer when Privy is unset |
 | Mainnet (Aristotle) deploy | pending | Galileo testnet only today; Phase 8 work |
 
 This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the frontend, with the same status badges.

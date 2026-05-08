@@ -39,6 +39,7 @@ const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: str
   { component: "On-chain verifyAttestation", state: "stubbed", note: "off-chain enclave verification only" },
   { component: "0G broker processResponse co-signature", state: "draft", note: "out of scope for v1; receipt has its own signature chain" },
   { component: "Privy embedded wallet", state: "draft", note: "wired in /onboard step 1; live behind NEXT_PUBLIC_PRIVY_APP_ID, fixture timer in default build" },
+  { component: "/onboard step 2 — live mintAgent", state: "draft", note: "Privy embedded wallet → AgentRegistry.mintAgent on Galileo (chainId 16602), gated on user-funded gas; fixture timer when Privy is unset" },
 ];
 
 const REALITY_TONE: Record<RealityState, "positive" | "warning" | "neutral"> = {

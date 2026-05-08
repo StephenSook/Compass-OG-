@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { PrivyConnectButton } from "@/components/onboard/PrivyConnectButton";
+import { MintAgentButton } from "@/components/onboard/MintAgentButton";
 import { isPrivyEnabled } from "@/lib/chains";
 
 const AGENT_MINT_TX_HASH =
@@ -33,6 +34,7 @@ const STEP_TIMINGS: Record<StepId, number> = {
 export default function OnboardPage() {
   const [steps, setSteps] = useState<StepRecord>(INITIAL);
   const [walletAddress, setWalletAddress] = useState<Address | null>(null);
+  const [liveMint, setLiveMint] = useState<{ tokenId: bigint; txHash: Hex } | null>(null);
   const reduced = useReducedMotion();
   const timerIdsRef = useRef<Set<number>>(new Set());
   const privyOn = isPrivyEnabled();
@@ -68,11 +70,21 @@ export default function OnboardPage() {
     setSteps((s) => (s.connect === "done" ? s : { ...s, connect: "done" }));
   }, []);
 
+  // Step 2 live-mint callback: receipt is mined, AgentMinted event decoded.
+  const handleMinted = useCallback(
+    (info: { tokenId: bigint; txHash: Hex }) => {
+      setLiveMint(info);
+      setSteps((s) => (s.mint === "done" ? s : { ...s, mint: "done" }));
+    },
+    [],
+  );
+
   const reset = () => {
     timerIdsRef.current.forEach((id) => window.clearTimeout(id));
     timerIdsRef.current.clear();
     setSteps(INITIAL);
     setWalletAddress(null);
+    setLiveMint(null);
   };
   const allDone = Object.values(steps).every((s) => s === "done");
   const firstIncompleteId: StepId | null =
@@ -143,12 +155,35 @@ export default function OnboardPage() {
               isActive={firstIncompleteId === "mint"}
               disabled={steps.connect !== "done"}
               title="Mint the agent"
-              detail="ERC-7857-stripped soulbound INFT, committed to the wallet. The tx hash below points to a prior real Galileo mint of an agent under the same contract — proof of the on-chain primitive, not this walkthrough's mint."
+              detail={
+                privyOn && walletAddress
+                  ? liveMint
+                    ? `ERC-7857-stripped soulbound INFT, tokenId #${liveMint.tokenId.toString()} on 0G Galileo. The wallet that signed the mint is the canonical agent owner.`
+                    : "ERC-7857-stripped soulbound INFT. AgentRegistry.mintAgent runs on 0G Galileo; the signing key is your Privy embedded wallet. You'll need a small amount of OG to pay gas — fund the wallet via the Galileo faucet if it's empty."
+                  : "ERC-7857-stripped soulbound INFT, committed to the wallet. The tx hash below points to a prior real Galileo mint of an agent under the same contract — proof of the on-chain primitive, not this fixture walkthrough's mint."
+              }
               actionLabel="Mint"
               onAction={() => start("mint")}
               reduced={!!reduced}
+              actionOverride={
+                privyOn && walletAddress && steps.connect === "done" ? (
+                  <MintAgentButton
+                    walletAddress={walletAddress}
+                    onMinted={handleMinted}
+                  />
+                ) : undefined
+              }
               footer={
-                steps.mint === "done" ? (
+                liveMint ? (
+                  <a
+                    href={`https://chainscan-galileo.0g.ai/tx/${liveMint.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+                  >
+                    {liveMint.txHash.slice(0, 14)}…{liveMint.txHash.slice(-8)} ↗
+                  </a>
+                ) : steps.mint === "done" ? (
                   <a
                     href={`https://chainscan-galileo.0g.ai/tx/${AGENT_MINT_TX_HASH}`}
                     target="_blank"

@@ -8,7 +8,8 @@ The Compass frontend is wired for Privy embedded wallets but ships in fixture mo
 |---|---|---|
 | `/onboard` Step 1 | "Connect" button → 800ms simulated timer → ✓ done | "Connect" button → opens Privy modal → email/Google/wallet login → embedded EVM wallet provisioned → ✓ {0x1234…abcd} |
 | Step 1 detail copy | "Privy embedded wallet. Fixture here." | "Privy embedded wallet. Email or Google login provisions a secp256k1 key on this device." (or shows the address once connected) |
-| Steps 2–3 | Unchanged (still fixture timers) | Unchanged (still fixture timers — full mint/issue wiring is on the v2 roadmap) |
+| Step 2 | Fixture timer + hard-coded prior-mint tx hash | Real `AgentRegistry.mintAgent` on Galileo (chainId 16602) signed by the embedded wallet, with the live tx hash and tokenId surfaced in the step footer. Requires the wallet to hold a small amount of OG; the step shows a faucet link if balance is 0. |
+| Step 3 | Unchanged (fixture timer) | Unchanged (fixture timer — issuer endpoint is on the v2 roadmap) |
 | `/about` reality table | Privy row reads "wired in /onboard step 1; live when NEXT_PUBLIC_PRIVY_APP_ID is set, fixture timer otherwise" | Same row, but now it is honestly *live* |
 
 The architecture diagram on `/about` and the layered SVG (`ArchitectureDiagram.tsx`) are unchanged; they describe the integration neutrally.
