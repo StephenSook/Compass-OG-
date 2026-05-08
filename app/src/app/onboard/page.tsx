@@ -40,15 +40,14 @@ export default function OnboardPage() {
   }, []);
 
   const start = (id: StepId) => {
-    let scheduled = false;
-    setSteps((s) => {
-      if (s[id] !== "pending") return s;
-      const i = STEP_ORDER.indexOf(id);
-      if (i > 0 && s[STEP_ORDER[i - 1]] !== "done") return s;
-      scheduled = true;
-      return { ...s, [id]: "running" };
-    });
-    if (!scheduled) return;
+    // Eligibility check from current render's state. The button's
+    // `disabled` prop already enforces this at the DOM level; this
+    // is belt-and-suspenders for programmatic clicks.
+    if (steps[id] !== "pending") return;
+    const i = STEP_ORDER.indexOf(id);
+    if (i > 0 && steps[STEP_ORDER[i - 1]] !== "done") return;
+
+    setSteps((s) => ({ ...s, [id]: "running" }));
     const tid = window.setTimeout(() => {
       timerIdsRef.current.delete(tid);
       setSteps((s) => ({ ...s, [id]: "done" }));
