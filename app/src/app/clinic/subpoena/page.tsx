@@ -1,14 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "motion/react";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { RevealText } from "@/components/primitives/RevealText";
 import { MagneticButton } from "@/components/primitives/MagneticButton";
 import { CANONICAL_RECEIPT_ID } from "@/lib/fixtures/receipts";
 
-// Day-3 mint w/ live 0G Storage rootHash 0x4d188a35...c115b7 in the
-// AgentMinted event. Swap to a real ReceiptIssued tx once
-// CompassHub.issueReceipt fires in Phase 6.
 const RECEIPT_TX_HASH =
   "0xfcbe4a4d3afc742c8683ab1a45eb1512329e42ae5b466271863c961788fc8e41";
+
+const FADE_IN = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+};
 
 export default function SubpoenaPage() {
   return (
@@ -23,15 +28,22 @@ export default function SubpoenaPage() {
       </header>
 
       <section className="flex flex-1 flex-col items-center justify-center px-6">
-        <LiquidGlass
-          radius="xl"
+        <motion.div
           aria-hidden="true"
-          className="mb-16 flex h-[280px] w-full max-w-[800px] items-center justify-center motion-safe:animate-pulse md:h-[400px]"
+          className="mb-16 w-full max-w-[800px]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0.4, 0.75, 0.4] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         >
-          <span className="font-mono text-[10px] tracking-[0.4em] text-muted-foreground/30 uppercase">
-            [ no data ]
-          </span>
-        </LiquidGlass>
+          <LiquidGlass
+            radius="xl"
+            className="flex h-[280px] w-full items-center justify-center md:h-[400px]"
+          >
+            <span className="font-mono text-[10px] tracking-[0.4em] text-muted-foreground/30 uppercase">
+              [ no data ]
+            </span>
+          </LiquidGlass>
+        </motion.div>
 
         <div className="max-w-3xl text-center">
           <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
@@ -41,15 +53,33 @@ export default function SubpoenaPage() {
             <RevealText text="Someone qualified for free legal assistance at 14:32 on May 18, 2026." />
           </p>
 
-          <p className="mt-20 font-serif text-5xl leading-tight italic text-foreground md:text-7xl">
+          <motion.p
+            className="mt-20 font-serif text-5xl leading-tight italic text-foreground md:text-7xl"
+            initial={FADE_IN.initial}
+            whileInView={FADE_IN.animate}
+            viewport={{ once: true, margin: "-20%" }}
+            transition={{ duration: 0.9, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          >
             That&apos;s all that exists.
-          </p>
+          </motion.p>
 
-          <p className="mt-12 text-base leading-relaxed text-muted-foreground md:text-lg">
+          <motion.p
+            className="mt-12 text-base leading-relaxed text-muted-foreground md:text-lg"
+            initial={FADE_IN.initial}
+            whileInView={FADE_IN.animate}
+            viewport={{ once: true, margin: "-10%" }}
+            transition={{ duration: 0.7, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
+          >
             No name. No HKID. No employer. No documents.
-          </p>
+          </motion.p>
 
-          <div className="mt-16 flex flex-wrap justify-center gap-4">
+          <motion.div
+            className="mt-16 flex flex-wrap items-center justify-center gap-4"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-10%" }}
+            transition={{ duration: 0.6, delay: 2.0 }}
+          >
             <MagneticButton
               href={`https://chainscan-galileo.0g.ai/tx/${RECEIPT_TX_HASH}`}
               ariaLabel="Verify receipt transaction on chainscan-galileo (opens new tab)"
@@ -59,11 +89,17 @@ export default function SubpoenaPage() {
             </MagneticButton>
             <Link
               href={`/receipt/${CANONICAL_RECEIPT_ID}`}
-              className="self-center font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+              className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
             >
               See the receipt →
             </Link>
-          </div>
+            <Link
+              href="/audit"
+              className="self-center font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+            >
+              Public audit log →
+            </Link>
+          </motion.div>
         </div>
       </section>
 
