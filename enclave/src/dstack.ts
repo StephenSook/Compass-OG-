@@ -4,7 +4,7 @@
  * and exposes requestPerReceiptQuote() for fresh per-request binding to a
  * specific receiptId. Returns null when /var/run/dstack.sock is absent.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { DstackClient } from "@phala/dstack-sdk";
@@ -71,12 +71,39 @@ export async function tryLoadAttestedSigner(opts?: {
 }): Promise<AttestedSignerBundle | null> {
   const sockPath = opts?.socketPath ?? DEFAULT_SOCK;
   const endpoint = opts?.endpoint;
-  if (!endpoint && !existsSync(sockPath)) return null;
 
+  if (!endpoint) {
+    const exists = existsSync(sockPath);
+    if (!exists) {
+      try {
+        const dir = readdirSync("/var/run");
+        console.log(`[dstack] ${sockPath} absent; /var/run contains: ${JSON.stringify(dir)}`);
+      } catch (e) {
+        console.log(`[dstack] /var/run readdir failed: ${(e as Error).message}`);
+      }
+      return null;
+    }
+    try {
+      const st = statSync(sockPath);
+      console.log(
+        `[dstack] ${sockPath} exists; isSocket=${st.isSocket()} isFile=${st.isFile()} isDirectory=${st.isDirectory()} mode=0${(st.mode & 0o777).toString(8)}`,
+      );
+    } catch (e) {
+      console.log(`[dstack] stat ${sockPath} failed: ${(e as Error).message}`);
+    }
+  }
+
+  // SDK 0.5.7's isReachable() probes /prpc/Tappd.Info (legacy tappd path),
+  // which dstack-0.5.9 dropped. Skip the probe and rely on info()'s error.
   const client = new DstackClient(endpoint);
-  if (!(await client.isReachable())) return null;
-
-  const info = await client.info();
+  let info;
+  try {
+    info = await client.info();
+    console.log(`[dstack] info() OK; appId=${info.app_id} composeHash=${info.compose_hash?.slice(0, 16)}...`);
+  } catch (e) {
+    console.log(`[dstack] info() failed: ${(e as Error).message}`);
+    return null;
+  }
   if (!info.compose_hash) {
     throw new Error("dstack info() returned no compose_hash; refusing TEE boot");
   }

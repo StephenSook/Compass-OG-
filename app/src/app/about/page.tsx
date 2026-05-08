@@ -33,7 +33,7 @@ const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: str
   { component: "CompassHub contract", state: "real", note: "policies + Authwit + receipts, Galileo deployed" },
   { component: "0G Storage encrypted vaults", state: "real", note: "AES-256-GCM round-trip" },
   { component: "Receipt-signer service", state: "real", note: "dstack TDX dual-boot; per-receipt quote freshness binding" },
-  { component: "Phala Cloud TDX deploy", state: "draft", note: "runbook ready; user-side dashboard step pending" },
+  { component: "Phala Cloud TDX deploy", state: "real", note: "live: ethAddress 0xaba6...a7e7, composeHash 0x1884...cea0 — see docs/notes/phala-deployment.md" },
   { component: "SD-JWT VC issuers (HELP, Bethune, Hospital)", state: "mocked", note: "real NGOs; signing keys are local Ed25519 fixtures, not endorsed by the NGOs" },
   { component: "Trust list governance", state: "stubbed", note: "owner-managed for v1; production needs DAO" },
   { component: "On-chain verifyAttestation", state: "stubbed", note: "off-chain enclave verification only" },
