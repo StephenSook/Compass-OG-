@@ -31,12 +31,26 @@ export default function HomePage() {
           contract, and her HKID just to ask the question.
         </p>
 
-        <Link
-          href="/clinic/subpoena"
-          className="mt-12 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
-        >
-          See the disclosure log →
-        </Link>
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+          <Link
+            href="/onboard"
+            className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+          >
+            Onboard Maria's agent →
+          </Link>
+          <Link
+            href="/clinic/subpoena"
+            className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+          >
+            See the disclosure log →
+          </Link>
+          <Link
+            href="/about"
+            className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+          >
+            About →
+          </Link>
+        </div>
       </section>
     </main>
   );
