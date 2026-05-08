@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { ClinicHeader } from "@/components/clinic/ClinicHeader";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
-import { POLICIES, type PolicyFixture } from "@/lib/fixtures/policies";
+import {
+  POLICIES,
+  TONE_BY_POLICY_STATUS,
+  predicateExpression,
+  type PolicyFixture,
+} from "@/lib/fixtures/policies";
 import { shortenHex } from "@/lib/fixtures/receipts";
 
-const TONE_BY_STATUS: Record<PolicyFixture["status"], "positive" | "warning" | "neutral"> = {
-  active: "positive",
-  draft: "warning",
-  deprecated: "neutral",
-};
 
 export default function PoliciesPage() {
   return (
@@ -54,7 +54,7 @@ function PolicyCard({ policy }: { policy: PolicyFixture }) {
             {policy.issuer}
           </p>
         </div>
-        <StatusBadge tone={TONE_BY_STATUS[policy.status]} label={policy.status} />
+        <StatusBadge tone={TONE_BY_POLICY_STATUS[policy.status]} label={policy.status} />
       </div>
 
       <p className="mt-6 text-sm text-muted-foreground">{policy.description}</p>
@@ -64,7 +64,7 @@ function PolicyCard({ policy }: { policy: PolicyFixture }) {
           <dt className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
             Predicate
           </dt>
-          <dd className="mt-1 font-mono text-xs text-foreground">{policy.predicate}</dd>
+          <dd className="mt-1 font-mono text-xs text-foreground">{predicateExpression(policy)}</dd>
         </div>
         <div>
           <dt className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">

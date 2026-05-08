@@ -106,3 +106,7 @@ export function formatExpiry(sec: number): string {
   const d = new Date(sec * 1000);
   return d.toISOString().replace("T", " ").slice(0, 16) + " UTC";
 }
+
+export function formatBucket(sec: number): string {
+  return new Date(sec * 1000).toISOString().replace("T", " ").slice(0, 16);
+}

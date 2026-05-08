@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ClinicHeader } from "@/components/clinic/ClinicHeader";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
+import { Th } from "@/components/primitives/Th";
 import {
   RECEIPTS,
+  formatBucket,
   formatExpiry,
   shortenHex,
   type ReceiptFixture,
@@ -70,29 +72,8 @@ export default function ClinicInboxPage() {
   );
 }
 
-function Th({
-  children,
-  align = "left",
-}: {
-  children: React.ReactNode;
-  align?: "left" | "right";
-}) {
-  return (
-    <th
-      className={`pb-4 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase ${
-        align === "right" ? "text-right" : "text-left"
-      }`}
-    >
-      {children}
-    </th>
-  );
-}
-
 function Row({ row }: { row: ReceiptFixture & { id: string } }) {
-  const bucket = new Date(row.timestampBucketSec * 1000)
-    .toISOString()
-    .replace("T", " ")
-    .slice(0, 16);
+  const bucket = formatBucket(row.timestampBucketSec);
   return (
     <tr className="border-b border-border/20 transition-colors hover:bg-foreground/[0.02]">
       <td className="py-4 pr-4 font-mono text-xs text-foreground">

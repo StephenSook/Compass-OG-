@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ClinicHeader } from "@/components/clinic/ClinicHeader";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
+import { Stat } from "@/components/primitives/Stat";
+import { Th } from "@/components/primitives/Th";
 import { POLICIES } from "@/lib/fixtures/policies";
-import { RECEIPTS, shortenHex } from "@/lib/fixtures/receipts";
+import { RECEIPTS, formatBucket, shortenHex } from "@/lib/fixtures/receipts";
 
 export default function AuditPage() {
   const rows = Object.entries(RECEIPTS)
@@ -31,9 +33,10 @@ export default function AuditPage() {
             <span className="font-serif italic">Everything</span> we publish.
           </h1>
           <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-            Every Compass receipt is logged on-chain at the 15-minute bucket.
-            The full public ledger is below. No name, HKID, employer, or
-            document field appears in any row, today or under subpoena.
+            Compass receipts ride a 15-minute timestamp bucket on 0G Chain. The
+            log below shows the schema with fixture rows; live receipts on
+            mainnet will publish in this exact shape. No name, HKID, employer,
+            or document field appears in any row, today or under subpoena.
           </p>
 
           <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -56,10 +59,7 @@ export default function AuditPage() {
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const bucket = new Date(row.timestampBucketSec * 1000)
-                    .toISOString()
-                    .replace("T", " ")
-                    .slice(0, 16);
+                  const bucket = formatBucket(row.timestampBucketSec);
                   return (
                     <tr
                       key={row.id}
@@ -117,18 +117,18 @@ export default function AuditPage() {
                 <li>• Employer or contract details</li>
                 <li>• Document images</li>
                 <li>• Wall-clock timestamps below 15 minutes</li>
-                <li>• Anything a subpoena can pry into identity</li>
+                <li>• Any plaintext field a subpoena could turn into identity</li>
               </ul>
             </div>
           </div>
 
           <p className="mt-16 max-w-2xl text-sm text-muted-foreground/70">
-            Want to see what a subpoenaed snapshot looks like next to a receipt?{" "}
+            A subpoenaed snapshot, next to a receipt:{" "}
             <Link
               href="/clinic/subpoena"
               className="text-foreground underline-offset-4 hover:underline"
             >
-              Open the disclosure scene →
+              open the disclosure scene →
             </Link>
           </p>
         </div>
@@ -137,31 +137,3 @@ export default function AuditPage() {
   );
 }
 
-function Th({
-  children,
-  align = "left",
-}: {
-  children: React.ReactNode;
-  align?: "left" | "right";
-}) {
-  return (
-    <th
-      className={`pb-4 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase ${
-        align === "right" ? "text-right" : "text-left"
-      }`}
-    >
-      {children}
-    </th>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="rounded-2xl border border-border/40 p-6">
-      <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-medium text-foreground">{value}</p>
-    </div>
-  );
-}

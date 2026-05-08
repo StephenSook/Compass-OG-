@@ -3,22 +3,17 @@ import { notFound } from "next/navigation";
 import { ClinicHeader } from "@/components/clinic/ClinicHeader";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
 import { GLASS_BASE } from "@/components/primitives/LiquidGlass";
+import { Stat } from "@/components/primitives/Stat";
 import {
   POLICIES,
+  TONE_BY_POLICY_STATUS,
   getPolicyBySlug,
-  type PolicyFixture,
 } from "@/lib/fixtures/policies";
 import { RECEIPTS, shortenHex } from "@/lib/fixtures/receipts";
 
 export function generateStaticParams() {
   return POLICIES.map((p) => ({ slug: p.slug }));
 }
-
-const TONE_BY_STATUS: Record<PolicyFixture["status"], "positive" | "warning" | "neutral"> = {
-  active: "positive",
-  draft: "warning",
-  deprecated: "neutral",
-};
 
 export default async function PolicyDetailPage({
   params,
@@ -46,7 +41,7 @@ export default async function PolicyDetailPage({
             <h1 className="text-3xl leading-tight font-medium text-foreground md:text-5xl">
               <span className="font-serif italic">Eligibility</span> for {policy.name.split(" — ")[0]}
             </h1>
-            <StatusBadge tone={TONE_BY_STATUS[policy.status]} label={policy.status} />
+            <StatusBadge tone={TONE_BY_POLICY_STATUS[policy.status]} label={policy.status} />
           </div>
           <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
             {policy.description}
@@ -65,7 +60,7 @@ export default async function PolicyDetailPage({
             </ol>
             <p className="mt-6 max-w-2xl text-sm text-muted-foreground">
               All claims must hold. The TEE evaluates the predicate inside the
-              attested image; the policy hash is bound into the receipt's
+              attested image. The policy hash binds into the receipt's
               attestation digest.
             </p>
           </Section>
@@ -99,7 +94,7 @@ export default async function PolicyDetailPage({
                 >
                   Open the receipt inbox →
                 </Link>{" "}
-                to inspect the public-fields-only log for this policy.
+                Public fields only.
               </p>
             ) : (
               <p className="mt-6 text-sm text-muted-foreground">
@@ -150,13 +145,3 @@ function Field({ label, value, mono = false }: { label: string; value: string; m
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-2xl border border-border/40 p-6">
-      <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-medium text-foreground">{value}</p>
-    </div>
-  );
-}
