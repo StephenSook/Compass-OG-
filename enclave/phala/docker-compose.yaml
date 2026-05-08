@@ -7,20 +7,13 @@
 # composeHash). Verifier extracts and confirms the binding.
 services:
   compass-enclave:
-    image: compass-enclave:latest
-    build:
-      context: ..
-      dockerfile: phala/Dockerfile
+    # Pinned by digest so Phala pulls the exact image we built locally,
+    # not whatever floats at :1.0.0 over time. Re-pin on every rebuild.
+    image: ghcr.io/stephensook/compass-enclave:1.0.0@sha256:58c2b3dfed39b3dae97424c791537fd43deef5c3361229ecd940400c5d66ca68
     ports:
       - "8080:8080"
     volumes:
       - /var/run/dstack.sock:/var/run/dstack.sock
     environment:
       COMPASS_BIND_HOST: 0.0.0.0
-      # Compass-side config; signer key is NOT here — derived inside enclave.
-      COMPASS_POLICY_REGISTRY_URL: ${COMPASS_POLICY_REGISTRY_URL}
-      COMPASS_TRUST_LIST_ROOT: ${COMPASS_TRUST_LIST_ROOT}
-      COMPASS_AGENT_REGISTRY_ADDR: ${COMPASS_AGENT_REGISTRY_ADDR}
-      COMPASS_HUB_ADDR: ${COMPASS_HUB_ADDR}
-      ZEROG_RPC_URL: ${ZEROG_RPC_URL}
     restart: always

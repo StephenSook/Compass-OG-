@@ -4,14 +4,13 @@
 # inside the enclave, eth address committed into TDX quote report_data).
 # Build context: enclave/ (parent of this Dockerfile).
 FROM node:22-alpine AS builder
+RUN apk add --no-cache python3 make g++ libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund --legacy-peer-deps
 COPY tsconfig.json ./
 COPY src ./src
-RUN npx tsc --noEmit && \
-    npx tsc --outDir dist src/server.ts && \
-    cp -r src/types dist/types 2>/dev/null || true
+RUN npx tsc -p tsconfig.json
 
 FROM node:22-alpine
 WORKDIR /app
