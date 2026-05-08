@@ -2,95 +2,244 @@
 
 > **Prove eligibility, not identity.**
 
-Compass is a private eligibility firewall built on 0G Network. Vulnerable users (lead persona: Maria Cruz, Filipino domestic worker in Hong Kong) prove they qualify for services through a soulbound agent identity — clinics receive only non-identifying receipts, never raw credentials.
+A private eligibility firewall on 0G — vulnerable migrant workers prove they qualify for services through an autonomous agent, while clinics receive only non-identifying receipts.
 
-**Track 5: Privacy & Sovereign Infrastructure** — 0G APAC Hackathon 2026.
+**Track 5 — Privacy & Sovereign Infrastructure**, 0G APAC Hackathon 2026.
 
 ---
 
-## What this is
+## See it live
 
-A two-contract on-chain footprint plus an off-chain enclave service:
-
-- `AgentRegistry` (ERC-7857-stripped, soulbound) — Maria's agent identity with encrypted credential pointer to 0G Storage
-- `CompassHub` — policy registry + atomic `consumeGrantAndIssueReceipt` (Aztec-Authwit-style EIP-712 grant + bounded-disclosure receipt in a single tx, single-principal-bound to the agent owner)
-- 0G Sealed Inference (TeeML) — policy evaluation inside hardware-attested enclave
-- 0G Storage — AES-256-GCM-encrypted SD-JWT VC vaults
-- 0G Chain — testnet (Galileo, chainId 16602) for staging; mainnet chainId pending verification (16661 or 16600 — see `docs/notes/0g-ecosystem-status.md`)
-
-The clinic's view of Maria after she passes eligibility: `"Someone qualified for free legal assistance at 14:32 on May 18, 2026."` That's the entire disclosure. No name. No HKID. No employer. No documents.
-
-## Repo layout
-
-```
-Compass-OG-/
-├── contracts/    Hardhat workspace — AgentRegistry + CompassHub
-├── app/          Next.js 14 App Router — Privy embedded wallet
-├── enclave/      TypeScript node service — 0G broker + SD-JWT VC + receipt
-├── docs/
-│   ├── policies/         demo policy JSONs (HELP, Bethune, Hospital)
-│   ├── notes/            broker smoke test results, canonical provider, cost benchmarks
-│   ├── deployments/      mainnet contract addresses + Explorer links
-│   └── schemas/          receipt-v1.json canonicalization spec
-└── .github/workflows/ci.yml   contracts + app + enclave on every push
-```
-
-## Status
-
-**Today (May 6 2026):** workspace + scaffolding + contracts + invariants. See `docs/notes/0g-tee-smoke.md` for the broker smoke-test result.
-
-| Area | State |
+| Layer | URL |
 |---|---|
-| Hardhat workspace + 0G networks (Galileo / Aristotle) | wired |
-| `AgentRegistry` soulbound + ERC-7857-stripped | implemented + tested |
-| `CompassHub` atomic grant + receipt | implemented + tested |
-| Property-based invariants (5) | green |
-| `slither` static analysis | clean (medium + high) |
-| `solidity-coverage` | 100% lines, 96.55% branches |
-| 0G broker SDK smoke test | infrastructure ready, gated on testnet funding |
-| SD-JWT VC issuer/holder/verifier round-trip | not started |
-| 0G Storage encrypted vault upload | not started |
-| 0G Sealed Inference broker integration | not started |
-| Mainnet deploy | not yet |
+| Frontend | <https://app-psi-pied.vercel.app> |
+| TEE receipt-signer | <https://65c93172e22403466eecee47dd1cc90375014a0f-8080.dstack-pha-prod9.phala.network> |
+| AgentRegistry (0G Galileo) | [`0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8`](https://chainscan-galileo.0g.ai/address/0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8) |
+| CompassHub (0G Galileo) | [`0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b`](https://chainscan-galileo.0g.ai/address/0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b) |
+| Container image | `ghcr.io/stephensook/compass-enclave:1.0.3` |
+| Repo | <https://github.com/StephenSook/Compass-OG-> |
 
-Build-in-public:
-- X thread: posted day-1 — search `#0GHackathon` for `@StephenSook` updates
-- Discord: 0G builders channel
-- Repo updates daily through the submission deadline
+The Phala CVM is stopped between demos to save free credits. Click **Start** in the Phala dashboard before judging — receipts cannot be minted while the CVM is off, but the historical attestation evidence is permanent (see [docs/notes/phala-deployment.md](./docs/notes/phala-deployment.md)).
 
-## Architecture (at a glance)
+---
 
-User device (Privy embedded wallet) → AES-256-GCM encrypts SD-JWT VC → uploaded to 0G Storage. Provider sends fresh challenge + policyId. Maria signs an Authwit grant via Privy. Provider passes the grant to the enclave; the enclave decrypts the VC inside the 0G TeeML-attested image (built on dstack TDX), evaluates the policy predicate, signs the receipt with a key derived inside that image, and returns it. The Ethereum address corresponding to the signing key is bound into the TDX quote's `report_data` field — verifiers run Intel DCAP (or the dstack verifier) and check that the receipt signer matches the address embedded in `report_data`, proving the key was generated inside this exact attested image. Provider posts grant + receipt in a single `consumeGrantAndIssueReceipt` call — atomic, no half-state. The clinic sees the on-chain `ReceiptIssued` event; the clinic never sees Maria.
+## The "shouldn't be possible" moment
 
-## Honest limits
+Open the [subpoena scene](https://app-psi-pied.vercel.app/clinic/subpoena). Under a PDPO §57 disclosure order, the clinic produces this and only this:
 
-This is hackathon-grade. Read `docs/honest-limits.md` for the full disclosure list. Highlights:
-- Three demo issuers (HELP for Domestic Workers, Bethune House, MFMW) are **mocked** local fixtures, not real NGOs
-- Trust list governance is **stubbed** — owner-managed for v1, needs DAO for production
-- On-chain `verifyAttestation` is a **stub** — RA quote verification too expensive on-chain, real verification happens off-chain in the enclave service
-- Receipt-key-to-quote binding is **REPORTDATA-bound** — confirmed Day 3 by 0G compute team. dstack TDX writes the signing key's Ethereum address into the quote's `report_data`. Hardware-bound enclave-born key proof. See `docs/honest-limits.md` §5b.
-- SD-JWT VC pinned to draft-ietf-oauth-sd-jwt-vc-15 (the underlying SD-JWT primitive is RFC 9901 stable, but the VC profile is in flux)
+```
+14:32 on May 18, 2026 — Someone qualified for free legal assistance.
+That's all that exists.
+```
 
-## Replicate a receipt yourself — *roadmap*
+No name. No HKID. No employer. No documents. No fields a subpoena can pry open.
 
-The judge-replicable verify-receipt CLI is a roadmap item. It will reproduce the receipt digest from public on-chain inputs + the canonical 0G TEE provider's attestation quote + the policy JSON. **Status today: scaffolded, not built.** It depends on (a) the canonical 0G TEE provider being pinned in production and (b) at least one real receipt anchored on mainnet.
+---
 
-When live, the invocation will be:
+## Maria's story
+
+Maria works 16 hours a day in a Hong Kong apartment. When she needs free legal help, she should not have to hand over her passport, her contract, and her HKID just to ask the question. Compass lets her prove "I'm an FDH in HK with an open employment dispute" without disclosing who she is. Her credentials stay encrypted on her device. The clinic learns only a bucketed timestamp and a cryptographic commitment.
+
+Maria is a composite — built from research, not a real person. The persona is inspired by the work of [HELP for Domestic Workers](https://helpforfdws.org/), [Bethune House Migrant Women's Refuge](https://www.bethunehouse.org/), and [Mission for Migrant Workers](https://www.migrants.net/) in Hong Kong.
+
+---
+
+## What's real / what's mocked
+
+| Component | Status | Note |
+|---|---|---|
+| AgentRegistry contract | **real** | ERC-7857 stripped, Galileo deployed |
+| CompassHub contract | **real** | policies + Authwit + receipts, Galileo deployed |
+| 0G Storage encrypted vaults | **real** | AES-256-GCM round-trip verified |
+| Receipt-signer service | **real** | dstack TDX dual-boot, per-receipt quote freshness binding |
+| Phala Cloud TDX deploy | **real** | live: signer `0xaba6…a7e7`, composeHash `0x1884…cea0` |
+| Vercel frontend | **real** | 9 routes serving 200 |
+| SD-JWT VC issuers (HELP, Bethune, Hospital) | mocked | real NGOs; signing keys are local Ed25519 fixtures, not endorsed by the NGOs |
+| Trust list governance | stubbed | owner-managed for v1; production needs DAO |
+| On-chain `verifyAttestation` | stubbed | off-chain enclave verification only |
+| 0G broker `processResponse` co-signature | draft | out of scope for v1; receipt has its own signature chain |
+| Privy embedded wallet integration | roadmap | currently runs against user-controlled EOA |
+| Mainnet (Aristotle) deploy | pending | Galileo testnet only today; Phase 8 work |
+
+This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the frontend, with the same status badges.
+
+---
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────┐
+│  USER DEVICE  · Next.js · user-controlled EOA        │
+│  • secp256k1 key (Privy embedded wallet — roadmap)   │
+│  • AES-256-GCM vault encryption                      │
+│  • SD-JWT VC selective disclosure                    │
+└────────────────────────┬─────────────────────────────┘
+                         │  encrypted vault upload
+                         ▼
+┌──────────────────────────────────────────────────────┐
+│  0G STORAGE  · Galileo testnet · encrypted blob      │
+│  • ciphertext SD-JWT bundle                          │
+│  • Merkle root → AgentRegistry.encryptedURI          │
+└────────────────────────┬─────────────────────────────┘
+                         │  selectively-disclosed claims
+                         ▼
+┌──────────────────────────────────────────────────────┐
+│  0G TeeML / PHALA dstack TDX                         │
+│  • dstack-derived secp256k1 signer                   │
+│  • per-receipt quote: report_data binds              │
+│    sha256(ethAddress || composeHash || receiptId)    │
+│  • policy evaluator → eligible/denied                │
+└────────────────────────┬─────────────────────────────┘
+                         │  ReceiptIssued
+                         ▼
+┌──────────────────────────────────────────────────────┐
+│  0G CHAIN  · AgentRegistry + CompassHub              │
+│  • soulbound INFT (agent identity)                   │
+│  • Authwit grants + nullifier replay protection      │
+│  • ReceiptIssued event (15-min bucketed timestamp)   │
+└──────────────────────────────────────────────────────┘
+```
+
+Visual + section-by-section breakdown: [/about](https://app-psi-pied.vercel.app/about).
+
+---
+
+## 0G integration
+
+| Component | 0G Layer | Role |
+|---|---|---|
+| Agent ID | 0G Chain ([AgentRegistry](https://chainscan-galileo.0g.ai/address/0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8)) | Soulbound INFT bound to user EOA; carries encrypted vault URI |
+| Encrypted vault | 0G Storage | AES-256-GCM ciphertext of SD-JWT bundle; root hash on-chain |
+| Sealed inference | 0G TeeML / Phala dstack TDX | Receives selectively-disclosed claims; signs receipt with sealed key |
+| Receipt log | 0G Chain ([CompassHub](https://chainscan-galileo.0g.ai/address/0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b)) | ReceiptIssued: receiptId, policyId, nullifier, agentIdCommitment, resultHash, attestationDigest, expiry, 15-min timestamp bucket |
+
+---
+
+## Replicate the TEE binding yourself
+
+The receipt-signer's Ethereum address is bound into a per-receipt TDX quote's `report_data` field as `sha256(ethAddress || composeHash || receiptId)`. Anyone can re-verify against the live endpoint:
 
 ```bash
 git clone https://github.com/StephenSook/Compass-OG-.git
-cd Compass-OG- && npm install
-npm run verify-receipt -- --receiptId 0x…
+cd Compass-OG-/enclave && npm install --legacy-peer-deps
+npx ts-node phala/scripts/verify-deploy.ts \
+  https://65c93172e22403466eecee47dd1cc90375014a0f-8080.dstack-pha-prod9.phala.network
 ```
 
-Expected output: `OK — receipt verified against TEE attestation.`
+Expected output (when the CVM is running):
 
-Until then, the receipt's digest construction is documented in [`docs/schemas/receipt-v1.json`](./docs/schemas/receipt-v1.json) (RFC 8785 JCS canonical form), and the enclave-key TEE-binding requirement is documented in `docs/honest-limits.md`.
+```
+[verify-deploy] /health source=tee signer=0xaba6b92ff8199275eb090c9b3049141fd431a7e7
+[verify-deploy] ethAddress:    0xaba6b92ff8199275eb090c9b3049141fd431a7e7
+[verify-deploy] composeHash:   0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
+[verify-deploy] running verifyReportDataBinding...
+[verify-deploy] OK — quote binds to (ethAddress, composeHash)
+```
 
-## License
+Captured evidence: [docs/notes/phala-deployment.md](./docs/notes/phala-deployment.md).
+
+---
+
+## Live attestation evidence (pinned)
+
+| Field | Value |
+|---|---|
+| Phala URL | `https://65c93172e22403466eecee47dd1cc90375014a0f-8080.dstack-pha-prod9.phala.network` |
+| TEE signer eth address | `0xaba6b92ff8199275eb090c9b3049141fd431a7e7` |
+| dstack `composeHash` | `0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0` |
+| Phala app ID | `65c93172e22403466eecee47dd1cc90375014a0f` |
+| Phala instance ID | `0263ebb91641237ca840f3b46e6f3d56920197ae` |
+| Image digest | `sha256:f3ed653050216ee4ad6a332e6e38d02c5d0166ff33b55ff80acd9973ae2727d1` |
+| dstack runtime | `dstack-0.5.9` (production channel, not DEV) |
+| Quote version | TDX v4 (10020 hex chars) |
+| Signature chain entries | 2 |
+| Bound at | 2026-05-08T01:38:14 UTC |
+
+---
+
+## On-chain deployments
+
+| Network | Contract | Address |
+|---|---|---|
+| 0G Galileo (chainId 16602) | AgentRegistry | [`0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8`](https://chainscan-galileo.0g.ai/address/0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8) |
+| 0G Galileo (chainId 16602) | CompassHub | [`0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b`](https://chainscan-galileo.0g.ai/address/0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b) |
+| 0G Aristotle (mainnet) | — | pending — Phase 8 |
+
+Deployer: `0x05b5Bb550eb8401fC4b8a33bf566C03f49ef5d34`. Deployment record: [docs/deployments/](./docs/deployments/).
+
+---
+
+## Quickstart (local dev)
+
+```bash
+# Clone
+git clone https://github.com/StephenSook/Compass-OG-.git
+cd Compass-OG-
+
+# Frontend
+cd app && npm install && npm run dev          # → http://localhost:3000
+
+# Receipt-signer (env mode — for development without dstack)
+cd ../enclave && npm install --legacy-peer-deps && npx tsc
+COMPASS_FORCE_LOCAL=1 \
+COMPASS_RECEIPT_SIGNER_KEY=0x0000000000000000000000000000000000000000000000000000000000000001 \
+  node dist/server.js                          # → http://localhost:8080/health
+
+# Tests
+cd enclave && npx vitest run                   # 103 passed | 3 skipped
+cd ../contracts && npx hardhat test            # 40+ unit tests + 5 invariants
+```
+
+Production TEE deploy via Phala Cloud: see [enclave/phala/deploy.md](./enclave/phala/deploy.md).
+
+---
+
+## Tech stack
+
+- **Solidity 0.8.24** + **Hardhat** for AgentRegistry + CompassHub
+- **TypeScript 5.6** for receipt-signer (Express) + holder/issuer/verifier
+- **Next.js 16** App Router + Tailwind v4 (Cinematic Privacy aesthetic)
+- **Intel TDX** via **Phala dstack-0.5.9** for the sealed enclave
+- **`@phala/dstack-sdk@0.5.7`** for `getKey` / `getQuote` / `info`
+- **`@noble/curves`** secp256k1 + **`@noble/hashes`** keccak256/sha256 for receipt signing
+- **`@sd-jwt/sd-jwt-vc`** + **`@sd-jwt/jwt-status-list`** for credential issuance + revocation
+- **`@0gfoundation/0g-storage-ts-sdk`** + **`@0gfoundation/0g-compute-ts-sdk`** for 0G integration
+- **Vercel** for frontend hosting · **GHCR** for the enclave image
+
+103 vitest tests + 95% Solidity branch coverage. CI on every push: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
+---
+
+## Documentation map
+
+| Doc | Purpose |
+|---|---|
+| [docs/architecture.md](./docs/architecture.md) | Full architecture walkthrough |
+| [docs/threat-model.md](./docs/threat-model.md) | 9 attack surfaces with mitigations |
+| [docs/honest-limits.md](./docs/honest-limits.md) | What Compass does NOT protect against |
+| [docs/schemas/receipt-v1.json](./docs/schemas/receipt-v1.json) | Canonical receipt schema (v1.2.0) |
+| [docs/policies/](./docs/policies/) | Three demo eligibility policies (HELP, Bethune, Hospital) |
+| [docs/notes/phala-deployment.md](./docs/notes/phala-deployment.md) | Live TEE deployment evidence |
+| [docs/notes/codex-tee-architecture-review.md](./docs/notes/codex-tee-architecture-review.md) | Adversarial architecture review |
+| [enclave/phala/deploy.md](./enclave/phala/deploy.md) | Phala Cloud deploy runbook |
+| [enclave/src/verify-attestation.ts](./enclave/src/verify-attestation.ts) | Verifier-side TEE binding chain |
+
+---
+
+## Honest limits
+
+Compass narrows disclosure but does not eliminate it. Coercion, deniable encryption, full k-anonymity against statistical re-identification, and SD-JWT VC draft churn all remain open issues. See [docs/honest-limits.md](./docs/honest-limits.md) for the full list.
+
+The receipt-signer key is **enclave-bound** by virtue of dstack `getKey`'s deterministic-key-sealed-to-MR_TD primitive plus the per-receipt quote's `report_data = sha256(ethAddress || composeHash || receiptId)` binding. Per-receipt freshness defeats the quote-replay attack a single boot quote would leave open. Verifier-side trust chain documented in [`enclave/src/verify-attestation.ts`](./enclave/src/verify-attestation.ts).
+
+---
+
+## License + credits
 
 MIT — see [LICENSE](./LICENSE).
 
-## Build credits
+Solo build by **Stephen Sookra** (Atlanta). Pair-coded with **Claude Opus 4.7 (1M context)**, adversarially reviewed by **Codex (GPT-5.5)** for security boundaries, **Gemini 2.5 Pro** for long-context audits.
 
-Solo build by Stephen Sookra (KSU CS sophomore, Atlanta). Pair-coded with Claude Code (Opus 4.7), reviewed by Codex (GPT-5.5) and Gemini 2.5 Pro. Thanks to the 0G Labs team and HackQuest for the infrastructure and the platform.
+Persona narrative inspired by the work of HELP for Domestic Workers, Bethune House Migrant Women's Refuge, and Mission for Migrant Workers in Hong Kong. Compass does not represent any real worker; the demo flow is a composite.
+
+Built on the 0G APAC Hackathon, May 2026. Track 5 — Privacy & Sovereign Infrastructure.
