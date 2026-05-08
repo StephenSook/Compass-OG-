@@ -6,7 +6,10 @@
   "scripts": {
     "test": "vitest run",
     "smoke-test": "ts-node src/smoke-test.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "verify-deploy": "ts-node phala/scripts/verify-deploy.ts",
+    "verify-receipt": "ts-node scripts/verify-receipt.ts",
+    "mint-sample-receipt": "ts-node scripts/mint-sample-receipt.ts"
   },
   "keywords": [],
   "author": "",

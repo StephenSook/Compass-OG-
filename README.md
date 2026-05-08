@@ -117,16 +117,21 @@ Visual + section-by-section breakdown: [/about](https://app-psi-pied.vercel.app/
 
 ## Replicate the TEE binding yourself
 
-The receipt-signer's Ethereum address is bound into a per-receipt TDX quote's `report_data` field as `sha256(ethAddress || composeHash || receiptId)`. Anyone can re-verify against the live endpoint:
+Two scripts let any judge re-verify the cryptographic chain independently. Clone, install, run:
 
 ```bash
 git clone https://github.com/StephenSook/Compass-OG-.git
 cd Compass-OG-/enclave && npm install --legacy-peer-deps
-npx ts-node phala/scripts/verify-deploy.ts \
+```
+
+### A. Verify the live deploy's attestation
+
+```bash
+npm run verify-deploy -- \
   https://65c93172e22403466eecee47dd1cc90375014a0f-8080.dstack-pha-prod9.phala.network
 ```
 
-Expected output (when the CVM is running):
+Expected output (when CVM is running):
 
 ```
 [verify-deploy] /health source=tee signer=0xaba6b92ff8199275eb090c9b3049141fd431a7e7
@@ -137,6 +142,34 @@ Expected output (when the CVM is running):
 ```
 
 Captured evidence: [docs/notes/phala-deployment.md](./docs/notes/phala-deployment.md).
+
+### B. Verify a receipt end-to-end (offline OR live)
+
+```bash
+# Offline — verifies the bundled sample receipt without needing Phala running
+npm run mint-sample-receipt        # generates enclave/samples/receipt-sample.json
+npm run verify-receipt -- --sample \
+  --expected-compose 0xabababababababababababababababababababababababababababababababab
+
+# Live — mints a fresh receipt against the running Phala CVM and verifies it
+npm run verify-receipt -- \
+  --live https://65c93172e22403466eecee47dd1cc90375014a0f-8080.dstack-pha-prod9.phala.network \
+  --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
+```
+
+Expected output (PASS):
+
+```
+[verify-receipt] ✓ attestationDigest = sha256(canonicalize(receipt))
+[verify-receipt] ✓ signature ECDSA-recovers to claimed signer
+[verify-receipt] ✓ receipt.quoteCommitment = sha256(perReceiptQuoteHex)
+[verify-receipt] ✓ quote report_data binds (signerAddress || composeHash || receiptId)
+[verify-receipt] PASS — receipt verified against TEE attestation.
+```
+
+Tampering produces explicit failure codes (`REPORT_DATA_MISMATCH`, `QUOTE_COMMITMENT_MISMATCH`, `ENV_MODE_RECEIPT`, `QUOTE_VERSION_UNSUPPORTED`) — see [`enclave/src/verify-attestation.ts`](./enclave/src/verify-attestation.ts).
+
+Out of scope (next layer): full Intel DCAP verification of the TDX quote signature chain — run via the DStack Verifier or Intel QVL externally.
 
 ---
 
