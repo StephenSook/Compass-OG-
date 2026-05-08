@@ -9,7 +9,7 @@ services:
   compass-enclave:
     # Pinned by digest so Phala pulls the exact image we built locally,
     # not whatever floats at :1.0.0 over time. Re-pin on every rebuild.
-    image: ghcr.io/stephensook/compass-enclave:1.0.0@sha256:58c2b3dfed39b3dae97424c791537fd43deef5c3361229ecd940400c5d66ca68
+    image: ghcr.io/stephensook/compass-enclave:1.0.1@sha256:f11923f9295b4bb377687083e9bd36cb92bc7a46a2b68fe14a91d05cc4e7939d
     ports:
       - "8080:8080"
     volumes:
