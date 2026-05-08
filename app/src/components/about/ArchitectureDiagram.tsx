@@ -8,7 +8,7 @@ const LAYERS = [
     title: "User device",
     subtitle: "Next.js · user-controlled EOA",
     bullets: [
-      "secp256k1 key (Privy fixture today)",
+      "secp256k1 key (Privy wired; fixture by default)",
       "AES-256-GCM vault (Node CLI v1, browser v2)",
       "SD-JWT VC (selective disclosure capable)",
     ],

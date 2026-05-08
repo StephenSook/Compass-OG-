@@ -45,6 +45,12 @@ export default function HomePage() {
             See the disclosure log →
           </Link>
           <Link
+            href="/vault"
+            className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+          >
+            Open the vault →
+          </Link>
+          <Link
             href="/about"
             className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
           >

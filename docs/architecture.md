@@ -7,7 +7,9 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Frontend (app/) — Next.js 14 + Privy embedded wallet       │
+│  Frontend (app/) — Next.js 16 + Privy embedded wallet       │
+│  (Privy wired in /onboard step 1; live behind                │
+│   NEXT_PUBLIC_PRIVY_APP_ID, fixture timer in default build) │
 │   • Maria onboards, mints Agent, uploads VC, requests       │
 │     eligibility, views receipt, sees /clinic/subpoena       │
 └────────────────────────────────┬────────────────────────────┘
@@ -62,9 +64,11 @@
 | AgentRegistry | CompassHub | ownerOf(tokenId) is canonical agent owner |
 | CompassHub | Provider | Receipt log is append-only + dedup-checked |
 
-## Single-principal model
+## Single-principal model (target architecture; v2)
 
-Maria's Privy-derived secp256k1 key plays four roles:
+Maria's Privy-derived secp256k1 key is *intended* to play four roles. v1 wires
+role 1 (frontend onboarding step 1) only; roles 2–4 are the v2 wire-up.
+
 1. EVM owner of `AgentRegistry` tokenId (soulbound — cannot be transferred)
 2. EIP-712 signer for `CompassHub.consumeGrant` (verified via
    `recovered == agentRegistry.ownerOf(g.agentTokenId)` — `UnauthorizedSigner`
@@ -72,15 +76,20 @@ Maria's Privy-derived secp256k1 key plays four roles:
 3. SD-JWT VC `cnf` claim (presentation keybinding)
 4. Authwit Grant signer
 
-A judge can verify "the holder, the agent owner, and the grant signer are the
-same principal" from public on-chain data + the VC.
+When v2 lands, a judge can verify "the holder, the agent owner, and the grant
+signer are the same principal" from public on-chain data + the VC. Today, the
+on-chain primitive (AgentRegistry + CompassHub) is real; the wallet wiring on
+the receipt-mint flow is fixture.
 
-## Receipt lifecycle
+## Receipt lifecycle (target; v2 frontend wire-up)
+
+The enclave half is real (see `enclave/src/`); the frontend signing flow
+described below is v2.
 
 1. Provider sends fresh `challenge` + `policyId` to Maria's app
-2. App signs Authwit Grant via Privy → POSTs to enclave
+2. App signs Authwit Grant via Privy → POSTs to enclave  *(v2)*
 3. Enclave fetches encrypted VC bundle from 0G Storage by Maria's `agentId`
-4. Enclave decrypts inside TEE (AES-256-GCM, key wrapped via Privy device key)
+4. Enclave decrypts inside TEE (AES-256-GCM, key wrapped via Privy device key)  *(v2)*
 5. Enclave loads canonical policy JSON from `docs/policies/<policyId>.json`
 6. Enclave evaluates predicate
 7. Enclave constructs receipt per `docs/schemas/receipt-v1.json`

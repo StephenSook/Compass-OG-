@@ -21,9 +21,11 @@ export type ReceiptFixture = {
   teeSignerAddress: string;
 };
 
-export const CANONICAL_RECEIPT_ID = "1" as const;
+export type ReceiptId = "1" | "2" | "3";
 
-export const RECEIPTS: Record<string, ReceiptFixture> = {
+export const CANONICAL_RECEIPT_ID: ReceiptId = "1";
+
+export const RECEIPTS: Record<ReceiptId, ReceiptFixture> = {
   [CANONICAL_RECEIPT_ID]: {
     receiptId: "0x4e6d3a1b9c84f72e5d3a1b9c84f72e5d3a1b9c84f72e5d3a1b9c84f72e5d3a1b",
     policyId: "compass:help-legal-aid",

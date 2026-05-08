@@ -1,3 +1,5 @@
+import type { ClaimName } from "./claims";
+
 export type PolicyStatus = "active" | "draft" | "deprecated";
 
 export const TONE_BY_POLICY_STATUS: Record<PolicyStatus, "positive" | "warning" | "neutral"> = {
@@ -13,7 +15,7 @@ export type PolicyFixture = {
   issuer: string;
   issuerNote: string;
   /** Predicate claims in order. Render-side joins with " ∧ " for human display. */
-  predicateClaims: readonly string[];
+  predicateClaims: readonly ClaimName[];
   minAnonymitySet: number;
   status: PolicyStatus;
   policyHash: string;

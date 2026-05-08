@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import type { Address } from "viem";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
+import { PrivyConnectButton } from "@/components/onboard/PrivyConnectButton";
+import { isPrivyEnabled } from "@/lib/chains";
 
 const AGENT_MINT_TX_HASH =
   "0xfcbe4a4d3afc742c8683ab1a45eb1512329e42ae5b466271863c961788fc8e41";
@@ -29,8 +32,10 @@ const STEP_TIMINGS: Record<StepId, number> = {
 
 export default function OnboardPage() {
   const [steps, setSteps] = useState<StepRecord>(INITIAL);
+  const [walletAddress, setWalletAddress] = useState<Address | null>(null);
   const reduced = useReducedMotion();
   const timerIdsRef = useRef<Set<number>>(new Set());
+  const privyOn = isPrivyEnabled();
 
   useEffect(() => {
     return () => {
@@ -55,10 +60,19 @@ export default function OnboardPage() {
     timerIdsRef.current.add(tid);
   };
 
+  // Privy step 1 stays "pending" while the modal is open (no crypto work has
+  // started yet) and goes straight to "done" once the embedded wallet address
+  // arrives. Cancelled modal leaves state untouched — user can retry.
+  const handlePrivyConnected = useCallback((address: Address) => {
+    setWalletAddress(address);
+    setSteps((s) => (s.connect === "done" ? s : { ...s, connect: "done" }));
+  }, []);
+
   const reset = () => {
     timerIdsRef.current.forEach((id) => window.clearTimeout(id));
     timerIdsRef.current.clear();
     setSteps(INITIAL);
+    setWalletAddress(null);
   };
   const allDone = Object.values(steps).every((s) => s === "done");
   const firstIncompleteId: StepId | null =
@@ -86,9 +100,10 @@ export default function OnboardPage() {
             Maria&apos;s <span className="font-serif italic">agent</span>, in three steps.
           </h1>
           <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-            Soulbound agent, then a fixture eligibility credential. Privy
-            embedded wallet is on the v1 roadmap; this walkthrough runs in
-            three seconds.
+            Soulbound agent, then a fixture eligibility credential.{" "}
+            {privyOn
+              ? "Step 1 uses the Privy embedded wallet; steps 2–3 are scripted fixtures that run in three seconds."
+              : "Privy embedded wallet is env-gated (see docs/privy-setup.md); this fixture walkthrough runs in three seconds."}
           </p>
 
           <div role="status" aria-live="polite" className="sr-only">
@@ -105,10 +120,21 @@ export default function OnboardPage() {
               state={steps.connect}
               isActive={firstIncompleteId === "connect"}
               title="Connect wallet"
-              detail="Privy embedded wallet. Fixture here. The wallet's secp256k1 key signs every consent."
+              detail={
+                privyOn
+                  ? walletAddress
+                    ? `Privy embedded wallet ready: ${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}. The wallet's secp256k1 key signs every consent.`
+                    : "Privy embedded wallet. Email or Google login provisions a secp256k1 key on this device. The same key signs every consent."
+                  : "Privy embedded wallet. Fixture here. The wallet's secp256k1 key signs every consent."
+              }
               actionLabel="Connect"
               onAction={() => start("connect")}
               reduced={!!reduced}
+              actionOverride={
+                privyOn ? (
+                  <PrivyConnectButton onConnected={handlePrivyConnected} />
+                ) : undefined
+              }
             />
             <Step
               n={2}
@@ -168,8 +194,14 @@ export default function OnboardPage() {
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
-                  href="/clinic/subpoena"
+                  href="/vault"
                   className={`${GLASS_BASE} rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase`}
+                >
+                  Open the vault →
+                </Link>
+                <Link
+                  href="/clinic/subpoena"
+                  className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
                 >
                   See the disclosure scene →
                 </Link>
@@ -207,6 +239,8 @@ type StepProps = {
   onAction: () => void;
   reduced: boolean;
   footer?: React.ReactNode;
+  /** Replaces the default ActionButton entirely (used by the Privy step). */
+  actionOverride?: ReactNode;
 };
 
 function Step({
@@ -220,6 +254,7 @@ function Step({
   onAction,
   reduced,
   footer,
+  actionOverride,
 }: StepProps) {
   const opacity = isActive || state === "done" ? "opacity-100" : "opacity-50";
   return (
@@ -247,12 +282,14 @@ function Step({
             {footer ? <div className="mt-3">{footer}</div> : null}
           </div>
         </div>
-        <ActionButton
-          state={state}
-          disabled={disabled}
-          label={actionLabel}
-          onClick={onAction}
-        />
+        {actionOverride ?? (
+          <ActionButton
+            state={state}
+            disabled={disabled}
+            label={actionLabel}
+            onClick={onAction}
+          />
+        )}
       </div>
     </motion.li>
   );

@@ -7,7 +7,7 @@ const INTEGRATION = [
   {
     component: "Agent ID",
     network: "0G Chain (AgentRegistry)",
-    role: "Soulbound INFT bound to the user's EOA; carries encrypted vault URI (Privy embedded-wallet integration in progress)",
+    role: "Soulbound INFT bound to the user's EOA; Privy embedded wallet wires the EOA when NEXT_PUBLIC_PRIVY_APP_ID is set, fixture mode otherwise",
   },
   {
     component: "Encrypted vault",
@@ -31,13 +31,14 @@ type RealityState = "real" | "draft" | "mocked" | "stubbed";
 const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: string }> = [
   { component: "AgentRegistry contract", state: "real", note: "ERC-7857 stripped, Galileo deployed" },
   { component: "CompassHub contract", state: "real", note: "policies + Authwit + receipts, Galileo deployed" },
-  { component: "0G Storage encrypted vaults", state: "real", note: "AES-256-GCM round-trip" },
+  { component: "0G Storage encrypted vaults", state: "draft", note: "AES-256-GCM round-trip on Node CLI; live 0G upload behind COMPASS_LIVE_STORAGE=1; browser-side flow is v2" },
   { component: "Receipt-signer service", state: "real", note: "dstack TDX dual-boot; per-receipt quote freshness binding" },
   { component: "Phala Cloud TDX deploy", state: "real", note: "live: ethAddress 0xaba6...a7e7, composeHash 0x1884...cea0 — see docs/notes/phala-deployment.md" },
   { component: "SD-JWT VC issuers (HELP, Bethune, Hospital)", state: "mocked", note: "real NGOs; signing keys are local Ed25519 fixtures, not endorsed by the NGOs" },
   { component: "Trust list governance", state: "stubbed", note: "owner-managed for v1; production needs DAO" },
   { component: "On-chain verifyAttestation", state: "stubbed", note: "off-chain enclave verification only" },
   { component: "0G broker processResponse co-signature", state: "draft", note: "out of scope for v1; receipt has its own signature chain" },
+  { component: "Privy embedded wallet", state: "draft", note: "wired in /onboard step 1; live behind NEXT_PUBLIC_PRIVY_APP_ID, fixture timer in default build" },
 ];
 
 const REALITY_TONE: Record<RealityState, "positive" | "warning" | "neutral"> = {

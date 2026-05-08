@@ -22,7 +22,7 @@ export default function SubpoenaPage() {
     <main className="relative flex min-h-screen flex-col bg-background">
       <header className="px-6 pt-10 pb-6">
         <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase">
-          Investigation Request — Clinic Disclosure Log
+          Investigation Request — Clinic Disclosure Log · PDPO Cap. 486 §57
         </p>
         <p className="mt-2 font-mono text-xs tracking-[0.2em] text-muted-foreground/60 uppercase">
           subject: anonymous applicant · 2026-05-18 14:32:00 +08:00

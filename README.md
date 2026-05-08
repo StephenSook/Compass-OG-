@@ -50,15 +50,15 @@ Maria is a composite — built from research, not a real person. The persona is 
 |---|---|---|
 | AgentRegistry contract | **real** | ERC-7857 stripped, Galileo deployed |
 | CompassHub contract | **real** | policies + Authwit + receipts, Galileo deployed |
-| 0G Storage encrypted vaults | **real** | AES-256-GCM round-trip verified |
+| 0G Storage encrypted vaults | draft | AES-256-GCM round-trip on Node CLI; live 0G upload behind `COMPASS_LIVE_STORAGE=1`; browser-side flow is v2 |
 | Receipt-signer service | **real** | dstack TDX dual-boot, per-receipt quote freshness binding |
 | Phala Cloud TDX deploy | **real** | live: signer `0xaba6…a7e7`, composeHash `0x1884…cea0` |
-| Vercel frontend | **real** | 9 routes serving 200 |
+| Vercel frontend | **real** | 11 routes serving 200, including `/vault` and the env-gated `/onboard` Privy flow |
 | SD-JWT VC issuers (HELP, Bethune, Hospital) | mocked | real NGOs; signing keys are local Ed25519 fixtures, not endorsed by the NGOs |
 | Trust list governance | stubbed | owner-managed for v1; production needs DAO |
 | On-chain `verifyAttestation` | stubbed | off-chain enclave verification only |
 | 0G broker `processResponse` co-signature | draft | out of scope for v1; receipt has its own signature chain |
-| Privy embedded wallet integration | roadmap | currently runs against user-controlled EOA |
+| Privy embedded wallet integration | draft | wired in `/onboard` step 1 + root provider; live behind `NEXT_PUBLIC_PRIVY_APP_ID`, fixture timer in default build (see `docs/privy-setup.md`) |
 | Mainnet (Aristotle) deploy | pending | Galileo testnet only today; Phase 8 work |
 
 This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the frontend, with the same status badges.
@@ -70,7 +70,7 @@ This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the 
 ```
 ┌──────────────────────────────────────────────────────┐
 │  USER DEVICE  · Next.js · user-controlled EOA        │
-│  • secp256k1 key (Privy embedded wallet — roadmap)   │
+│  • secp256k1 key (Privy wired; fixture by default)   │
 │  • AES-256-GCM vault encryption                      │
 │  • SD-JWT VC selective disclosure                    │
 └────────────────────────┬─────────────────────────────┘

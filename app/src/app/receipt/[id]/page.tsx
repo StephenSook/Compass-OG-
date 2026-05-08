@@ -7,6 +7,7 @@ import {
   RECEIPTS,
   formatExpiry,
   shortenHex,
+  type ReceiptFixture,
 } from "@/lib/fixtures/receipts";
 
 export function generateStaticParams() {
@@ -19,7 +20,7 @@ export default async function ReceiptPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const r = RECEIPTS[id];
+  const r = (RECEIPTS as Record<string, ReceiptFixture>)[id];
   if (!r) notFound();
 
   return (
