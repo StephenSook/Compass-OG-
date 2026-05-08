@@ -31,10 +31,10 @@ export default function HomePage() {
           contract, and her HKID just to ask the question.
         </p>
 
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/onboard"
-            className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+            className="rounded-full border border-foreground/40 px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase transition-colors hover:border-foreground/80"
           >
             Onboard Maria's agent →
           </Link>

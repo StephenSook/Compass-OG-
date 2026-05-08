@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 
@@ -12,6 +12,8 @@ type StepId = "connect" | "mint" | "issue";
 type StepState = "pending" | "running" | "done";
 
 type StepRecord = Record<StepId, StepState>;
+
+const STEP_ORDER: readonly StepId[] = ["connect", "mint", "issue"] as const;
 
 const INITIAL: StepRecord = {
   connect: "pending",
@@ -28,20 +30,40 @@ const STEP_TIMINGS: Record<StepId, number> = {
 export default function OnboardPage() {
   const [steps, setSteps] = useState<StepRecord>(INITIAL);
   const reduced = useReducedMotion();
+  const timerIdsRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    return () => {
+      timerIdsRef.current.forEach((id) => window.clearTimeout(id));
+      timerIdsRef.current.clear();
+    };
+  }, []);
 
   const start = (id: StepId) => {
-    if (steps[id] !== "pending") return;
-    setSteps((s) => ({ ...s, [id]: "running" }));
-    window.setTimeout(() => {
+    let scheduled = false;
+    setSteps((s) => {
+      if (s[id] !== "pending") return s;
+      const i = STEP_ORDER.indexOf(id);
+      if (i > 0 && s[STEP_ORDER[i - 1]] !== "done") return s;
+      scheduled = true;
+      return { ...s, [id]: "running" };
+    });
+    if (!scheduled) return;
+    const tid = window.setTimeout(() => {
+      timerIdsRef.current.delete(tid);
       setSteps((s) => ({ ...s, [id]: "done" }));
     }, reduced ? 0 : STEP_TIMINGS[id]);
+    timerIdsRef.current.add(tid);
   };
 
-  const reset = () => setSteps(INITIAL);
+  const reset = () => {
+    timerIdsRef.current.forEach((id) => window.clearTimeout(id));
+    timerIdsRef.current.clear();
+    setSteps(INITIAL);
+  };
   const allDone = Object.values(steps).every((s) => s === "done");
-  const activeId: StepId | null = (["connect", "mint", "issue"] as const).find(
-    (id) => steps[id] !== "done",
-  ) ?? null;
+  const firstIncompleteId: StepId | null =
+    STEP_ORDER.find((id) => steps[id] !== "done") ?? null;
 
   return (
     <main className="relative flex min-h-screen flex-col bg-background">
@@ -65,16 +87,15 @@ export default function OnboardPage() {
             Maria&apos;s <span className="font-serif italic">agent</span>, in three steps.
           </h1>
           <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-            Compass mints a soulbound agent identity for Maria, then issues her
-            a fixture eligibility credential. Real Privy wallet integration is
-            on the v1 roadmap; this walkthrough is fixture-mode and runs in ~3
-            seconds.
+            Soulbound agent, then a fixture eligibility credential. Privy
+            embedded wallet is on the v1 roadmap; this walkthrough runs in
+            three seconds.
           </p>
 
           <div role="status" aria-live="polite" className="sr-only">
-            {activeId === "connect" && steps.connect === "running" && "Connecting wallet"}
-            {activeId === "mint" && steps.mint === "running" && "Minting agent on Galileo"}
-            {activeId === "issue" && steps.issue === "running" && "Issuing demo credential"}
+            {firstIncompleteId === "connect" && steps.connect === "running" && "Connecting wallet"}
+            {firstIncompleteId === "mint" && steps.mint === "running" && "Minting agent on Galileo"}
+            {firstIncompleteId === "issue" && steps.issue === "running" && "Issuing demo credential"}
             {allDone && "All three steps complete"}
           </div>
 
@@ -83,9 +104,9 @@ export default function OnboardPage() {
               n={1}
               id="connect"
               state={steps.connect}
-              isActive={activeId === "connect"}
+              isActive={firstIncompleteId === "connect"}
               title="Connect wallet"
-              detail="Privy embedded wallet — fixture-mode here; real Privy integration is the v1 roadmap. The wallet's secp256k1 key signs Authwit grants and Aztec-style consent."
+              detail="Privy embedded wallet. Fixture here. The wallet's secp256k1 key signs every consent."
               actionLabel="Connect"
               onAction={() => start("connect")}
               reduced={!!reduced}
@@ -94,10 +115,10 @@ export default function OnboardPage() {
               n={2}
               id="mint"
               state={steps.mint}
-              isActive={activeId === "mint"}
+              isActive={firstIncompleteId === "mint"}
               disabled={steps.connect !== "done"}
               title="Mint the agent"
-              detail="ERC-7857-stripped soulbound INFT. The agent ID commits to the wallet. The tx below is the live Galileo mint — Compass already has agents on-chain."
+              detail="ERC-7857-stripped soulbound INFT, committed to the wallet. The tx hash below points to a prior real Galileo mint of an agent under the same contract — proof of the on-chain primitive, not this walkthrough's mint."
               actionLabel="Mint"
               onAction={() => start("mint")}
               reduced={!!reduced}
@@ -118,10 +139,10 @@ export default function OnboardPage() {
               n={3}
               id="issue"
               state={steps.issue}
-              isActive={activeId === "issue"}
+              isActive={firstIncompleteId === "issue"}
               disabled={steps.mint !== "done"}
               title="Issue demo credential"
-              detail="Fixture HELP for Domestic Workers SD-JWT VC, AES-256-GCM-encrypted client-side, uploaded to 0G Storage. Real NGO; signing key is a local Ed25519 fixture."
+              detail="Fixture HELP for Domestic Workers SD-JWT VC. Real NGO; signing key is a local Ed25519 fixture. Live encryption + 0G Storage upload runs in the enclave-side mint script today; browser-side flow is on the v2 roadmap."
               actionLabel="Issue"
               onAction={() => start("issue")}
               reduced={!!reduced}
@@ -142,8 +163,9 @@ export default function OnboardPage() {
                 Maria&apos;s agent is <span className="font-serif italic">ready</span>.
               </p>
               <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
-                Pick what to inspect next. The agent + credential exist; the
-                receipt log shows the only thing a clinic ever sees about her.
+                Pick what to inspect next. The fixture agent and demo
+                credential are ready; the receipt log shows the only thing a
+                clinic ever sees about her.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
@@ -163,7 +185,7 @@ export default function OnboardPage() {
                   onClick={reset}
                   className="self-center font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground"
                 >
-                  Run again →
+                  Reset →
                 </button>
               </div>
             </motion.div>
