@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ClinicHeader } from "@/components/clinic/ClinicHeader";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
 import { POLICIES, type PolicyFixture } from "@/lib/fixtures/policies";
@@ -80,9 +81,17 @@ function PolicyCard({ policy }: { policy: PolicyFixture }) {
           </dd>
         </div>
       </dl>
-      <p className="mt-6 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
-        Registered {policy.registeredAt}
-      </p>
+      <div className="mt-6 flex flex-wrap items-baseline justify-between gap-4">
+        <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
+          Registered {policy.registeredAt}
+        </p>
+        <Link
+          href={`/policies/${policy.slug}`}
+          className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+        >
+          Open detail →
+        </Link>
+      </div>
     </article>
   );
 }

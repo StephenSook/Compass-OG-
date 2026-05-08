@@ -209,6 +209,12 @@ export default function AboutPage() {
               See the subpoena scene →
             </Link>
             <Link
+              href="/audit"
+              className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
+            >
+              Public audit log →
+            </Link>
+            <Link
               href="/clinic"
               className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
             >
