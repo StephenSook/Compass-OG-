@@ -17,11 +17,13 @@ import { NextResponse } from "next/server";
 import {
   createPublicClient,
   createWalletClient,
+  encodeAbiParameters,
   http,
   isAddress,
   isHex,
   keccak256,
   parseEventLogs,
+  recoverTypedDataAddress,
   size,
   toHex,
   type Hex,
@@ -29,6 +31,9 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { zeroGGalileoTestnet } from "@/lib/chains";
 import {
+  COMPASS_EIP712_DOMAIN_NAME,
+  COMPASS_EIP712_DOMAIN_VERSION,
+  COMPASS_GRANT_TYPES,
   COMPASS_HUB_ABI,
   COMPASS_HUB_GALILEO,
   HELP_LEGAL_AID_POLICY_LABEL,
@@ -155,8 +160,49 @@ export async function POST(req: Request) {
   const challenge = keccak256(
     toHex(`compass-challenge:${body.grant.nullifier}:${nowSec}`),
   );
+
+  // The on-chain ReceiptIssued event computes
+  //   agentIdCommitment = keccak256(abi.encode(agentTokenId, ownerOf(tokenId)))
+  // (CompassHub.sol). The enclave receipt-doc must commit to the SAME value
+  // so a verifier sees one consistent agent handle across the chain. We
+  // recover the agent owner from the EIP-712 grant signature here — the
+  // contract enforces signer == ownerOf(tokenId) so a successful tx implies
+  // the recovered address is the correct owner; if the sig is malformed the
+  // contract reverts and we never persist the receipt.
+  let agentOwner: Hex;
+  try {
+    agentOwner = await recoverTypedDataAddress({
+      domain: {
+        name: COMPASS_EIP712_DOMAIN_NAME,
+        version: COMPASS_EIP712_DOMAIN_VERSION,
+        chainId: zeroGGalileoTestnet.id,
+        verifyingContract: COMPASS_HUB_GALILEO,
+      },
+      types: COMPASS_GRANT_TYPES,
+      primaryType: "Grant",
+      message: {
+        agentTokenId: BigInt(body.grant.agentTokenId),
+        policyId: body.grant.policyId,
+        provider: body.grant.provider,
+        nonce: BigInt(body.grant.nonce),
+        expiry: BigInt(body.grant.expiry),
+        nullifier: body.grant.nullifier,
+      },
+      signature: sig,
+    });
+  } catch (err) {
+    console.error("[/api/consume] recoverTypedDataAddress failed", err);
+    return NextResponse.json(
+      { error: "bad_signature", message: "could not recover signer from grant" },
+      { status: 400 },
+    );
+  }
+
   const agentIdCommitment = keccak256(
-    toHex(`compass-agent-id-commitment:${body.grant.agentTokenId}:${body.grant.provider}`),
+    encodeAbiParameters(
+      [{ type: "uint256" }, { type: "address" }],
+      [BigInt(body.grant.agentTokenId), agentOwner],
+    ),
   );
 
   let attestationDigest: Hex = keccak256(toHex("compass-tdx-stub-v1"));
