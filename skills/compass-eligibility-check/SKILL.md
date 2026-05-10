@@ -34,10 +34,7 @@ prints the specific gap and returns the failure code.
 |---------|--------------------------------------------------------------------------------|
 | Live    | A live Phala enclave URL — script mints a fresh receipt + verifies it          |
 | Sample  | None — uses a fixture bundled with the Compass repo for offline demos          |
-
-(A `--bundle <path>` mode for verifying a previously-saved receipt JSON
-is on the v2 roadmap; the current CLI only supports `--live` and
-`--sample` per `enclave/scripts/verify-receipt.ts`.)
+| Bundle  | Path to a JSON file `{receipt, attestationDigest, signature, signerAddress, perReceiptQuoteHex}` — verifies a user-supplied receipt offline |
 
 ## Outputs
 
@@ -76,7 +73,19 @@ npx ts-node scripts/verify-receipt.ts \
   --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
 ```
 
-### Option B — sample-mode (no network, no enclave)
+### Option B — verify a saved bundle
+
+```bash
+npx ts-node scripts/verify-receipt.ts \
+  --bundle ./received-receipt.json \
+  --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
+```
+
+The bundle must contain `{receipt, attestationDigest, signature,
+signerAddress, perReceiptQuoteHex}` — the exact shape the live enclave
+returns. Useful for verifying a receipt someone else minted.
+
+### Option C — sample-mode (no network, no enclave)
 
 ```bash
 npx ts-node scripts/verify-receipt.ts \

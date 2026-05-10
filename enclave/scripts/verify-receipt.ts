@@ -22,6 +22,11 @@
  *   npx ts-node scripts/verify-receipt.ts \
  *     --sample \
  *     --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
+ *
+ *   # Verify a user-supplied receipt JSON bundle (offline)
+ *   npx ts-node scripts/verify-receipt.ts \
+ *     --bundle ./received-receipt.json \
+ *     --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -124,23 +129,40 @@ function step(label: string, ok: boolean, detail?: string): void {
   if (!ok) process.exit(1);
 }
 
+function loadBundle(path: string): WrappedResponse {
+  const resolved = resolve(process.cwd(), path);
+  const raw = readFileSync(resolved, "utf8");
+  const parsed = JSON.parse(raw) as WrappedResponse;
+  // Smoke-validate the shape so a malformed bundle fails with a clear
+  // message instead of a downstream digest mismatch.
+  if (!parsed.receipt || !parsed.attestationDigest || !parsed.signature || !parsed.signerAddress) {
+    throw new Error(
+      `bundle missing required fields {receipt, attestationDigest, signature, signerAddress}: ${path}`,
+    );
+  }
+  return parsed;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   let liveUrl: string | null = null;
   let useSample = false;
+  let bundlePath: string | null = null;
   let expectedComposeHash: string | null = null;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === "--live") liveUrl = args[++i] ?? null;
     else if (a === "--sample") useSample = true;
+    else if (a === "--bundle") bundlePath = args[++i] ?? null;
     else if (a === "--expected-compose") expectedComposeHash = args[++i] ?? null;
   }
 
-  if (!liveUrl && !useSample) {
+  if (!liveUrl && !useSample && !bundlePath) {
     console.error("Usage:");
     console.error("  --live <baseUrl> --expected-compose <0x...>");
     console.error("  --sample --expected-compose <0x...>");
+    console.error("  --bundle <path-to-receipt.json> --expected-compose <0x...>");
     process.exit(2);
   }
   if (!expectedComposeHash) {
@@ -153,6 +175,10 @@ async function main() {
     console.log(`[verify-receipt] minting live receipt against ${liveUrl}`);
     wrapped = await mintLive(liveUrl);
     console.log(`[verify-receipt] minted receiptId=${wrapped.receipt.receiptId}`);
+  } else if (bundlePath) {
+    console.log(`[verify-receipt] loading bundle from ${bundlePath}`);
+    wrapped = loadBundle(bundlePath);
+    console.log(`[verify-receipt] loaded receiptId=${wrapped.receipt.receiptId}`);
   } else {
     console.log(`[verify-receipt] loading bundled sample`);
     wrapped = loadSample();

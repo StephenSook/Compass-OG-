@@ -60,7 +60,7 @@ Maria is a composite — built from research, not a real person. The persona is 
 | Authwit grant — browser-side EIP-712 signing | **real** | Privy embedded wallet signs the Compass `Grant` typed data on `/onboard` step 4 (chainId 16602, CompassHub verifying contract); no gas, no popup-required sub-flow |
 | `CompassHub.consumeGrantAndIssueReceipt` — atomic on-chain | **real** | `POST /api/consume` relays Maria's signed grant; `PROVIDER_PRIVATE_KEY`-held wallet calls Galileo CompassHub; emits `GrantConsumed` + `ReceiptIssued` in one tx |
 | Vercel frontend | **real** | server-rendered routes incl. `/vault`, `/about`, `/clinic/subpoena`, env-gated `/onboard` Privy + mint + issue + request-eligibility flow |
-| Trust list governance | stubbed | owner-managed for v1; production needs DAO |
+| Trust list governance | draft | v1 owner-managed via `docs/policies/*.json`; v2 DAO design specced at [`docs/trust-list-governance.md`](./docs/trust-list-governance.md) (5-of-7 quorum, 7-day timelock with 24h revoke expedite, on-chain TrustList contract on Aristotle) |
 | On-chain `verifyAttestation` | stubbed | gas-prohibitive on-chain (cert chain + ECDSA + 4KB quote); off-chain via `verify-receipt` CLI is the honest substitute |
 | 0G broker `processResponse` co-signature | draft | out of scope for v1; receipt has its own signature chain |
 | Privy embedded wallet integration | draft | wired in `/onboard` step 1 + root provider; live behind `NEXT_PUBLIC_PRIVY_APP_ID`, fixture timer in default build |
@@ -149,7 +149,7 @@ Expected output (when CVM is running):
 
 Captured evidence: [docs/notes/phala-deployment.md](./docs/notes/phala-deployment.md).
 
-### B. Verify a receipt end-to-end (offline OR live)
+### B. Verify a receipt end-to-end (offline OR live OR user-supplied bundle)
 
 ```bash
 # Offline — verifies the bundled sample receipt without needing Phala running
@@ -160,6 +160,11 @@ npm run verify-receipt -- --sample \
 # Live — mints a fresh receipt against the running Phala CVM and verifies it
 npm run verify-receipt -- \
   --live https://65c93172e22403466eecee47dd1cc90375014a0f-8080.dstack-pha-prod9.phala.network \
+  --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
+
+# Bundle — verifies a JSON receipt someone else minted (no network needed)
+npm run verify-receipt -- \
+  --bundle ./path/to/received-receipt.json \
   --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
 ```
 
@@ -176,6 +181,46 @@ Expected output (PASS):
 Tampering produces explicit failure codes (`REPORT_DATA_MISMATCH`, `QUOTE_COMMITMENT_MISMATCH`, `ENV_MODE_RECEIPT`, `QUOTE_VERSION_UNSUPPORTED`) — see [`enclave/src/verify-attestation.ts`](./enclave/src/verify-attestation.ts).
 
 Out of scope (next layer): full Intel DCAP verification of the TDX quote signature chain — run via the DStack Verifier or Intel QVL externally.
+
+### C. Tutorial — verify someone else's Compass receipt
+
+If you've received a Compass receipt JSON (e.g., a clinic showed you
+their copy and you want to independently confirm it's TEE-attested),
+the verifier runs offline in <30 seconds:
+
+```bash
+# 1. Clone + install (one-time)
+git clone https://github.com/StephenSook/Compass-OG-.git
+cd Compass-OG-/enclave
+npm install --legacy-peer-deps
+
+# 2. Save the receipt JSON to a file
+#    (the bundle should contain receipt, attestationDigest,
+#    signature, signerAddress, perReceiptQuoteHex)
+cp /path/to/their-receipt.json ./inbound.json
+
+# 3. Verify against the trust anchor pinned in this repo
+npm run verify-receipt -- \
+  --bundle ./inbound.json \
+  --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
+```
+
+What you've now proven, independently of any party:
+
+1. The receipt's `attestationDigest` is the canonical sha256 of the
+   receipt — no field was tampered.
+2. The signature recovers to a specific Ethereum address — that
+   address is the receipt-signer.
+3. The receipt's `quoteCommitment` is the sha256 of a TDX quote — the
+   receipt commits to a specific TDX quote.
+4. That TDX quote's `report_data` binds the (signer, image, receiptId)
+   triple — defeats archived-quote replay across deployments.
+5. The recovered `composeHash` matches `0x1884…cea0` — the same image
+   pinned in [`docs/notes/phala-deployment.md`](./docs/notes/phala-deployment.md).
+
+If the bundle is tampered, the CLI exits with a specific failure code
+indicating which check failed. There is no graceful-degradation
+fallback that hides a tamper.
 
 ---
 
@@ -372,6 +417,7 @@ Production TEE deploy via Phala Cloud: see [enclave/phala/deploy.md](./enclave/p
 | [docs/notes/0g-aristotle-deploy-checklist.md](./docs/notes/0g-aristotle-deploy-checklist.md) | 9-step Aristotle mainnet deploy procedure (gated on OG funding) |
 | [docs/notes/0g-mainnet-funding-options.md](./docs/notes/0g-mainnet-funding-options.md) | Ranked paths to acquire OG on Aristotle (credits, bridge, onramps, exchanges) |
 | [docs/notes/codex-tee-architecture-review.md](./docs/notes/codex-tee-architecture-review.md) | Adversarial architecture review |
+| [docs/trust-list-governance.md](./docs/trust-list-governance.md) | v1 stub → v2 DAO design for trusted-issuer governance |
 | [docs/outreach/README.md](./docs/outreach/README.md) | 6 NGO + foundation cold-email drafts (Pillar 5 traction log) |
 | [skills/compass-eligibility-check/SKILL.md](./skills/compass-eligibility-check/SKILL.md) | Reusable Claude Code / OpenClaw verification skill |
 | [enclave/phala/deploy.md](./enclave/phala/deploy.md) | Phala Cloud deploy runbook |
