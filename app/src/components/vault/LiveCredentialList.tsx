@@ -5,16 +5,19 @@ import {
   isStoredLiveCredential,
   type StoredLiveCredential,
 } from "@/lib/crypto/vault";
+import { CredentialCardSkeleton } from "@/components/primitives/Skeleton";
 
 const STORAGE_KEY = "compass.live_credentials";
 
 export function LiveCredentialList() {
   const [creds, setCreds] = useState<StoredLiveCredential[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [hasStoredKey, setHasStoredKey] = useState(false);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
+      setHasStoredKey(raw !== null);
       const parsed = raw ? (JSON.parse(raw) as unknown[]) : [];
       const filtered = Array.isArray(parsed)
         ? parsed.filter(isStoredLiveCredential)
@@ -26,7 +29,30 @@ export function LiveCredentialList() {
     setHydrated(true);
   }, []);
 
-  if (!hydrated || creds.length === 0) return null;
+  // While hydrating, only render the skeleton if localStorage suggests the
+  // user *has* live credentials — otherwise we'd flash a placeholder for
+  // every fresh visitor, which is worse than rendering nothing.
+  if (!hydrated) {
+    if (typeof window === "undefined") return null;
+    if (!window.localStorage.getItem(STORAGE_KEY)) return null;
+    return (
+      <section className="mt-16">
+        <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
+          Live credentials (this device)
+        </p>
+        <ul className="mt-6 space-y-4" aria-busy="true">
+          <li>
+            <CredentialCardSkeleton />
+          </li>
+        </ul>
+      </section>
+    );
+  }
+
+  if (creds.length === 0) return null;
+  // Avoid an unused-variable lint warning on hasStoredKey while keeping
+  // the state available for telemetry / future surfaces.
+  void hasStoredKey;
 
   return (
     <section className="mt-16">
