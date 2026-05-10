@@ -174,6 +174,43 @@ Out of scope (next layer): full Intel DCAP verification of the TDX quote signatu
 
 ---
 
+## End-to-end tests
+
+Playwright suite at `app/tests/e2e/` covers page renders, API endpoints,
+and browser-side crypto. Three projects run in parallel: chromium-desktop
+(1280×800) and chromium-mobile (iPhone 13 viewport).
+
+```bash
+cd app
+npm install                          # one-time, includes @playwright/test
+npm run test:e2e:install             # one-time, installs Chromium
+BASE_URL=http://localhost:3000 npm run test:e2e
+```
+
+Run against a Vercel deployment (the prod URL is SSO-gated; pass the
+deployment-protection bypass token):
+
+```bash
+BASE_URL=https://app-psi-pied.vercel.app \
+VERCEL_BYPASS_TOKEN=<paste-from-Vercel-Settings-Deployment-Protection> \
+  npm run test:e2e
+```
+
+Coverage:
+
+| Suite | Asserts |
+|---|---|
+| `pages.spec.ts` | / + /about (incl. live TEE-status badge) + /vault + /clinic/subpoena + /clinic/inbox + /audit + /policies/help-legal-aid + /receipt/1 + /onboard server-render correctly |
+| `api.spec.ts` | /api/tee-status returns valid mode; /api/issue 503-or-200 by env; /api/consume rejects malformed bodies cleanly |
+| `crypto.spec.ts` | AES-256-GCM round-trip + GCM auth-tag tamper rejection + IndexedDB CryptoKey persist + StoredLiveCredential type-guard, all via `page.evaluate` against a live origin |
+
+The wallet-gated flows (Privy login → mint → issue → request eligibility)
+need a funded Galileo wallet and are deliberately NOT in the suite — they're
+covered by manual click-through per the verification protocol in
+`feedback_autonomous_verification.md`.
+
+---
+
 ## Whitepaper
 
 3-page technical whitepaper covering threat model, architecture,
