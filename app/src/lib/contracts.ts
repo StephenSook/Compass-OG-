@@ -6,12 +6,49 @@
 // docs/notes/0g-ecosystem-status.md for the credits-request status.
 
 import type { Abi, Address } from "viem";
+import { useMainnet } from "./chains";
 
 export const AGENT_REGISTRY_GALILEO: Address =
   "0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8";
 
 export const COMPASS_HUB_GALILEO: Address =
   "0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b";
+
+// A.5 mainnet (Aristotle, chainId 16661) — addresses filled in after the
+// real deploy lands. Until then, activeAgentRegistry()/activeCompassHub()
+// throw a clear error if NEXT_PUBLIC_COMPASS_USE_MAINNET=1 is set early —
+// surfaces the misconfiguration loudly instead of writing to address zero.
+export const AGENT_REGISTRY_ARISTOTLE: Address =
+  "0x0000000000000000000000000000000000000000";
+
+export const COMPASS_HUB_ARISTOTLE: Address =
+  "0x0000000000000000000000000000000000000000";
+
+const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
+
+export function activeAgentRegistry(): Address {
+  if (useMainnet()) {
+    if (AGENT_REGISTRY_ARISTOTLE === ZERO_ADDRESS) {
+      throw new Error(
+        "AgentRegistry on Aristotle mainnet not deployed yet. Unset NEXT_PUBLIC_COMPASS_USE_MAINNET or finish A.5 deploy.",
+      );
+    }
+    return AGENT_REGISTRY_ARISTOTLE;
+  }
+  return AGENT_REGISTRY_GALILEO;
+}
+
+export function activeCompassHub(): Address {
+  if (useMainnet()) {
+    if (COMPASS_HUB_ARISTOTLE === ZERO_ADDRESS) {
+      throw new Error(
+        "CompassHub on Aristotle mainnet not deployed yet. Unset NEXT_PUBLIC_COMPASS_USE_MAINNET or finish A.5 deploy.",
+      );
+    }
+    return COMPASS_HUB_ARISTOTLE;
+  }
+  return COMPASS_HUB_GALILEO;
+}
 
 // Minimal ABI — only the surface used by /onboard. The full ABI lives
 // at contracts/typechain-types/contracts/AgentRegistry.ts; rebuild via
