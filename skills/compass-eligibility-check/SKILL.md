@@ -32,9 +32,12 @@ prints the specific gap and returns the failure code.
 
 | Mode    | Required input                                                                |
 |---------|--------------------------------------------------------------------------------|
-| Live    | A receiptId from `ReceiptIssued` event on Galileo or Aristotle CompassHub      |
-| Bundle  | A JSON file `{receipt, attestationDigest, signature, signerAddress, perReceiptQuoteHex}` |
+| Live    | A live Phala enclave URL — script mints a fresh receipt + verifies it          |
 | Sample  | None — uses a fixture bundled with the Compass repo for offline demos          |
+
+(A `--bundle <path>` mode for verifying a previously-saved receipt JSON
+is on the v2 roadmap; the current CLI only supports `--live` and
+`--sample` per `enclave/scripts/verify-receipt.ts`.)
 
 ## Outputs
 
@@ -73,15 +76,7 @@ npx ts-node scripts/verify-receipt.ts \
   --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
 ```
 
-### Option B — provide a saved bundle
-
-```bash
-npx ts-node scripts/verify-receipt.ts \
-  --bundle ./compass-receipt.json \
-  --expected-compose 0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0
-```
-
-### Option C — sample-mode (no network, no enclave)
+### Option B — sample-mode (no network, no enclave)
 
 ```bash
 npx ts-node scripts/verify-receipt.ts \

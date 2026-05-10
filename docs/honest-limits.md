@@ -142,6 +142,58 @@ contract deployment fails. Galileo testnet deployment is the verification
 step — bump to OpenZeppelin v4.x (paris-compatible) if needed before
 mainnet deploy.
 
+### 15. Caller-supplied receiptId — DoS griefing via mempool replay
+
+`CompassHub.consumeGrantAndIssueReceipt` accepts the `r.receiptId` from
+the caller (the provider relayer) and stores it in the global
+`usedReceiptIds` mapping with no binding to the grant fields. A mempool
+watcher can mint their own (permissionless) agent + sign their own
+grant + submit `consumeGrantAndIssueReceipt` with `r.receiptId` copied
+from the legitimate user's pending tx. If the attacker's tx lands first,
+`usedReceiptIds[receiptId] = true` and the legitimate tx reverts with
+`ReceiptAlreadyIssued`. The attacker pays ~140k gas per grief; the
+legitimate user has to retry with a different `receiptId`.
+
+What this is NOT: a forgery (the contract still verifies the grant
+signer == agent owner) and NOT a way to steal eligibility. The receipt
+the attacker mints is bound to the attacker's own agent.
+
+What this IS: a DoS griefing primitive. Demo is single-actor so it
+doesn't bite v1. Production fix: derive `receiptId` inside the contract
+from `keccak256(abi.encode(address(this), block.chainid, g.policyId,
+g.nullifier, g.provider, g.agentTokenId))` and reject any caller-supplied
+field that doesn't match.
+
+The Codex pre-submission review surfaced this as HIGH; v2 closes it
+with an in-contract derivation pattern.
+
+### 16. Verifier public key is a placeholder in v1
+
+`COMPASS_VERIFIER_PUB_KEY` in `app/src/lib/compassEnclave.ts` is a stub
+constant the enclave receives in every receipt-doc. Real verifier
+identity (the clinic's secp256k1 pubkey) belongs there. v2 wires this
+from the calling clinic's actual key material; the receipt-doc field is
+already canonicalized into the `attestationDigest` so swapping it later
+is a single-line change with no contract impact.
+
+The placeholder is documented here rather than silently stubbed; a
+verifier comparing two receipts cannot infer different clinics from
+this field in v1.
+
+### 17. SD-JWT VC `cnf` claim shape
+
+The `/api/issue` route emits `cnf: { holderAddress }` (an EVM address)
+as a v1 placeholder. The `draft-ietf-oauth-sd-jwt-vc-15` profile expects
+`cnf: { jwk: {...} }` carrying the holder's public key. v1 stamps the
+EVM address only; v2 derives the secp256k1 JWK from the Privy embedded
+wallet and emits the standards-compliant shape.
+
+A standards-compliant verifier (e.g., a generic SD-JWT VC checker that
+isn't aware of Compass) would reject the v1 receipt. Compass's
+in-house verifier accepts the address-shaped `cnf` because the receipt
+chain doesn't load-bear on it — agent ownership is tracked on-chain via
+`AgentRegistry.ownerOf`, not via the credential's `cnf`.
+
 ---
 
 ## What Compass v1 DOES protect

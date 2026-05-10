@@ -13,8 +13,15 @@
 // This module is server-only (uses fetch + Node Buffer). Don't import from
 // client components.
 
+// Placeholder for the calling verifier's secp256k1 public key. The
+// enclave's validateCompassPayload only checks `^0x[0-9a-fA-F]+$`, so
+// the field shape is permissive — but the receipt-doc commits to this
+// value via the canonical sha256 attestationDigest. v2 wires the real
+// clinic key here; v1 uses a stable 65-byte uncompressed-pubkey-shaped
+// stub so the canonical commitment is at least non-malformed and
+// stable across receipts. See docs/honest-limits.md item 16.
 const COMPASS_VERIFIER_PUB_KEY =
-  "0x04f5a0e25cba6f1eaa53fffd6dd8f9fe0a6c7b39b18b4f5e2c4d7a8b3e6c5f9d2a4e7b8c1d3a5e6f8b2c4d7a9e1c3f5b7d9a2e4c6f8b1d3a5e7c9f2b4d6a8e0c2";
+  "0x040000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002";
 
 export type EnclaveResponseSlim = {
   attestationDigest: `0x${string}`;
