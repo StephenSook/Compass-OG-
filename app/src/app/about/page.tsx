@@ -35,6 +35,7 @@ const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: str
   { component: "Receipt-signer service", state: "real", note: "dstack TDX dual-boot; per-receipt quote freshness binding" },
   { component: "Phala Cloud TDX deploy", state: "real", note: "live: ethAddress 0xaba6...a7e7, composeHash 0x1884...cea0 — see docs/notes/phala-deployment.md" },
   { component: "SD-JWT VC issuers (HELP, Bethune, Hospital)", state: "mocked", note: "real NGOs; signing keys are local Ed25519 fixtures, not endorsed by the NGOs" },
+  { component: "SD-JWT VC live issuer service", state: "draft", note: "POST /api/issue signs Ed25519 SD-JWT VC when ISSUER_PRIVATE_KEY env set; rendered in /vault from localStorage. v2 adds browser AES-256-GCM + 0G Storage upload" },
   { component: "Trust list governance", state: "stubbed", note: "owner-managed for v1; production needs DAO" },
   { component: "On-chain verifyAttestation", state: "stubbed", note: "off-chain enclave verification only" },
   { component: "0G broker processResponse co-signature", state: "draft", note: "out of scope for v1; receipt has its own signature chain" },
