@@ -1,27 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-type LiveCredential = {
-  sdjwtvc: string;
-  issuerDid: string;
-  vct: string;
-  claimNames: string[];
-  issuedAt: number;
-  expiresAt: number;
-};
+import {
+  isStoredLiveCredential,
+  type StoredLiveCredential,
+} from "@/lib/crypto/vault";
 
 const STORAGE_KEY = "compass.live_credentials";
 
 export function LiveCredentialList() {
-  const [creds, setCreds] = useState<LiveCredential[]>([]);
+  const [creds, setCreds] = useState<StoredLiveCredential[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      const parsed = raw ? (JSON.parse(raw) as LiveCredential[]) : [];
-      setCreds(Array.isArray(parsed) ? parsed : []);
+      const parsed = raw ? (JSON.parse(raw) as unknown[]) : [];
+      const filtered = Array.isArray(parsed)
+        ? parsed.filter(isStoredLiveCredential)
+        : [];
+      setCreds(filtered);
     } catch {
       setCreds([]);
     }
@@ -36,15 +34,15 @@ export function LiveCredentialList() {
         Live credentials (this device)
       </p>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        SD-JWT VCs signed by <span className="font-mono">/api/issue</span> on
-        this browser session. Stored in localStorage; cleared on{" "}
-        <span className="font-mono">/onboard</span> reset. v2 wraps these in
-        AES-256-GCM and uploads ciphertext to 0G Storage.
+        SD-JWT VCs signed by <span className="font-mono">/api/issue</span> and
+        encrypted browser-side with AES-256-GCM before persisting. Per-device
+        key is a non-extractable AES-256 in IndexedDB; the plaintext SD-JWT VC
+        never enters localStorage. 0G Storage ciphertext upload is still v2.
       </p>
       <ul className="mt-6 space-y-4">
         {creds.map((c, i) => (
           <li
-            key={`${c.issuedAt}-${i}`}
+            key={`${c.encryptedAt}-${i}`}
             className="rounded-2xl border border-foreground/30 p-6"
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -52,7 +50,9 @@ export function LiveCredentialList() {
                 <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
                   {c.vct}
                 </p>
-                <h3 className="mt-2 text-lg text-foreground">Live SD-JWT VC</h3>
+                <h3 className="mt-2 text-lg text-foreground">
+                  Live SD-JWT VC · ciphertext only
+                </h3>
                 <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
                   {c.issuerDid}
                 </p>
@@ -79,6 +79,17 @@ export function LiveCredentialList() {
             </div>
 
             <dl className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <Field label="Encryption" value={c.algorithm} />
+              <Field label="Key source" value={c.keySource} />
+              <Field
+                label="Ciphertext size"
+                value={`${c.bytesEncrypted} B`}
+              />
+              <Field
+                label="IV (96-bit)"
+                value={c.iv}
+                mono
+              />
               <Field
                 label="Issued"
                 value={new Date(c.issuedAt * 1000).toISOString().slice(0, 10)}
@@ -89,12 +100,12 @@ export function LiveCredentialList() {
               />
               <div className="md:col-span-2">
                 <dt className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
-                  SD-JWT VC (compact)
+                  Ciphertext (AES-256-GCM, base64url)
                 </dt>
                 <dd className="mt-1 break-all font-mono text-xs text-muted-foreground">
-                  {c.sdjwtvc.length > 140
-                    ? `${c.sdjwtvc.slice(0, 96)}…${c.sdjwtvc.slice(-32)}`
-                    : c.sdjwtvc}
+                  {c.ciphertext.length > 140
+                    ? `${c.ciphertext.slice(0, 96)}…${c.ciphertext.slice(-32)}`
+                    : c.ciphertext}
                 </dd>
               </div>
             </dl>
@@ -105,13 +116,23 @@ export function LiveCredentialList() {
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
   return (
     <div>
       <dt className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-foreground">{value}</dd>
+      <dd className={`mt-1 ${mono ? "break-all font-mono" : ""} text-sm text-foreground`}>
+        {value}
+      </dd>
     </div>
   );
 }
