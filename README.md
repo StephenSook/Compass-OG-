@@ -48,21 +48,26 @@ Maria is a composite — built from research, not a real person. The persona is 
 
 | Component | Status | Note |
 |---|---|---|
-| AgentRegistry contract | **real** | ERC-7857 stripped, Galileo deployed |
-| CompassHub contract | **real** | policies + Authwit + receipts, Galileo deployed |
-| 0G Storage encrypted vaults | draft | AES-256-GCM round-trip on Node CLI; live 0G upload behind `COMPASS_LIVE_STORAGE=1`; browser-side flow is v2 |
+| AgentRegistry contract | **real** | ERC-7857 stripped, Galileo deployed; Slither audit clean (0 sec findings) |
+| CompassHub contract | **real** | policies + Authwit + receipts, Galileo deployed; 40 unit + 5 property-invariant tests pass |
+| Browser AES-256-GCM encryption | **real** | live on `/onboard` step 3 — non-extractable AES-256 in IndexedDB encrypts the issued SD-JWT VC before localStorage persist; plaintext never enters localStorage |
+| 0G Storage ciphertext upload | draft | AES-256-GCM round-trip on Node CLI; live 0G upload behind `COMPASS_LIVE_STORAGE=1`; browser-side upload is v2 |
 | Receipt-signer service | **real** | dstack TDX dual-boot, per-receipt quote freshness binding |
-| Phala Cloud TDX deploy | **real** | live: signer `0xaba6…a7e7`, composeHash `0x1884…cea0` |
-| Vercel frontend | **real** | 11 routes serving 200, including `/vault` and the env-gated `/onboard` Privy flow |
+| Phala Cloud TDX deploy | **real** | live: signer `0xaba6…a7e7`, composeHash `0x1884…cea0`; live state probe at [`/api/tee-status`](https://app-psi-pied.vercel.app/api/tee-status) |
+| RA-quote-bound `attestationDigest` in receipts | **real** | `/api/consume` calls live Phala TEE; digest is sha256 of canonicalized receipt + per-receipt TDX quote whose `report_data` binds (signer, image, receiptId) |
+| SD-JWT VC live issuer service | draft | `POST /api/issue` Ed25519-signs an SD-JWT VC when `ISSUER_PRIVATE_KEY` env set; rendered in `/vault` from localStorage |
 | SD-JWT VC issuers (HELP, Bethune, Hospital) | mocked | real NGOs; signing keys are local Ed25519 fixtures, not endorsed by the NGOs |
+| Authwit grant — browser-side EIP-712 signing | **real** | Privy embedded wallet signs the Compass `Grant` typed data on `/onboard` step 4 (chainId 16602, CompassHub verifying contract); no gas, no popup-required sub-flow |
+| `CompassHub.consumeGrantAndIssueReceipt` — atomic on-chain | **real** | `POST /api/consume` relays Maria's signed grant; `PROVIDER_PRIVATE_KEY`-held wallet calls Galileo CompassHub; emits `GrantConsumed` + `ReceiptIssued` in one tx |
+| Vercel frontend | **real** | server-rendered routes incl. `/vault`, `/about`, `/clinic/subpoena`, env-gated `/onboard` Privy + mint + issue + request-eligibility flow |
 | Trust list governance | stubbed | owner-managed for v1; production needs DAO |
-| On-chain `verifyAttestation` | stubbed | off-chain enclave verification only |
+| On-chain `verifyAttestation` | stubbed | gas-prohibitive on-chain (cert chain + ECDSA + 4KB quote); off-chain via `verify-receipt` CLI is the honest substitute |
 | 0G broker `processResponse` co-signature | draft | out of scope for v1; receipt has its own signature chain |
-| Privy embedded wallet integration | draft | wired in `/onboard` step 1 + root provider; live behind `NEXT_PUBLIC_PRIVY_APP_ID`, fixture timer in default build (see `docs/privy-setup.md`) |
-| `/onboard` step 2 — live `mintAgent` | draft | Privy embedded wallet → `AgentRegistry.mintAgent` on Galileo (`0x461eda…3C2D8`), gated on user-funded gas via faucet; fixture timer when Privy is unset |
-| Mainnet (Aristotle) deploy | pending | Galileo testnet only today; Phase 8 work |
+| Privy embedded wallet integration | draft | wired in `/onboard` step 1 + root provider; live behind `NEXT_PUBLIC_PRIVY_APP_ID`, fixture timer in default build |
+| `/onboard` step 2 — live `mintAgent` | draft | Privy embedded wallet → `AgentRegistry.mintAgent` on Galileo, gated on user-funded gas via faucet; fixture timer when Privy unset |
+| Aristotle mainnet (chainId 16661) deploy | draft | scaffolded — chain-selector helpers + `activeAgentRegistry`/`activeCompassHub` guards wired; deploy gated on OG funding (see [`docs/notes/0g-mainnet-funding-options.md`](./docs/notes/0g-mainnet-funding-options.md) + [`docs/notes/0g-aristotle-deploy-checklist.md`](./docs/notes/0g-aristotle-deploy-checklist.md)) |
 
-This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the frontend, with the same status badges.
+This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the frontend with the same status badges and a live `/api/tee-status` probe above the table.
 
 ---
 
@@ -248,11 +253,12 @@ or wire the TEE chain by hand.
 
 Skill inputs:
 
-- a `receiptId` from a `ReceiptIssued` event on Galileo or Aristotle
-  CompassHub (live mode), OR
-- a saved JSON bundle `{receipt, attestationDigest, signature,
-  signerAddress, perReceiptQuoteHex}` (offline mode), OR
-- the bundled sample fixture (no network needed)
+- a live Phala enclave URL — the CLI mints a fresh receipt and verifies
+  the chain end-to-end (`--live` mode), OR
+- the bundled sample fixture for offline demos (`--sample` mode)
+
+(A `--bundle <path>` mode for verifying a previously-saved receipt JSON
+is on the v2 roadmap.)
 
 Skill output: structured JSON with `verified: true/false` plus the
 recovered `signerAddress`, `composeHash`, `policyId`, `timestampBucket`,
@@ -291,9 +297,9 @@ receipts with one tool call.
 |---|---|---|
 | 0G Galileo (chainId 16602) | AgentRegistry | [`0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8`](https://chainscan-galileo.0g.ai/address/0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8) |
 | 0G Galileo (chainId 16602) | CompassHub | [`0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b`](https://chainscan-galileo.0g.ai/address/0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b) |
-| 0G Aristotle (mainnet) | — | pending — Phase 8 |
+| 0G Aristotle (mainnet) | AgentRegistry / CompassHub | scaffolded — gated on OG funding; deploy is a single command per [`docs/notes/0g-aristotle-deploy-checklist.md`](./docs/notes/0g-aristotle-deploy-checklist.md) |
 
-Deployer: `0x05b5Bb550eb8401fC4b8a33bf566C03f49ef5d34`. Deployment record: [docs/deployments/](./docs/deployments/).
+Deployer: `0x05b5Bb550eb8401fC4b8a33bf566C03f49ef5d34`. Provider relayer (server-side `consumeGrantAndIssueReceipt` caller): `0xaD736a7233847Cf1D73a7D820b32424CF8125b0a` — funded `0.1 OG` on Galileo, key in `app/.env` + Vercel env. Deployment record: [docs/deployments/](./docs/deployments/). HELP policy registered on Galileo CompassHub at policyId `0x21b8b0e6…2d08f` per [`docs/notes/0g-galileo-policy-setup.md`](./docs/notes/0g-galileo-policy-setup.md).
 
 ---
 
@@ -334,7 +340,19 @@ Production TEE deploy via Phala Cloud: see [enclave/phala/deploy.md](./enclave/p
 - **`@0gfoundation/0g-storage-ts-sdk`** + **`@0gfoundation/0g-compute-ts-sdk`** for 0G integration
 - **Vercel** for frontend hosting · **GHCR** for the enclave image
 
-103 vitest tests + 95% Solidity branch coverage. CI on every push: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+103 vitest tests + 95% Solidity branch coverage + Playwright E2E suite at [`app/tests/e2e/`](./app/tests/e2e/) covering page renders + API endpoints + browser-side crypto. CI on every push: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
+## Pre-submission audit summary
+
+| Check | Tool | Result |
+|---|---|---|
+| Solidity static analysis | Slither 0.11.5 (101 detectors) | **0 sec findings** · 2 INFO documented in [audit report](./docs/audits/slither-2026-05-10.md) |
+| Property-based invariants | Hardhat fuzz | 5 invariants passing (monotonic nullifiers, soulbound, no-receipt-without-grant, etc.) |
+| Solidity unit tests | Hardhat / Mocha | 40 passing covering Authwit + policy-registry + atomic-flow + invariants |
+| Receipt-signer logic | Vitest | 103 passing |
+| Frontend E2E smoke | Playwright (chromium-desktop + chromium-mobile) | scaffolded; suite runs against localhost or Vercel deploy with bypass token |
+| Cryptographic adversarial review | Codex (GPT-5.5) pre-submission | **1 BLOCKER fixed** (`agentIdCommitment` mismatch between enclave receipt-doc and on-chain `ReceiptIssued`); 4 MEDIUM resolved or documented in `docs/honest-limits.md` items 15-17 |
+| Independent receipt verification | `verify-receipt` CLI | re-derives full TEE chain from a single `receiptId` |
 
 ---
 
@@ -342,13 +360,20 @@ Production TEE deploy via Phala Cloud: see [enclave/phala/deploy.md](./enclave/p
 
 | Doc | Purpose |
 |---|---|
+| [docs/whitepaper.pdf](./docs/whitepaper.pdf) | 3-page submission whitepaper (threat model + architecture + protocol + honest limits + roadmap) |
 | [docs/architecture.md](./docs/architecture.md) | Full architecture walkthrough |
 | [docs/threat-model.md](./docs/threat-model.md) | 9 attack surfaces with mitigations |
-| [docs/honest-limits.md](./docs/honest-limits.md) | What Compass does NOT protect against |
+| [docs/honest-limits.md](./docs/honest-limits.md) | What Compass does NOT protect against (17 items, including Codex pre-review findings) |
+| [docs/audits/slither-2026-05-10.md](./docs/audits/slither-2026-05-10.md) | Slither static-analysis audit of AgentRegistry + CompassHub (0 sec findings) |
 | [docs/schemas/receipt-v1.json](./docs/schemas/receipt-v1.json) | Canonical receipt schema (v1.2.0) |
 | [docs/policies/](./docs/policies/) | Three demo eligibility policies (HELP, Bethune, Hospital) |
 | [docs/notes/phala-deployment.md](./docs/notes/phala-deployment.md) | Live TEE deployment evidence |
+| [docs/notes/0g-galileo-policy-setup.md](./docs/notes/0g-galileo-policy-setup.md) | Galileo on-chain HELP policy + provider relayer setup |
+| [docs/notes/0g-aristotle-deploy-checklist.md](./docs/notes/0g-aristotle-deploy-checklist.md) | 9-step Aristotle mainnet deploy procedure (gated on OG funding) |
+| [docs/notes/0g-mainnet-funding-options.md](./docs/notes/0g-mainnet-funding-options.md) | Ranked paths to acquire OG on Aristotle (credits, bridge, onramps, exchanges) |
 | [docs/notes/codex-tee-architecture-review.md](./docs/notes/codex-tee-architecture-review.md) | Adversarial architecture review |
+| [docs/outreach/README.md](./docs/outreach/README.md) | 6 NGO + foundation cold-email drafts (Pillar 5 traction log) |
+| [skills/compass-eligibility-check/SKILL.md](./skills/compass-eligibility-check/SKILL.md) | Reusable Claude Code / OpenClaw verification skill |
 | [enclave/phala/deploy.md](./enclave/phala/deploy.md) | Phala Cloud deploy runbook |
 | [enclave/src/verify-attestation.ts](./enclave/src/verify-attestation.ts) | Verifier-side TEE binding chain |
 
