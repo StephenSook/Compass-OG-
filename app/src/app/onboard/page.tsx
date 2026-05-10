@@ -7,7 +7,13 @@ import type { Address, Hex } from "viem";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { PrivyConnectButton } from "@/components/onboard/PrivyConnectButton";
 import { MintAgentButton } from "@/components/onboard/MintAgentButton";
+import {
+  IssueCredentialButton,
+  type IssueResponse,
+} from "@/components/onboard/IssueCredentialButton";
 import { isPrivyEnabled } from "@/lib/chains";
+
+const LIVE_CREDENTIAL_STORAGE_KEY = "compass.live_credentials";
 
 const AGENT_MINT_TX_HASH =
   "0xfcbe4a4d3afc742c8683ab1a45eb1512329e42ae5b466271863c961788fc8e41";
@@ -35,6 +41,7 @@ export default function OnboardPage() {
   const [steps, setSteps] = useState<StepRecord>(INITIAL);
   const [walletAddress, setWalletAddress] = useState<Address | null>(null);
   const [liveMint, setLiveMint] = useState<{ tokenId: bigint; txHash: Hex } | null>(null);
+  const [liveCredential, setLiveCredential] = useState<IssueResponse | null>(null);
   const reduced = useReducedMotion();
   const timerIdsRef = useRef<Set<number>>(new Set());
   const privyOn = isPrivyEnabled();
@@ -79,12 +86,34 @@ export default function OnboardPage() {
     [],
   );
 
+  // Step 3 live-issue callback: SD-JWT VC signed by /api/issue.
+  // Persists to localStorage so /vault renders the live credential alongside
+  // the fixture rows. localStorage write is best-effort — Safari private mode,
+  // disk-full, and quota-exceeded all fall back silently to in-memory only.
+  const handleIssued = useCallback((info: IssueResponse) => {
+    setLiveCredential(info);
+    setSteps((s) => (s.issue === "done" ? s : { ...s, issue: "done" }));
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(LIVE_CREDENTIAL_STORAGE_KEY);
+      const arr: IssueResponse[] = raw ? JSON.parse(raw) : [];
+      arr.push(info);
+      window.localStorage.setItem(
+        LIVE_CREDENTIAL_STORAGE_KEY,
+        JSON.stringify(arr),
+      );
+    } catch (err) {
+      console.warn("[onboard] localStorage persist failed", err);
+    }
+  }, []);
+
   const reset = () => {
     timerIdsRef.current.forEach((id) => window.clearTimeout(id));
     timerIdsRef.current.clear();
     setSteps(INITIAL);
     setWalletAddress(null);
     setLiveMint(null);
+    setLiveCredential(null);
   };
   const allDone = Object.values(steps).every((s) => s === "done");
   const firstIncompleteId: StepId | null =
@@ -202,10 +231,31 @@ export default function OnboardPage() {
               isActive={firstIncompleteId === "issue"}
               disabled={steps.mint !== "done"}
               title="Issue demo credential"
-              detail="Fixture HELP for Domestic Workers SD-JWT VC. Real NGO; signing key is a local Ed25519 fixture. Live encryption + 0G Storage upload runs in the enclave-side mint script today; browser-side flow is on the v2 roadmap."
+              detail={
+                privyOn && walletAddress && liveMint
+                  ? liveCredential
+                    ? `Live SD-JWT VC signed by /api/issue at ${new Date(liveCredential.issuedAt * 1000).toLocaleTimeString()}. Issuer ${liveCredential.issuerDid.slice(0, 24)}…. Persisted to localStorage; rendered in /vault.`
+                    : "Vercel API route /api/issue signs an Ed25519 SD-JWT VC with HELP-fixture claims (is_FDH_in_HK, has_pending_case, employment_active, residency). v2 adds browser AES-256-GCM + 0G Storage upload."
+                  : "Fixture HELP for Domestic Workers SD-JWT VC. Real NGO; signing key is a local Ed25519 fixture. Live encryption + 0G Storage upload runs in the enclave-side mint script today; browser-side flow is on the v2 roadmap."
+              }
               actionLabel="Issue"
               onAction={() => start("issue")}
               reduced={!!reduced}
+              actionOverride={
+                privyOn && walletAddress && liveMint && steps.mint === "done" ? (
+                  <IssueCredentialButton
+                    walletAddress={walletAddress}
+                    onIssued={handleIssued}
+                  />
+                ) : undefined
+              }
+              footer={
+                liveCredential ? (
+                  <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                    {liveCredential.claimNames.length} claims · vct {liveCredential.vct.split("/").pop()}
+                  </span>
+                ) : null
+              }
             />
           </ol>
 
