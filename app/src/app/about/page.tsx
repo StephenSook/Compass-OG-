@@ -42,6 +42,8 @@ const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: str
   { component: "0G broker processResponse co-signature", state: "draft", note: "out of scope for v1; receipt has its own signature chain" },
   { component: "Privy embedded wallet", state: "draft", note: "wired in /onboard step 1; live behind NEXT_PUBLIC_PRIVY_APP_ID, fixture timer in default build" },
   { component: "/onboard step 2 — live mintAgent", state: "draft", note: "Privy embedded wallet → AgentRegistry.mintAgent on Galileo (chainId 16602), gated on user-funded gas; fixture timer when Privy is unset" },
+  { component: "Authwit grant — browser-side EIP-712 signing", state: "real", note: "Privy embedded wallet signs the Compass Grant typed data on /onboard step 4 (Galileo chainId 16602, CompassHub verifying contract), no popup-required sub-flow" },
+  { component: "CompassHub.consumeGrantAndIssueReceipt — atomic on-chain", state: "real", note: "POST /api/consume relays Maria's signed grant; PROVIDER_PRIVATE_KEY-held wallet calls Galileo CompassHub; emits GrantConsumed + ReceiptIssued in one tx; nullifier + receiptId stored as used" },
 ];
 
 const REALITY_TONE: Record<RealityState, "positive" | "warning" | "neutral"> = {
