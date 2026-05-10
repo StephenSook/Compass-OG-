@@ -1,0 +1,224 @@
+// Server-side relayer for CompassHub.consumeGrantAndIssueReceipt.
+//
+// Why a relayer: the contract requires msg.sender == grant.provider AND
+// signer(grant) == agentRegistry.ownerOf(agentTokenId). That's two distinct
+// principals — the user's Privy embedded wallet (agent owner) signs the
+// EIP-712 grant in the browser, and the provider wallet (held server-side
+// here) calls the contract and pays gas. Same architecture as the SD-JWT VC
+// issuer route in /api/issue.
+//
+// v1: PROVIDER_PRIVATE_KEY env holds a fresh secp256k1 key, funded on
+// Galileo via the deployer transfer documented in
+// docs/notes/0g-galileo-policy-setup.md. v2 moves provider keys per-NGO
+// (HELP, Bethune, Hospital each hold their own) and into a Phala enclave
+// per docs/honest-limits.md.
+
+import { NextResponse } from "next/server";
+import {
+  createPublicClient,
+  createWalletClient,
+  decodeEventLog,
+  http,
+  isAddress,
+  isHex,
+  keccak256,
+  parseEventLogs,
+  size,
+  toHex,
+  type Hex,
+} from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { zeroGGalileoTestnet } from "@/lib/chains";
+import { COMPASS_HUB_ABI, COMPASS_HUB_GALILEO } from "@/lib/contracts";
+
+export const runtime = "nodejs";
+
+type GrantBody = {
+  agentTokenId: string;
+  policyId: Hex;
+  provider: Hex;
+  nonce: string;
+  expiry: number;
+  nullifier: Hex;
+};
+
+type ConsumeBody = {
+  grant?: GrantBody;
+  sig?: Hex;
+};
+
+function loadProviderKey(): Hex | null {
+  const raw = process.env.PROVIDER_PRIVATE_KEY;
+  if (!raw) return null;
+  const hex = raw.startsWith("0x") ? raw : `0x${raw}`;
+  if (!isHex(hex) || hex.length !== 66) return null;
+  return hex as Hex;
+}
+
+function isPlainBytes32(v: unknown): v is Hex {
+  return typeof v === "string" && isHex(v) && v.length === 66;
+}
+
+function validateGrant(g: GrantBody | undefined): { ok: boolean; reason?: string } {
+  if (!g) return { ok: false, reason: "grant missing" };
+  if (typeof g.agentTokenId !== "string" || !/^\d+$/.test(g.agentTokenId))
+    return { ok: false, reason: "agentTokenId must be decimal string" };
+  if (!isPlainBytes32(g.policyId)) return { ok: false, reason: "policyId must be 0x-32-bytes" };
+  if (!isAddress(g.provider)) return { ok: false, reason: "provider must be address" };
+  if (typeof g.nonce !== "string" || !/^\d+$/.test(g.nonce))
+    return { ok: false, reason: "nonce must be decimal string" };
+  if (typeof g.expiry !== "number" || g.expiry <= 0)
+    return { ok: false, reason: "expiry must be positive number" };
+  if (!isPlainBytes32(g.nullifier)) return { ok: false, reason: "nullifier must be 0x-32-bytes" };
+  return { ok: true };
+}
+
+export async function POST(req: Request) {
+  const sk = loadProviderKey();
+  if (!sk) {
+    return NextResponse.json(
+      {
+        error: "provider_unconfigured",
+        message:
+          "PROVIDER_PRIVATE_KEY env is not set or invalid. /onboard step 4 stays in fixture mode until the env is wired.",
+      },
+      { status: 503 },
+    );
+  }
+
+  let body: ConsumeBody = {};
+  try {
+    body = (await req.json()) as ConsumeBody;
+  } catch {
+    return NextResponse.json({ error: "bad_request", message: "body must be JSON" }, { status: 400 });
+  }
+
+  const sig = body.sig;
+  if (!sig || !isHex(sig) || size(sig) !== 65) {
+    return NextResponse.json(
+      { error: "bad_request", message: "sig must be 65-byte hex" },
+      { status: 400 },
+    );
+  }
+  const valid = validateGrant(body.grant);
+  if (!valid.ok || !body.grant) {
+    return NextResponse.json(
+      { error: "bad_request", message: valid.reason ?? "invalid grant" },
+      { status: 400 },
+    );
+  }
+
+  // Provider must match the address committed to in the grant — the contract
+  // enforces this at msg.sender == grant.provider, but rejecting early gives
+  // a cleaner error than a viem revert.
+  const account = privateKeyToAccount(sk);
+  if (account.address.toLowerCase() !== body.grant.provider.toLowerCase()) {
+    return NextResponse.json(
+      {
+        error: "provider_mismatch",
+        message:
+          "grant.provider does not match the server-held provider key. Check NEXT_PUBLIC_COMPASS_PROVIDER_ADDRESS.",
+      },
+      { status: 400 },
+    );
+  }
+
+  // Receipt fields are minted server-side. v1 uses a stub attestationDigest
+  // and a fixed resultHash for the demo's "eligible: true" outcome. A.4
+  // wires the real RA-quote digest from the TEE-attested enclave.
+  const nowSec = Math.floor(Date.now() / 1000);
+  const receiptId = keccak256(
+    toHex(`compass-receipt:${body.grant.nullifier}:${nowSec}`),
+  );
+  const resultHash = keccak256(toHex("compass-eligibility-result:eligible:true:help-legal-aid"));
+  const attestationDigest = keccak256(toHex("compass-tdx-stub-v1"));
+  const receiptExpiry = nowSec + 60 * 60 * 24 * 365; // 1 year
+
+  const grantTuple = {
+    agentTokenId: BigInt(body.grant.agentTokenId),
+    policyId: body.grant.policyId,
+    provider: body.grant.provider,
+    nonce: BigInt(body.grant.nonce),
+    expiry: BigInt(body.grant.expiry),
+    nullifier: body.grant.nullifier,
+  } as const;
+
+  const receiptTuple = {
+    receiptId,
+    resultHash,
+    receiptExpiry: BigInt(receiptExpiry),
+    attestationDigest,
+  } as const;
+
+  const publicClient = createPublicClient({
+    chain: zeroGGalileoTestnet,
+    transport: http(),
+  });
+  const walletClient = createWalletClient({
+    chain: zeroGGalileoTestnet,
+    transport: http(),
+    account,
+  });
+
+  let txHash: Hex;
+  try {
+    txHash = await walletClient.writeContract({
+      address: COMPASS_HUB_GALILEO,
+      abi: COMPASS_HUB_ABI,
+      functionName: "consumeGrantAndIssueReceipt",
+      args: [grantTuple, sig, receiptTuple],
+    });
+  } catch (err) {
+    console.error("[/api/consume] writeContract failed", err);
+    const msg = err instanceof Error ? err.message : "unknown";
+    return NextResponse.json(
+      { error: "tx_failed", message: msg.slice(0, 240) },
+      { status: 500 },
+    );
+  }
+
+  let txReceipt: Awaited<ReturnType<typeof publicClient.waitForTransactionReceipt>>;
+  try {
+    txReceipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+  } catch (err) {
+    console.error("[/api/consume] waitForTransactionReceipt failed", err);
+    return NextResponse.json(
+      { error: "tx_unconfirmed", message: "Submitted but not yet confirmed", txHash },
+      { status: 504 },
+    );
+  }
+
+  if (txReceipt.status !== "success") {
+    return NextResponse.json(
+      { error: "tx_reverted", message: "Tx mined but reverted", txHash },
+      { status: 502 },
+    );
+  }
+
+  // Pull ReceiptIssued event for the canonical fields the browser surfaces.
+  const events = parseEventLogs({
+    abi: COMPASS_HUB_ABI,
+    eventName: "ReceiptIssued",
+    logs: txReceipt.logs,
+  });
+  const issued = events[0];
+  if (!issued) {
+    return NextResponse.json(
+      { error: "event_missing", message: "Tx confirmed but ReceiptIssued not found", txHash },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({
+    txHash,
+    blockNumber: Number(txReceipt.blockNumber),
+    receiptId: issued.args.receiptId,
+    policyId: issued.args.policyId,
+    nullifier: issued.args.nullifier,
+    agentIdCommitment: issued.args.agentIdCommitment,
+    resultHash: issued.args.resultHash,
+    attestationDigest: issued.args.attestationDigest,
+    timestampBucket: Number(issued.args.timestampBucket),
+    receiptExpiry: Number(issued.args.expiry),
+  });
+}
