@@ -47,6 +47,7 @@ const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: str
   { component: "Authwit grant — browser-side EIP-712 signing", state: "real", note: "Privy embedded wallet signs the Compass Grant typed data on /onboard step 4 (Galileo chainId 16602, CompassHub verifying contract), no popup-required sub-flow" },
   { component: "CompassHub.consumeGrantAndIssueReceipt — atomic on-chain", state: "real", note: "POST /api/consume relays Maria's signed grant; PROVIDER_PRIVATE_KEY-held wallet calls Galileo CompassHub; emits GrantConsumed + ReceiptIssued in one tx; nullifier + receiptId stored as used" },
   { component: "Aristotle mainnet (chainId 16661) deploy", state: "draft", note: "scaffolded — chain selector + activeAgentRegistry/activeCompassHub helpers wired in app/src/lib; deploy script + register-policy commands documented in docs/notes/0g-aristotle-deploy-checklist.md; deploy itself gated on OG funding (see docs/notes/0g-mainnet-funding-options.md)" },
+  { component: "Kiosk mode for NGO drop-in centres", state: "draft", note: "live at /kiosk — locked nav, 4-step welcome→sign-in→mint→credential→request-eligibility flow with large touch targets + plain-language labels + receipt-as-intake-artifact ending. Reuses Privy + on-chain primitives from /onboard, restyled for shared tablet use. v2 adds localization (Tagalog, Indonesian, Cantonese, Bahasa Malaysia) + auto-reset timer + audio cues for low-literacy assistance" },
 ];
 
 const REALITY_TONE: Record<RealityState, "positive" | "warning" | "neutral"> = {
