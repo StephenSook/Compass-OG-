@@ -17,7 +17,6 @@ import { NextResponse } from "next/server";
 import {
   createPublicClient,
   createWalletClient,
-  decodeEventLog,
   http,
   isAddress,
   isHex,
@@ -29,7 +28,24 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { zeroGGalileoTestnet } from "@/lib/chains";
-import { COMPASS_HUB_ABI, COMPASS_HUB_GALILEO } from "@/lib/contracts";
+import {
+  COMPASS_HUB_ABI,
+  COMPASS_HUB_GALILEO,
+  HELP_LEGAL_AID_POLICY_LABEL,
+} from "@/lib/contracts";
+import { callEnclave, getEnclaveUrl } from "@/lib/compassEnclave";
+
+// Galileo on-chain policy hash for help-legal-aid (registered via
+// docs/notes/0g-galileo-policy-setup.md). The enclave receives the same
+// hash so the receipt's policyHash field round-trips identically.
+const HELP_POLICY_HASH_HEX: Hex =
+  "0xc352f9c54bd580a2a45ef8c4a8f566607473fa8cfdefcb692121653178c765dc";
+
+// Fixed credential-bundle commitment for the demo HELP claims. v2 derives
+// this from the user's actual encrypted bundle in 0G Storage.
+const HELP_CREDENTIAL_BUNDLE_HASH: Hex = keccak256(
+  toHex("compass:help-credential-bundle:v1"),
+);
 
 export const runtime = "nodejs";
 
@@ -123,16 +139,54 @@ export async function POST(req: Request) {
     );
   }
 
-  // Receipt fields are minted server-side. v1 uses a stub attestationDigest
-  // and a fixed resultHash for the demo's "eligible: true" outcome. A.4
-  // wires the real RA-quote digest from the TEE-attested enclave.
+  // Receipt fields are minted server-side. receiptId binds to the grant
+  // nullifier so each grant maps to exactly one receipt. resultHash is the
+  // fixed "eligible:true" outcome for the demo. attestationDigest is the
+  // load-bearing field A.4 makes real — sourced from the live Phala TDX
+  // enclave when COMPASS_ENCLAVE_URL is set, falls back to the named stub
+  // digest when unset (and surfaces the degraded mode in the response so
+  // the browser can surface it).
   const nowSec = Math.floor(Date.now() / 1000);
   const receiptId = keccak256(
     toHex(`compass-receipt:${body.grant.nullifier}:${nowSec}`),
   );
   const resultHash = keccak256(toHex("compass-eligibility-result:eligible:true:help-legal-aid"));
-  const attestationDigest = keccak256(toHex("compass-tdx-stub-v1"));
   const receiptExpiry = nowSec + 60 * 60 * 24 * 365; // 1 year
+  const challenge = keccak256(
+    toHex(`compass-challenge:${body.grant.nullifier}:${nowSec}`),
+  );
+  const agentIdCommitment = keccak256(
+    toHex(`compass-agent-id-commitment:${body.grant.agentTokenId}:${body.grant.provider}`),
+  );
+
+  let attestationDigest: Hex = keccak256(toHex("compass-tdx-stub-v1"));
+  let teeSource: "tee" | "env" | "stub" = "stub";
+  let teeSignerAddress: Hex | null = null;
+  let perReceiptQuoteHex: Hex | null = null;
+  let teeReceiptVersion: string | null = null;
+  let teeError: string | null = null;
+  const enclaveUrl = getEnclaveUrl();
+  if (enclaveUrl) {
+    try {
+      const enc = await callEnclave(enclaveUrl, {
+        receiptId,
+        challenge,
+        policyHash: HELP_POLICY_HASH_HEX,
+        agentIdCommitment,
+        credentialBundleHash: HELP_CREDENTIAL_BUNDLE_HASH,
+        policyLabel: HELP_LEGAL_AID_POLICY_LABEL,
+        expirySec: receiptExpiry,
+      });
+      attestationDigest = enc.attestationDigest;
+      teeSource = enc.source;
+      teeSignerAddress = enc.signerAddress;
+      perReceiptQuoteHex = enc.perReceiptQuoteHex;
+      teeReceiptVersion = enc.receiptVersion;
+    } catch (err) {
+      console.warn("[/api/consume] enclave call failed, using stub digest", err);
+      teeError = err instanceof Error ? err.message.slice(0, 240) : "unknown";
+    }
+  }
 
   const grantTuple = {
     agentTokenId: BigInt(body.grant.agentTokenId),
@@ -220,5 +274,12 @@ export async function POST(req: Request) {
     attestationDigest: issued.args.attestationDigest,
     timestampBucket: Number(issued.args.timestampBucket),
     receiptExpiry: Number(issued.args.expiry),
+    tee: {
+      source: teeSource,
+      signerAddress: teeSignerAddress,
+      perReceiptQuoteHex,
+      receiptVersion: teeReceiptVersion,
+      error: teeError,
+    },
   });
 }
