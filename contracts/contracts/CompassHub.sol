@@ -3,11 +3,7 @@ pragma solidity ^0.8.24;
 
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
-interface IAgentRegistry {
-    function ownerOf(uint256 tokenId) external view returns (address);
-    function verifyAttestation(uint256 tokenId, bytes calldata quote) external view returns (bool);
-}
+import {IAgentRegistry} from "./IAgentRegistry.sol";
 
 /// @title CompassHub
 /// @notice Atomic grant-consumption + receipt-issuance hub. A single transaction

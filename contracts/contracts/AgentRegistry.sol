@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {IAgentRegistry} from "./IAgentRegistry.sol";
 
 /// @title AgentRegistry
 /// @notice Soulbound ERC-7857-stripped Agent INFT for Compass.
@@ -10,7 +11,7 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 ///         updateMetadata requires the user-supplied teeAttestation to be
 ///         non-empty AND verifyAttestation to return true — gates vault
 ///         repointing on at least the v1 stub.
-contract AgentRegistry is ERC721 {
+contract AgentRegistry is ERC721, IAgentRegistry {
     struct Agent {
         bytes32 metadataHash;
         string encryptedURI;
@@ -115,8 +116,14 @@ contract AgentRegistry is ERC721 {
     function verifyAttestation(
         uint256 tokenId,
         bytes calldata quote
-    ) external view returns (bool) {
+    ) external view override returns (bool) {
         return _verifyAttestation(tokenId, quote);
+    }
+
+    function ownerOf(
+        uint256 tokenId
+    ) public view override(ERC721, IAgentRegistry) returns (address) {
+        return super.ownerOf(tokenId);
     }
 
     function _verifyAttestation(
