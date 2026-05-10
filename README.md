@@ -174,6 +174,15 @@ Out of scope (next layer): full Intel DCAP verification of the TDX quote signatu
 
 ---
 
+## Whitepaper
+
+3-page technical whitepaper covering threat model, architecture,
+cryptographic protocol, honest limits, and roadmap:
+[`docs/whitepaper.pdf`](./docs/whitepaper.pdf) (markdown source:
+[`docs/whitepaper.md`](./docs/whitepaper.md)).
+
+---
+
 ## Pillar 5 — Honesty about traction
 
 | # | Target | Type | Drafted | Sent | Replied |
