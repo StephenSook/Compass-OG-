@@ -32,15 +32,21 @@ const DEFAULT_CLAIMS: Record<string, unknown> = {
 const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 function base58btcEncode(bytes: Uint8Array): string {
+  // BigInt literals (0n, 256n) require ES2020+; this app targets ES2017,
+  // so the constructor form keeps the encoder compatible without bumping
+  // the global tsconfig target.
+  const ZERO = BigInt(0);
+  const BASE = BigInt(58);
+  const BYTE_BASE = BigInt(256);
   let zeros = 0;
   while (zeros < bytes.length && bytes[zeros] === 0) zeros++;
-  let value = 0n;
-  for (const b of bytes) value = value * 256n + BigInt(b);
+  let value = ZERO;
+  for (const b of bytes) value = value * BYTE_BASE + BigInt(b);
   let out = "";
-  while (value > 0n) {
-    const r = Number(value % 58n);
+  while (value > ZERO) {
+    const r = Number(value % BASE);
     out = B58[r] + out;
-    value /= 58n;
+    value = value / BASE;
   }
   return "1".repeat(zeros) + out;
 }
