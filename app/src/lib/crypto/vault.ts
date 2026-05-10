@@ -95,15 +95,19 @@ export type EncryptedPayload = {
   bytesEncrypted: number;
 };
 
+// TS 5.7 narrowed BufferSource to ArrayBufferView<ArrayBuffer> | ArrayBuffer,
+// which forces explicit casts at WebCrypto call sites — Uint8Array literals
+// resolve to Uint8Array<ArrayBufferLike> and no longer match. Casting the
+// values rather than widening BufferSource keeps the surface narrow.
 export async function encryptText(
   plaintext: string,
   key: CryptoKey,
 ): Promise<EncryptedPayload> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv: iv as BufferSource },
     key,
-    textEncoder.encode(plaintext),
+    textEncoder.encode(plaintext) as BufferSource,
   );
   const bytes = new Uint8Array(ct);
   return {
@@ -119,7 +123,11 @@ export async function decryptText(
 ): Promise<string> {
   const iv = base64UrlToBytes(payload.iv);
   const ct = base64UrlToBytes(payload.ciphertext);
-  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+  const pt = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: iv as BufferSource },
+    key,
+    ct as BufferSource,
+  );
   return textDecoder.decode(pt);
 }
 
