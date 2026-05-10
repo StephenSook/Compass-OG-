@@ -11,7 +11,12 @@ import {
   IssueCredentialButton,
   type IssueResponse,
 } from "@/components/onboard/IssueCredentialButton";
+import { RequestEligibilityButton } from "@/components/onboard/RequestEligibilityButton";
 import { isPrivyEnabled } from "@/lib/chains";
+
+const COMPASS_PROVIDER_ADDRESS = process.env.NEXT_PUBLIC_COMPASS_PROVIDER_ADDRESS as
+  | `0x${string}`
+  | undefined;
 import {
   encryptText,
   getOrCreateVaultKey,
@@ -303,7 +308,26 @@ export default function OnboardPage() {
                 credential are ready; the receipt log shows the only thing a
                 clinic ever sees about her.
               </p>
-              <div className="mt-8 flex flex-wrap gap-4">
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                {privyOn && walletAddress && liveMint && COMPASS_PROVIDER_ADDRESS ? (
+                  <RequestEligibilityButton
+                    walletAddress={walletAddress}
+                    agentTokenId={liveMint.tokenId}
+                    providerAddress={COMPASS_PROVIDER_ADDRESS}
+                    onIssued={() => {
+                      /* result stays in the button's local state; future
+                       * polish: lift to page state + show full receipt
+                       * card here. */
+                    }}
+                  />
+                ) : (
+                  <Link
+                    href="/receipt/1"
+                    className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
+                  >
+                    See the receipt →
+                  </Link>
+                )}
                 <Link
                   href="/vault"
                   className={`${GLASS_BASE} rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase`}
@@ -315,12 +339,6 @@ export default function OnboardPage() {
                   className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
                 >
                   See the disclosure scene →
-                </Link>
-                <Link
-                  href="/receipt/1"
-                  className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
-                >
-                  See the receipt →
                 </Link>
                 <button
                   type="button"
