@@ -174,6 +174,24 @@ Out of scope (next layer): full Intel DCAP verification of the TDX quote signatu
 
 ---
 
+## Pillar 5 — Honesty about traction
+
+| # | Target | Type | Drafted | Sent | Replied |
+|---|--------|------|---------|------|---------|
+| 1 | HELP for Domestic Workers | NGO (persona check) | 2026-05-10 | — | — |
+| 2 | Bethune House Migrant Women's Refuge | NGO (persona check) | 2026-05-10 | — | — |
+| 3 | Mission for Migrant Workers | NGO (community check) | 2026-05-10 | — | — |
+| 4 | Open Society Foundations | Foundation | 2026-05-10 | — | — |
+| 5 | Luminate | Foundation | 2026-05-10 | — | — |
+| 6 | HK Jockey Club Charities Trust | Foundation | 2026-05-10 | — | — |
+
+Drafts live at [`docs/outreach/`](./docs/outreach/README.md). Even
+no-response counts: silence after a logged-and-dated send is a more
+honest traction signal than no contact at all. The `Sent` and `Replied`
+columns update post-send.
+
+---
+
 ## Ecosystem citizenship — `compass-eligibility-check` skill
 
 The receipt verifier above is also packaged as a reusable Claude Code /
