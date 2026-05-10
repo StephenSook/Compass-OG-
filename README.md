@@ -174,6 +174,36 @@ Out of scope (next layer): full Intel DCAP verification of the TDX quote signatu
 
 ---
 
+## Ecosystem citizenship — `compass-eligibility-check` skill
+
+The receipt verifier above is also packaged as a reusable Claude Code /
+OpenClaw skill at [`skills/compass-eligibility-check/`](./skills/compass-eligibility-check/SKILL.md).
+Any agent or CI step in the 0G ecosystem can install it and ask
+"is this Compass receipt valid?" without needing to clone the full repo
+or wire the TEE chain by hand.
+
+Skill inputs:
+
+- a `receiptId` from a `ReceiptIssued` event on Galileo or Aristotle
+  CompassHub (live mode), OR
+- a saved JSON bundle `{receipt, attestationDigest, signature,
+  signerAddress, perReceiptQuoteHex}` (offline mode), OR
+- the bundled sample fixture (no network needed)
+
+Skill output: structured JSON with `verified: true/false` plus the
+recovered `signerAddress`, `composeHash`, `policyId`, `timestampBucket`,
+`agentIdCommitment`, and per-check pass/fail (`attestationDigestMatch`,
+`signatureRecovers`, `quoteCommitmentMatch`, `reportDataBinding`,
+`composeHashTrusted`).
+
+Why publish it as a skill: per Track 5's ecosystem-citizenship criterion,
+shipping reusable primitives multiplies the project's value beyond a
+single demo. The skill format means a downstream agent — clinic intake
+bot, partner NGO compliance check, audit pipeline — can verify Compass
+receipts with one tool call.
+
+---
+
 ## Live attestation evidence (pinned)
 
 | Field | Value |
