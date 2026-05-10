@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArchitectureDiagram } from "@/components/about/ArchitectureDiagram";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
+import { TeeStatusBadge } from "@/components/about/TeeStatusBadge";
 
 const INTEGRATION = [
   {
@@ -139,6 +140,9 @@ export default function AboutPage() {
           </Section>
 
           <Section title="What's real / what's mocked">
+            <div className="mb-4">
+              <TeeStatusBadge />
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
