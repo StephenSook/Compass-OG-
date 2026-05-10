@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { Stat } from "@/components/primitives/Stat";
+import { AmbientSphere } from "@/components/primitives/AmbientSphere";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
 import { LiveCredentialList } from "@/components/vault/LiveCredentialList";
 import {
@@ -20,28 +21,35 @@ export default function VaultPage() {
   const issuers = uniqueIssuers(CREDENTIALS);
 
   return (
-    <main className="relative flex min-h-screen flex-col bg-background">
-      <header className="fixed top-6 left-1/2 z-50 -translate-x-1/2">
-        <LiquidGlass radius="full" className="px-6 py-2">
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-background">
+      <header className="fixed top-4 left-1/2 z-50 -translate-x-1/2 sm:top-6">
+        <LiquidGlass radius="full" className="px-5 py-2 sm:px-6">
           <Link
             href="/"
-            className="font-mono text-xs tracking-[0.3em] text-foreground uppercase"
+            className="font-mono text-[10px] tracking-[0.3em] text-foreground uppercase sm:text-xs"
           >
             ← COMPASS
           </Link>
         </LiquidGlass>
       </header>
 
-      <section className="flex flex-1 flex-col items-center px-6 pt-32 pb-24">
+      <div className="pointer-events-none absolute -top-32 right-0 hidden opacity-30 sm:block">
+        <AmbientSphere
+          className="h-[60vmin] w-[60vmin] max-h-[480px] max-w-[480px]"
+          size={480}
+        />
+      </div>
+
+      <section className="relative z-10 flex flex-1 flex-col items-center px-5 pt-24 pb-16 sm:px-6 sm:pt-32 sm:pb-24">
         <div className="w-full max-w-4xl">
           <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
             Vault
           </p>
-          <h1 className="mt-4 text-4xl leading-tight font-medium text-foreground md:text-6xl">
+          <h1 className="mt-3 text-3xl leading-tight font-medium text-foreground sm:mt-4 sm:text-4xl md:text-6xl">
             Maria&apos;s <span className="font-serif italic">credentials</span>, encrypted
             on-device.
           </h1>
-          <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
+          <p className="mt-5 max-w-2xl text-sm text-muted-foreground sm:mt-6 sm:text-base md:text-lg">
             Each row mirrors the production envelope: an SD-JWT VC, AES-256-GCM
             -encrypted on the user&apos;s device, ciphertext uploaded to 0G
             Storage. Plaintext claim values stay on the device. The data on
@@ -51,7 +59,7 @@ export default function VaultPage() {
             encryption parameters, storage root hash.
           </p>
 
-          <div className="mt-12 grid grid-cols-3 gap-4">
+          <div className="mt-10 grid grid-cols-1 gap-3 sm:mt-12 sm:grid-cols-3 sm:gap-4">
             <Stat label="Credentials" value={total} />
             <Stat label="Encrypted bytes" value={formatBytes(bytes)} />
             <Stat label="Issuers" value={issuers} />
@@ -93,16 +101,16 @@ export default function VaultPage() {
             </div>
           </div>
 
-          <div className="mt-16 flex flex-wrap gap-4">
+          <div className="mt-12 flex flex-col gap-3 sm:mt-16 sm:flex-row sm:flex-wrap sm:gap-4">
             <Link
               href="/clinic/subpoena"
-              className={`${GLASS_BASE} rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase`}
+              className={`${GLASS_BASE} rounded-full px-6 py-3 text-center font-mono text-[10px] tracking-[0.3em] text-foreground uppercase sm:px-8 sm:py-4 sm:text-xs`}
             >
               See the disclosure scene →
             </Link>
             <Link
               href="/onboard"
-              className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
+              className="rounded-full border border-border px-6 py-3 text-center font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40 sm:px-8 sm:py-4 sm:text-xs"
             >
               Onboard another agent →
             </Link>

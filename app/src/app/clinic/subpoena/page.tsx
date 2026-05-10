@@ -20,19 +20,19 @@ export default function SubpoenaPage() {
 
   return (
     <main className="relative flex min-h-screen flex-col bg-background">
-      <header className="px-6 pt-10 pb-6">
-        <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase">
+      <header className="px-5 pt-8 pb-6 sm:px-6 sm:pt-10">
+        <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase sm:text-xs">
           Investigation Request — Clinic Disclosure Log · PDPO Cap. 486 §57
         </p>
-        <p className="mt-2 font-mono text-xs tracking-[0.2em] text-muted-foreground/60 uppercase">
+        <p className="mt-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase sm:text-xs">
           subject: anonymous applicant · 2026-05-18 14:32:00 +08:00
         </p>
       </header>
 
-      <section className="flex flex-1 flex-col items-center justify-center px-6">
+      <section className="flex flex-1 flex-col items-center justify-center px-5 sm:px-6">
         <motion.div
           aria-hidden="true"
-          className="mb-16 w-full max-w-[800px]"
+          className="mb-12 w-full max-w-[800px] sm:mb-16"
           animate={
             reduced
               ? { opacity: 0.6 }
@@ -46,7 +46,7 @@ export default function SubpoenaPage() {
         >
           <LiquidGlass
             radius="xl"
-            className="flex h-[280px] w-full items-center justify-center md:h-[400px]"
+            className="flex h-[200px] w-full items-center justify-center sm:h-[280px] md:h-[400px]"
           >
             <span className="font-mono text-[10px] tracking-[0.4em] text-muted-foreground/30 uppercase">
               [ no data ]
@@ -58,12 +58,12 @@ export default function SubpoenaPage() {
           <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
             Disclosed
           </p>
-          <p className="mt-6 text-2xl leading-relaxed font-medium text-foreground md:text-4xl">
+          <p className="mt-5 text-xl leading-relaxed font-medium text-foreground sm:mt-6 sm:text-2xl md:text-4xl">
             <RevealText text="Someone qualified for free legal assistance at 14:32 on May 18, 2026." />
           </p>
 
           <motion.p
-            className="mt-20 font-serif text-5xl leading-tight italic text-foreground md:text-7xl"
+            className="mt-14 font-serif text-4xl leading-tight italic text-foreground sm:mt-20 sm:text-5xl md:text-7xl"
             initial={reduced ? false : { opacity: 0, y: 12 }}
             whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
             viewport={reduced ? undefined : { once: true, margin: "-20%" }}
@@ -73,7 +73,7 @@ export default function SubpoenaPage() {
           </motion.p>
 
           <motion.p
-            className="mt-12 text-base leading-relaxed text-muted-foreground md:text-lg"
+            className="mt-10 text-sm leading-relaxed text-muted-foreground sm:mt-12 sm:text-base md:text-lg"
             initial={reduced ? false : { opacity: 0, y: 8 }}
             whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
             viewport={reduced ? undefined : { once: true, margin: "-10%" }}
@@ -83,7 +83,7 @@ export default function SubpoenaPage() {
           </motion.p>
 
           <motion.div
-            className="mt-16 flex flex-wrap justify-center gap-4"
+            className="mt-12 flex flex-col items-center gap-3 sm:mt-16 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4"
             initial={reduced ? false : { opacity: 0 }}
             whileInView={reduced ? undefined : { opacity: 1 }}
             viewport={reduced ? undefined : { once: true, margin: "-10%" }}
@@ -92,19 +92,19 @@ export default function SubpoenaPage() {
             <MagneticButton
               href={`https://chainscan-galileo.0g.ai/tx/${AGENT_MINT_TX_HASH}`}
               ariaLabel="See the agent-mint transaction on chainscan-galileo (opens new tab)"
-              className={`${GLASS_BASE} rounded-full px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase`}
+              className={`${GLASS_BASE} rounded-full px-6 py-3 text-center font-mono text-[10px] tracking-[0.3em] sm:px-8 sm:py-4 sm:text-xs text-foreground uppercase`}
             >
               See the agent on chain →
             </MagneticButton>
             <Link
               href={`/receipt/${CANONICAL_RECEIPT_ID}`}
-              className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
+              className="rounded-full border border-border px-6 py-3 text-center font-mono text-[10px] tracking-[0.3em] sm:px-8 sm:py-4 sm:text-xs text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
             >
               See the receipt →
             </Link>
             <Link
               href="/audit"
-              className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
+              className="rounded-full border border-border px-6 py-3 text-center font-mono text-[10px] tracking-[0.3em] sm:px-8 sm:py-4 sm:text-xs text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
             >
               Public audit log →
             </Link>
