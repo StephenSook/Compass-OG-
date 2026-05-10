@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { Stat } from "@/components/primitives/Stat";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
+import { LiveCredentialList } from "@/components/vault/LiveCredentialList";
 import {
   CREDENTIALS,
   TONE_BY_CREDENTIAL_STATUS,
@@ -63,6 +64,8 @@ export default function VaultPage() {
               </li>
             ))}
           </ul>
+
+          <LiveCredentialList />
 
           <div className="mt-20 grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="rounded-2xl border border-border/40 p-6">
