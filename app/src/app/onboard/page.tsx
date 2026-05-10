@@ -12,6 +12,12 @@ import {
   type IssueResponse,
 } from "@/components/onboard/IssueCredentialButton";
 import { isPrivyEnabled } from "@/lib/chains";
+import {
+  encryptText,
+  getOrCreateVaultKey,
+  isStoredLiveCredential,
+  type StoredLiveCredential,
+} from "@/lib/crypto/vault";
 
 const LIVE_CREDENTIAL_STORAGE_KEY = "compass.live_credentials";
 
@@ -41,7 +47,7 @@ export default function OnboardPage() {
   const [steps, setSteps] = useState<StepRecord>(INITIAL);
   const [walletAddress, setWalletAddress] = useState<Address | null>(null);
   const [liveMint, setLiveMint] = useState<{ tokenId: bigint; txHash: Hex } | null>(null);
-  const [liveCredential, setLiveCredential] = useState<IssueResponse | null>(null);
+  const [liveCredential, setLiveCredential] = useState<StoredLiveCredential | null>(null);
   const reduced = useReducedMotion();
   const timerIdsRef = useRef<Set<number>>(new Set());
   const privyOn = isPrivyEnabled();
@@ -86,18 +92,36 @@ export default function OnboardPage() {
     [],
   );
 
-  // Step 3 live-issue callback: SD-JWT VC signed by /api/issue.
-  // Persists to localStorage so /vault renders the live credential alongside
-  // the fixture rows. localStorage write is best-effort — Safari private mode,
-  // disk-full, and quota-exceeded all fall back silently to in-memory only.
-  const handleIssued = useCallback((info: IssueResponse) => {
-    setLiveCredential(info);
-    setSteps((s) => (s.issue === "done" ? s : { ...s, issue: "done" }));
+  // Step 3 live-issue callback: SD-JWT VC signed by /api/issue, then encrypted
+  // browser-side with the per-device AES-256-GCM vault key before localStorage
+  // persist. Plaintext SD-JWT VC compact never touches localStorage. The
+  // button awaits this callback so a failure here keeps Step 3 in error state
+  // rather than flipping to "done".
+  const handleIssued = useCallback(async (info: IssueResponse) => {
     if (typeof window === "undefined") return;
+    const key = await getOrCreateVaultKey();
+    const enc = await encryptText(info.sdjwtvc, key);
+    const stored: StoredLiveCredential = {
+      schema: "compass.live_credential.v2",
+      ciphertext: enc.ciphertext,
+      iv: enc.iv,
+      algorithm: "AES-256-GCM",
+      keySource: "indexeddb-random-256",
+      bytesEncrypted: enc.bytesEncrypted,
+      encryptedAt: Math.floor(Date.now() / 1000),
+      issuerDid: info.issuerDid,
+      vct: info.vct,
+      claimNames: info.claimNames,
+      issuedAt: info.issuedAt,
+      expiresAt: info.expiresAt,
+    };
     try {
       const raw = window.localStorage.getItem(LIVE_CREDENTIAL_STORAGE_KEY);
-      const arr: IssueResponse[] = raw ? JSON.parse(raw) : [];
-      arr.push(info);
+      // Drop any old plaintext-shape entries — the type guard rejects them.
+      const arr: StoredLiveCredential[] = raw
+        ? (JSON.parse(raw) as unknown[]).filter(isStoredLiveCredential)
+        : [];
+      arr.push(stored);
       window.localStorage.setItem(
         LIVE_CREDENTIAL_STORAGE_KEY,
         JSON.stringify(arr),
@@ -105,6 +129,8 @@ export default function OnboardPage() {
     } catch (err) {
       console.warn("[onboard] localStorage persist failed", err);
     }
+    setLiveCredential(stored);
+    setSteps((s) => (s.issue === "done" ? s : { ...s, issue: "done" }));
   }, []);
 
   const reset = () => {
@@ -234,9 +260,9 @@ export default function OnboardPage() {
               detail={
                 privyOn && walletAddress && liveMint
                   ? liveCredential
-                    ? `Live SD-JWT VC signed by /api/issue at ${new Date(liveCredential.issuedAt * 1000).toLocaleTimeString()}. Issuer ${liveCredential.issuerDid.slice(0, 24)}…. Persisted to localStorage; rendered in /vault.`
-                    : "Vercel API route /api/issue signs an Ed25519 SD-JWT VC with HELP-fixture claims (is_FDH_in_HK, has_pending_case, employment_active, residency). v2 adds browser AES-256-GCM + 0G Storage upload."
-                  : "Fixture HELP for Domestic Workers SD-JWT VC. Real NGO; signing key is a local Ed25519 fixture. Live encryption + 0G Storage upload runs in the enclave-side mint script today; browser-side flow is on the v2 roadmap."
+                    ? `Live SD-JWT VC signed by /api/issue at ${new Date(liveCredential.issuedAt * 1000).toLocaleTimeString()}, then AES-256-GCM-encrypted browser-side. ${liveCredential.bytesEncrypted}-byte ciphertext stored in localStorage; plaintext SD-JWT VC never persists in the browser.`
+                    : "Vercel API route /api/issue signs an Ed25519 SD-JWT VC with HELP-fixture claims; the browser then encrypts it with a per-device AES-256-GCM key (non-extractable, IndexedDB) before persisting. 0G Storage ciphertext upload is still v2."
+                  : "Fixture HELP for Domestic Workers SD-JWT VC. Real NGO; signing key is a local Ed25519 fixture. Live signing + browser encryption flip on when ISSUER_PRIVATE_KEY is set and Privy is wired."
               }
               actionLabel="Issue"
               onAction={() => start("issue")}
@@ -252,7 +278,7 @@ export default function OnboardPage() {
               footer={
                 liveCredential ? (
                   <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
-                    {liveCredential.claimNames.length} claims · vct {liveCredential.vct.split("/").pop()}
+                    {liveCredential.bytesEncrypted} B AES-256-GCM · {liveCredential.claimNames.length} claims · iv {liveCredential.iv.slice(0, 6)}…
                   </span>
                 ) : null
               }

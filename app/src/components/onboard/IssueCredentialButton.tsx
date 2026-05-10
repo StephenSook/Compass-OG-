@@ -24,7 +24,12 @@ type Phase = "ready" | "signing" | "done" | "error";
 
 type Props = {
   walletAddress: Address;
-  onIssued: (info: IssueResponse) => void;
+  /**
+   * Called after a successful POST to /api/issue. May be async; the button
+   * awaits it before transitioning to "done" so encryption + persistence
+   * complete before the visual state advances.
+   */
+  onIssued: (info: IssueResponse) => void | Promise<void>;
 };
 
 export function IssueCredentialButton({ walletAddress, onIssued }: Props) {
@@ -51,8 +56,8 @@ export function IssueCredentialButton({ walletAddress, onIssued }: Props) {
       }
       const data = (await res.json()) as IssueResponse;
       if (!data.sdjwtvc) throw new Error("missing sdjwtvc in response");
+      await Promise.resolve(onIssued(data));
       setPhase("done");
-      onIssued(data);
     } catch (err) {
       console.error("[issue] failed", err);
       const msg = err instanceof Error ? err.message : String(err);
