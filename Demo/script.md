@@ -38,9 +38,25 @@ Four sentences. The pacing tightens beat-by-beat. The last fragment lands hardes
 
 ## Beat 3 — the Compass moment (0:50–1:30)
 
-**Visual:** live UX. Open `/clinic/subpoena` → request flow on the production Vercel URL → receipt mints in under 15 seconds with the `<TEEBadge status="verified" />` next to it.
+**Visual:** live UX on `/onboard`, the four-step walkthrough. Open the
+production Vercel URL with the Privy embedded wallet already
+authenticated (one-time setup before recording so the demo doesn't
+require a real email-verification beat). Steps 1, 2, 3 each tick to
+green in under 5s. Step 4 is the load-bearing reveal: click "Request
+HELP eligibility (live) →", the wallet prompts for a typed-data
+signature, the button shows "submitting grant… → mining receipt… →
+✓ receipt minted" with the Galileo explorer tx hash + the 15-min
+timestamp bucket pill.
 
-If the Phala CVM is up and `verify-receipt` PASSES against the live signer, mint on-camera. The 5-second wait is worth it because nothing else looks like a real signature appearing. If the CVM is down, fall back to a pre-recorded mint and cut the wait.
+If the Phala CVM is up and `/api/tee-status` returns `mode: tee`, mint
+on-camera. The 5-second wait is worth it because nothing else looks
+like a real signature appearing. If the CVM is down, fall back to a
+pre-recorded mint and cut the wait.
+
+**Pre-recording prerequisite:** Privy session active in the recording
+browser; provider relayer wallet funded on Galileo (≥0.05 OG); HELP
+policy registered on Galileo CompassHub. All three are baseline
+deployment state per `docs/notes/0g-galileo-policy-setup.md`.
 
 **Voiceover:**
 
@@ -122,8 +138,10 @@ End on the period. No outro chord. No URL card. The README has the URL.
 
 ## Recording checklist
 
-- [ ] Phala CVM Started — verify `/health` returns `source: tee` before recording (Beat 3 fallback otherwise).
-- [ ] Vercel deploy current — `/audit`, `/policies/[slug]`, `/about` all render.
+- [ ] Phala CVM Started — `vercel curl /api/tee-status` returns `mode: tee, reachable: true` before recording (Beat 3 fallback otherwise).
+- [ ] Vercel deploy current — `/audit`, `/policies/[slug]`, `/about` all render. The TEE-status badge on `/about` shows the green "tee live" dot.
+- [ ] Privy session pre-authed in recording browser. `/onboard` Step 1 shows wallet address pre-loaded on cold reload (do NOT record the email login).
+- [ ] Provider relayer wallet funded ≥ 0.05 OG on Galileo (`0xaD736a7233847Cf1D73a7D820b32424CF8125b0a`). HELP policy registered on Galileo CompassHub.
 - [ ] Browser zoom: 100% (default).
 - [ ] Hide bookmark bar, DevTools, mac dock.
 - [ ] System notifications: Do Not Disturb on.
