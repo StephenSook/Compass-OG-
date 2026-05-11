@@ -16,6 +16,14 @@ A private eligibility firewall on 0G — vulnerable migrant workers prove they q
 
 ---
 
+## Watch the demo
+
+> **3-minute walkthrough:** `[DEMO_VIDEO_URL]` *(YouTube unlisted — drop the URL here once F.1 lands; see `Demo/script.md` for the 6-beat shooting script and `Demo/storyboard.md` for the visual companion).*
+>
+> The demo records on **Aristotle mainnet** with `NEXT_PUBLIC_COMPASS_USE_MAINNET=1`. Receipts mint to chainId 16661 and land on `https://chainscan.0g.ai`. The Phala dstack TDX enclave must be live during recording — `/api/consume` fails closed (503 `tee_required`) when the CVM is stopped.
+
+---
+
 ## See it live
 
 | Layer | URL |
