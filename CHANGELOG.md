@@ -5,7 +5,7 @@ build-up phase are folded into milestone summaries; recent changes are
 listed by commit. The version cadence follows the hackathon timeline,
 not semver — this is `v0.x` until the post-hackathon hardening pass.
 
-## Unreleased — UI/UX polish push (2026-05-11)
+## Unreleased — UI/UX polish push + /verify differentiator (2026-05-11)
 
 The "tighten before submission" milestone. No new features; polish of
 existing surfaces.
@@ -46,9 +46,47 @@ existing surfaces.
   `NEXT_PUBLIC_COMPASS_DEMO_VIDEO_URL`; renders null until F.1 lands.
   Shows after 800ms or 30%-viewport scroll. Session-dismissible.
 
+### Added (continued — `/verify` + SEO + onboard polish push, commits 5a87b1f + f1602ab)
+
+- **`/verify` — browser-side receipt verifier.** Drag-drop or paste a
+  Compass receipt-bundle JSON; the page re-runs the same four
+  cryptographic checks the `verify-receipt` CLI does, entirely in the
+  browser using `@noble/curves` + `@noble/hashes`. No clone, no
+  `npm install`, no terminal. Source: `app/src/lib/verifyReceipt.ts`;
+  UI: `app/src/app/verify/page.tsx`. **Try sample** loads the bundled
+  fixture from `app/public/samples/receipt-sample.json` and auto-swaps
+  the composeHash input to the fixture value so all four checks tick
+  green on first click. Per-route OG image at `verify/opengraph-image.tsx`.
+  Home page + `/demo` step 06 both link the new page.
+- **`app/src/app/sitemap.ts`** — auto-generated XML sitemap listing 16
+  public routes with change-frequency + priority. Search engines now
+  see the privacy claim, the architecture page, the subpoena scene,
+  the FAQ, the roadmap, the verify page, and the audit log explicitly.
+- **`app/src/app/robots.ts`** — open robots policy; `/api/` and
+  `/_next/` disallowed; sitemap pointer included.
+- **`/onboard` progress indicator** — 3-bar progress strip + "X of 3 ·
+  current-step" label above the step list. `STEP_LABELS` + `labelFor()`
+  helper added to surface the current step name without duplicating
+  literals. Existing step state machine + aria-live region untouched.
+
 ### Dependency added
 
 - `@radix-ui/react-tooltip ^1.2.8` (~10kb gzipped, AA accessibility)
+- `@noble/hashes ^2.2.0` (sha256, keccak256 for the browser-side verifier)
+
+### Fixed
+
+- **CI Slither job unblocked.** `contracts/.npmrc` pins
+  `legacy-peer-deps=true` so the crytic/slither-action Docker — which
+  re-invokes `npm ci` without the flag — picks it up from the dir.
+  Action gains `ignore-compile: true` to reuse the host pre-compile
+  output and skip the redundant dep install inside Docker.
+  First 4/4 green CI run on Compass.
+- **`/verify` Try-sample composeHash auto-swap (f1602ab).** The bundled
+  sample is a test fixture pinned to `0xab × 32`, not the production
+  composeHash. Clicking Try-sample now sets both fields together so the
+  "first click" demo path lands green; real-receipt verifications keep
+  the production composeHash as the default.
 
 ---
 

@@ -29,6 +29,7 @@ A private eligibility firewall on 0G — vulnerable migrant workers prove they q
 | Layer | URL |
 |---|---|
 | Frontend | <https://app-psi-pied.vercel.app> |
+| Verify a receipt in your browser | <https://app-psi-pied.vercel.app/verify> |
 | TEE receipt-signer | <https://65c93172e22403466eecee47dd1cc90375014a0f-8080.dstack-pha-prod9.phala.network> |
 | AgentRegistry (0G Galileo) | [`0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8`](https://chainscan-galileo.0g.ai/address/0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8) |
 | CompassHub (0G Galileo) | [`0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b`](https://chainscan-galileo.0g.ai/address/0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b) |
@@ -138,6 +139,12 @@ Visual + section-by-section breakdown: [/about](https://app-psi-pied.vercel.app/
 ---
 
 ## Replicate the TEE binding yourself
+
+**No-CLI path:** open <https://app-psi-pied.vercel.app/verify> in any browser, drop a Compass receipt-bundle JSON, click **Verify receipt →**. Your browser re-runs the four cryptographic checks below using `@noble/curves` + `@noble/hashes` — no clone, no `npm install`, no terminal. Click **Try sample** to load the bundled fixture and watch all four checks tick green in ~150ms (the page auto-swaps the composeHash to the fixture value for that case). Source: [`app/src/lib/verifyReceipt.ts`](./app/src/lib/verifyReceipt.ts).
+
+The CLI scripts below stay as the canonical reference for anyone who'd rather verify in-terminal. Same four checks, same canonicalization, same curve library — `/verify` is a 1:1 browser port.
+
+---
 
 Two scripts let any judge re-verify the cryptographic chain independently. Clone, install, run:
 
