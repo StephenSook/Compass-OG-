@@ -11,16 +11,22 @@ import {
   type Address,
   type Hex,
 } from "viem";
-import { zeroGGalileoTestnet } from "@/lib/chains";
+import { activeChain } from "@/lib/chains";
 import {
+  activeCompassHub,
   COMPASS_EIP712_DOMAIN_NAME,
   COMPASS_EIP712_DOMAIN_VERSION,
   COMPASS_GRANT_TYPES,
-  COMPASS_HUB_GALILEO,
   HELP_LEGAL_AID_POLICY_LABEL,
 } from "@/lib/contracts";
 
-const GALILEO_EXPLORER_TX = "https://chainscan-galileo.0g.ai/tx";
+// Explorer base derived per-network so the receipt link points at the
+// right scanner. activeChain() returns the chain config whose
+// blockExplorers.default.url is chainscan-galileo.0g.ai (testnet) or
+// chainscan.0g.ai (mainnet).
+function explorerTxBase(): string {
+  return `${activeChain().blockExplorers.default.url}/tx`;
+}
 
 const POLICY_ID: Hex = keccak256(toHex(HELP_LEGAL_AID_POLICY_LABEL));
 
@@ -86,11 +92,21 @@ export function RequestEligibilityButton({
     setPhase("signing");
     setErrorMsg(null);
 
+    // EIP-712 grant signing must use the SAME chain + verifying-contract
+    // that /api/consume uses for `recoverTypedDataAddress`. The server
+    // reads `activeChain()` + `activeCompassHub()`; we mirror that here.
+    // Pre-fix this file hardcoded Galileo, so flipping
+    // NEXT_PUBLIC_COMPASS_USE_MAINNET=1 broke the demo (Codex review
+    // 2026-05-11): the user signed a Galileo-domain typed data, the
+    // server recovered against Aristotle, signers mismatched.
+    const chain = activeChain();
+    const compassHubAddress = activeCompassHub();
+
     try {
-      await wallet.switchChain(zeroGGalileoTestnet.id);
+      await wallet.switchChain(chain.id);
       const provider = await wallet.getEthereumProvider();
       const walletClient = createWalletClient({
-        chain: zeroGGalileoTestnet,
+        chain,
         transport: custom(provider),
         account: walletAddress,
       });
@@ -115,8 +131,8 @@ export function RequestEligibilityButton({
         domain: {
           name: COMPASS_EIP712_DOMAIN_NAME,
           version: COMPASS_EIP712_DOMAIN_VERSION,
-          chainId: zeroGGalileoTestnet.id,
-          verifyingContract: COMPASS_HUB_GALILEO,
+          chainId: chain.id,
+          verifyingContract: compassHubAddress,
         },
         types: COMPASS_GRANT_TYPES,
         primaryType: "Grant",
@@ -166,7 +182,7 @@ export function RequestEligibilityButton({
       <div className="flex flex-col items-end gap-2">
         <Pill tone="positive">✓ receipt minted</Pill>
         <a
-          href={`${GALILEO_EXPLORER_TX}/${result.txHash}`}
+          href={`${explorerTxBase()}/${result.txHash}`}
           target="_blank"
           rel="noopener noreferrer"
           className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase transition-colors hover:text-foreground"

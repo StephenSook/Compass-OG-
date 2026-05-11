@@ -13,14 +13,19 @@ import {
   type Address,
   type Hex,
 } from "viem";
-import { zeroGGalileoTestnet } from "@/lib/chains";
+import { activeChain, useMainnet } from "@/lib/chains";
 import {
+  activeAgentRegistry,
   AGENT_REGISTRY_ABI,
-  AGENT_REGISTRY_GALILEO,
 } from "@/lib/contracts";
 
+// Faucet only exists on Galileo testnet; mainnet has no faucet and the
+// component renders a different "fund via hub.0g.ai" hint instead.
 const GALILEO_FAUCET_URL = "https://faucet.0g.ai/";
-const GALILEO_EXPLORER_TX = "https://chainscan-galileo.0g.ai/tx";
+
+function explorerTxBase(): string {
+  return `${activeChain().blockExplorers.default.url}/tx`;
+}
 
 // Fixture metadata for the demo mint. AgentRegistry rejects a zero
 // metadataHash, so we hash a stable label so judges can re-derive it.
@@ -32,10 +37,15 @@ const DEMO_ATTESTOR: Address = "0x0000000000000000000000000000000000000000";
 const DEMO_TRUST_LIST_ROOT: Hex =
   "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-const publicClient = createPublicClient({
-  chain: zeroGGalileoTestnet,
-  transport: http(),
-});
+// Lazy public-client factory. Each call resolves activeChain() so that
+// NEXT_PUBLIC_COMPASS_USE_MAINNET=1 routes to Aristotle. Pre-fix this
+// was a module-level const pinned to Galileo — Codex 2026-05-11.
+function getPublicClient() {
+  return createPublicClient({
+    chain: activeChain(),
+    transport: http(),
+  });
+}
 
 type Phase = "loading" | "needs-fund" | "ready" | "signing" | "mining" | "done" | "error";
 
@@ -56,13 +66,13 @@ export function MintAgentButton({ walletAddress, onMinted }: Props) {
     let cancelled = false;
     (async () => {
       try {
-        const balance = await publicClient.getBalance({ address: walletAddress });
+        const balance = await getPublicClient().getBalance({ address: walletAddress });
         if (cancelled) return;
         setPhase(balance === BigInt(0) ? "needs-fund" : "ready");
       } catch (err) {
         if (cancelled) return;
         console.error("[mint] balance probe failed", err);
-        setErrorMsg("Could not read Galileo balance. Network may be down.");
+        setErrorMsg(`Could not read ${useMainnet() ? "Aristotle" : "Galileo"} balance. Network may be down.`);
         setPhase("error");
       }
     })();
@@ -75,11 +85,11 @@ export function MintAgentButton({ walletAddress, onMinted }: Props) {
     setPhase("loading");
     setErrorMsg(null);
     try {
-      const balance = await publicClient.getBalance({ address: walletAddress });
+      const balance = await getPublicClient().getBalance({ address: walletAddress });
       setPhase(balance === BigInt(0) ? "needs-fund" : "ready");
     } catch (err) {
       console.error("[mint] balance probe failed", err);
-      setErrorMsg("Could not read Galileo balance. Network may be down.");
+      setErrorMsg(`Could not read ${useMainnet() ? "Aristotle" : "Galileo"} balance. Network may be down.`);
       setPhase("error");
     }
   }
@@ -94,16 +104,22 @@ export function MintAgentButton({ walletAddress, onMinted }: Props) {
     try {
       setPhase("signing");
       setErrorMsg(null);
-      await wallet.switchChain(zeroGGalileoTestnet.id);
+      // Resolve active chain + registry once. Codex 2026-05-11 caught
+      // the prior hardcoded Galileo path; flipping
+      // NEXT_PUBLIC_COMPASS_USE_MAINNET=1 would have signed the mintAgent
+      // tx against the wrong domain.
+      const chain = activeChain();
+      const agentRegistry = activeAgentRegistry();
+      await wallet.switchChain(chain.id);
       const provider = await wallet.getEthereumProvider();
       const walletClient = createWalletClient({
-        chain: zeroGGalileoTestnet,
+        chain,
         transport: custom(provider),
         account: walletAddress,
       });
 
       const hash = await walletClient.writeContract({
-        address: AGENT_REGISTRY_GALILEO,
+        address: agentRegistry,
         abi: AGENT_REGISTRY_ABI,
         functionName: "mintAgent",
         args: [
@@ -116,7 +132,7 @@ export function MintAgentButton({ walletAddress, onMinted }: Props) {
       setTxHash(hash);
       setPhase("mining");
 
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      const receipt = await getPublicClient().waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") {
         throw new Error(`Tx reverted: ${hash}`);
       }
@@ -180,7 +196,7 @@ export function MintAgentButton({ walletAddress, onMinted }: Props) {
         <Pill tone="warning">mining…</Pill>
         {txHash ? (
           <a
-            href={`${GALILEO_EXPLORER_TX}/${txHash}`}
+            href={`${explorerTxBase()}/${txHash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase transition-colors hover:text-foreground"

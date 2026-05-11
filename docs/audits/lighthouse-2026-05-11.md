@@ -54,7 +54,7 @@ No issues found.
 
 These are small, defensible additions surfaced by the audit:
 
-1. **Skip-to-content link** in `app/src/app/layout.tsx`. Visible only on focus — keyboard users tab once to skip the persistent header chip and land on `#main-content`. Standard WCAG 2.1 §2.4.1 affordance.
+1. ~~**Skip-to-content link** in `app/src/app/layout.tsx`. Visible only on focus — keyboard users tab once to skip the persistent header chip and land on `#main-content`.~~ **CORRECTED 2026-05-11 (code-review pass 2):** the persistent `<header>` containing the COMPASS chip lives INSIDE each page's `<main>` — focus from the landing pad tabbed forward to that header link, defeating the skip. The link was removed rather than ship broken WCAG 2.1 §2.4.1 advertising. Proper fix tracked in `docs/honest-limits.md` §23 + the v0.7 milestone (extract `<CompassHeader>` to layout, drop per-page headers, then re-add skip-link).
 2. **`<link rel="preconnect">` hints** to `auth.privy.io` and `evmrpc.0g.ai` in the root document head. Starts TLS handshake earlier on `/onboard` (where Privy's auth iframe and the EVM RPC client both fire on first interaction). Marginal LCP improvement, no risk.
 
 ## What's NOT optimized (intentional)

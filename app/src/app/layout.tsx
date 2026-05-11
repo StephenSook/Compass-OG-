@@ -54,30 +54,19 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         {/*
-          WCAG 2.1 §2.4.1 skip-to-content link. Hidden until focused;
-          jumps keyboard users past the persistent header chip on every
-          route to the main-content anchor (mounted by each page's <main>
-          element via id="main-content"; the anchor selector also matches
-          the <main> tag itself as a fallback so old pages still work).
+          Skip-to-content link: pending structural refactor in v0.7.
+          The audit (2026-05-11) shipped a skip-link + landing pad, but
+          the persistent COMPASS-chip <header> lives INSIDE each page's
+          <main> element — focus from the landing pad therefore tabbed
+          forward to the header link, defeating the skip. Code-review
+          flagged this; the proper fix is moving <header> to layout
+          and dropping it from every page (16 files). Filed as v0.7.
+          Removed here to avoid advertising broken a11y. Tracked in
+          docs/honest-limits.md §23.
         */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:rounded-full focus:border focus:border-foreground/40 focus:bg-card/95 focus:px-4 focus:py-2 focus:font-mono focus:text-xs focus:tracking-[0.3em] focus:text-foreground focus:uppercase focus:shadow-xl focus:outline-none"
-        >
-          Skip to content
-        </a>
         <CursorSpotlight />
         <TermProvider>
-          <PrivyClientProvider>
-            {/*
-              Skip-link landing pad. tabIndex=-1 makes it programmatically
-              focusable (via the skip-to-content link above) without
-              joining the default tab order. aria-label gives screen
-              readers a "main content" cue when focus lands here.
-            */}
-            <div id="main-content" tabIndex={-1} aria-label="Main content" />
-            {children}
-          </PrivyClientProvider>
+          <PrivyClientProvider>{children}</PrivyClientProvider>
         </TermProvider>
         <DemoCta />
       </body>

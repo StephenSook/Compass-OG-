@@ -258,6 +258,50 @@ Tracked in `docs/notes/sentry-setup.md` and `CHANGELOG.md` v0.6.
 
 ---
 
+### 20. agentIdCommitment is brute-forceable from public registry data (by design)
+
+The on-chain `ReceiptIssued.agentIdCommitment = keccak256(abi.encode(uint256 agentTokenId, address agent))` is deterministic and reproducible from public data. `AgentRegistry` mints + ownership are public; an observer can enumerate all `(tokenId, owner)` pairs and recompute commitments to link a receipt to a specific on-chain agent.
+
+**Why this is intentional, not a bug:** the privacy claim is *bounded disclosure of PII* — no name, no HKID, no employer, no document fields. The on-chain `(tokenId, owner)` linkage is not PII; the owner is a Privy embedded wallet address provisioned at email signup. Receipts ARE intentionally linkable across policies for the same agent — this is the audit-log property the system wants. The disclosure surface that matters for migrant workers (legal name, HKID, employer of record) stays off-chain; the wallet address never appears on a receipt in plaintext.
+
+A future v0.7 variant could derive `agentIdCommitment` from an enclave-secret-derived per-receipt blinding factor, breaking the registry-brute-force linkage at the cost of cross-policy unlinkability. Documented as out of scope for v0.5.
+
+### 21. Enclave does not verify `policyHash` matches the evaluated policy (v0.6 fix)
+
+`enclave/src/server.ts:196` calls `evaluatePolicy(payload.policy, payload.claims, payload.policyHash)` where `payload.policyHash` is caller-supplied and **NOT** verified against `sha256(canonicalize(payload.policy))`. A direct caller to the public Phala enclave URL could submit a permissive predicate plus the hash of a stricter policy; the enclave would evaluate the permissive predicate, return `eligible: true`, and stamp the stricter policy hash into the signed receipt.
+
+**Scope of the bug:**
+- Compass' `/api/consume` flow is NOT affected: the server constructs both `policy` and `policyHash` from server-controlled constants (`helpLegalAidPolicy(label)` + `HELP_POLICY_HASH_HEX`), so receipts minted through the documented path are consistent.
+- The bug surfaces only via direct calls to the public Phala enclave URL. A consumer who trusts a receipt's `policyHash` to identify the evaluated predicate could be deceived.
+
+**Fix (v0.6):** enclave canonicalizes the supplied policy, computes its hash, rejects the request unless `policyHash == sha256(canonicalize(policy))`. Requires Phala CVM rebuild → composeHash changes → trust-anchor update across `docs/notes/phala-deployment.md`, README, and the canonical compose-hash references in the verifier (browser + CLI).
+
+### 22. `registerPolicy` is permissionless first-claimer admin (by design + v0.7 fix)
+
+`CompassHub.registerPolicy()` lets the FIRST caller for a given `policyId` permanently become its `oracleAdmin`. There is no governance signature, no `onlyOwner`-style gate, no front-running protection. An attacker can claim arbitrary `policyId` strings before legitimate registration and set the admin to their own address.
+
+**Why this is currently a low-impact issue for v0.5:** all three demo policies (`help-legal-aid`, `bethune-shelter`, `hk-fdh-hospital`) are ALREADY registered on Aristotle mainnet with the deployer wallet as admin. Squatting risk is closed for these policies. Future policies (added by partner NGOs in v0.7+) need the gating fix.
+
+**Fix (v0.7):** gate `registerPolicy` behind `onlyOracleAdmin` OR require a 5-of-7 governance multisig signature over `{policyId, policyHash, uri, minAnonymitySet}`. Pairs with the v0.7 trust-list governance work documented at `docs/trust-list-governance.md`.
+
+### 23. Skip-to-content link removed pending structural refactor (v0.7)
+
+The 2026-05-11 audit shipped a WCAG 2.1 §2.4.1 skip-to-content link plus a `#main-content` landing pad in `app/src/app/layout.tsx`. Code-review subsequently flagged that each page's persistent `<header>` containing the COMPASS chip lives INSIDE `<main>` — focus from the landing pad therefore tabs forward to the header link, defeating the skip. The skip-link was removed for v0.5 rather than ship a broken a11y affordance.
+
+**Fix (v0.7):** extract `<CompassHeader />` to a layout-mounted shared component, drop the per-page `<header>` from all ~16 pages, add `id="main-content"` to layout's `<main>` wrapper. Skip-link will then correctly skip past the layout-level header into the page content section.
+
+Tracked in the public GitHub v0.6 milestone.
+
+### 24. Enclave does not enforce `issuedAt` freshness (v0.6 fix)
+
+`enclave/src/server.ts:110-118` validates `expiry > issuedAt` but does NOT require `issuedAt` to be within a small clock-skew window of current enclave time, and does NOT cap `expiry - issuedAt`. A direct caller can mint a TEE-signed receipt with `issuedAt = 1` (epoch zero) and `expiry = 2^32`, producing a "valid forever" credential.
+
+**Mitigation today:** `/api/consume` sets both fields server-side (`issuedAt = Math.floor(Date.now()/1000)`, `expiry = nowSec + 60*60*24*365` — 1 year max), so Compass-flow receipts have bounded validity. The gap exists only for direct enclave callers.
+
+**Fix (v0.6):** enclave rejects `issuedAt` outside `[currentTime - 60s, currentTime + 60s]` and caps `expiry - issuedAt` at 1 year. Pairs with §21 since both require a CVM rebuild + composeHash update.
+
+---
+
 ## What Compass v1 DOES protect
 
 To be clear:

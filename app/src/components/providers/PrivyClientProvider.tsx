@@ -1,7 +1,12 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { PRIVY_APP_ID, zeroGGalileoTestnet } from "@/lib/chains";
+import {
+  PRIVY_APP_ID,
+  activeChain,
+  zeroGAristotleMainnet,
+  zeroGGalileoTestnet,
+} from "@/lib/chains";
 import type { ReactNode } from "react";
 
 // Mounts PrivyProvider only when NEXT_PUBLIC_PRIVY_APP_ID is set; otherwise
@@ -23,8 +28,12 @@ export function PrivyClientProvider({ children }: { children: ReactNode }) {
         embeddedWallets: {
           ethereum: { createOnLogin: "users-without-wallets" },
         },
-        defaultChain: zeroGGalileoTestnet,
-        supportedChains: [zeroGGalileoTestnet],
+        // defaultChain tracks the env flag so the wallet provisions on
+        // the active network. supportedChains lists both so the wallet
+        // can switch when needed (mainnet for the demo recording cycle,
+        // testnet for ongoing development).
+        defaultChain: activeChain(),
+        supportedChains: [zeroGGalileoTestnet, zeroGAristotleMainnet],
       }}
     >
       {children}

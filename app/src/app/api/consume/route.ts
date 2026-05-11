@@ -262,7 +262,13 @@ export async function POST(req: Request) {
       perReceiptQuoteHex = enc.perReceiptQuoteHex;
       teeReceiptVersion = enc.receiptVersion;
     } catch (err) {
-      console.warn("[/api/consume] enclave call failed, using stub digest", err);
+      // The fail-closed guard below will 503 rather than mint a stub-
+      // digest receipt; this log records the underlying enclave failure
+      // for Vercel function logs. Do NOT mention "stub digest" — that's
+      // a relic of pre-fail-closed behavior and would confuse operators
+      // who see this log followed by a 503 (silent-failure-hunter
+      // 2026-05-11).
+      console.error("[/api/consume] enclave call failed — will fail closed (503 tee_required)", err);
       teeError = err instanceof Error ? err.message.slice(0, 240) : "unknown";
     }
   }
