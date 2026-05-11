@@ -69,9 +69,21 @@ export type StepResult =
 // true, `receipt`, `signerAddress`, `composeHash` are all REQUIRED;
 // the UI can drop the `result.ok && result.receipt` re-narrow at
 // verify/page.tsx and just check `result.ok`.
+//
+// `dcapVerified` — always `false` in v1 because the in-repo verifier
+// runs the 4-check chain (canonicalize digest, ECDSA recovery,
+// quoteCommitment, report_data binding) but does NOT verify the TDX
+// quote's Intel DCAP signature chain. ADR-0003 §"Negative" calls this
+// out as a deliberate scope boundary — DCAP verification is left to
+// the DStack Verifier or Intel QVL externally. The flag is exposed
+// explicitly (vs. only in prose) so downstream agents that consume
+// the bundle programmatically can branch on incomplete verification
+// rather than having to parse free-text caveats. silent-failure-hunter
+// 2026-05-11 round 2.
 export type VerifyResult =
   | {
       ok: true;
+      dcapVerified: false;
       steps: StepResult[];
       receipt: ReceiptDocument;
       signerAddress: string;
@@ -79,6 +91,7 @@ export type VerifyResult =
     }
   | {
       ok: false;
+      dcapVerified: false;
       steps: StepResult[];
       receipt?: ReceiptDocument;
       signerAddress?: string;
@@ -398,6 +411,7 @@ export function verifyBundle(args: {
   if (steps.every((s) => s.ok)) {
     return {
       ok: true,
+      dcapVerified: false,
       steps,
       receipt: bundle.receipt,
       signerAddress: recoveredAddr ?? bundle.signerAddress,
@@ -406,6 +420,7 @@ export function verifyBundle(args: {
   }
   return {
     ok: false,
+    dcapVerified: false,
     steps,
     receipt: bundle.receipt,
     signerAddress: recoveredAddr ?? bundle.signerAddress,

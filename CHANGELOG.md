@@ -1,5 +1,113 @@
 # Changelog
 
+## Unreleased — Round-4 multi-agent audit cleanup (2026-05-11, fifth wave)
+
+7-subagent + 1-skill parallel review surfaced one CRITICAL SSR
+regression in my own perf fix plus 9 doc drifts, 1 mainnet-copy bug,
+1 verifier-output-structure improvement, and 1 dependabot scope gap.
+All shipped.
+
+### Fixed
+
+- **CRITICAL** Privy `dynamic({ ssr: false })` at root layout broke
+  SSR for the entire app tree. The wrapper rendered null server-side,
+  so `{children}` were not emitted in server HTML on every RSC route
+  (`/about`, `/faq`, `/roadmap`, `/audit`, `/clinic/*`, `/vault`,
+  `/analytics`, `/demo`, `/policies/*`, `/receipt/*`). Mounted-flag
+  pattern: render `<>{children}</>` on SSR + pre-hydration, lazy-load
+  Privy after `useEffect` fires.
+  (`app/src/components/providers/PrivyClientProvider.tsx`)
+- **Mainnet UX** — `/onboard` step 2 hardcoded "Galileo" in user-
+  visible copy and linked to the Galileo faucet, while `activeChain()`
+  routes writes to Aristotle when `NEXT_PUBLIC_COMPASS_USE_MAINNET=1`.
+  A mainnet demo sent users to the wrong faucet. Now: network name
+  derived from `activeChain().name`; funding affordance branches on
+  `useMainnet()` (Galileo → faucet button, Aristotle → CEX/bridge
+  doc).
+  (`app/src/components/onboard/MintAgentButton.tsx`,
+  `app/src/app/onboard/page.tsx`)
+- **README drift** — Aristotle mainnet row flipped from "draft" to
+  "real" with both deployed addresses (was contradicting 5 other
+  places in the same README + `/about`). `--bundle <path>` mode
+  marked "v2 roadmap" but already shipped — line removed. C4Context
+  diagram split "0G Chain + 0G Storage" into two systems with
+  Storage marked v2/draft.
+- **`docs/architecture.md`** — ASCII diagram listed
+  `authorizeUsage (ERC-7857)` under AgentRegistry, but contracts are
+  ERC-7857 *stripped*. Replaced.
+- **ADR-0001** — Clarified `dstack-0.5.9` is the CVM image; the SDK
+  pin is `@phala/dstack-sdk@0.5.7` (normal one-patch lag).
+- **ADR-0002** — BBS+ rejected-alternative justification claimed
+  `agentIdCommitment` linkability is "necessary for nullifier replay
+  protection." Codex round 4 caught this is factually wrong —
+  `buildNullifier(nonce, provider, policy)` against
+  `CompassHub.usedNullifiers` doesn't require stable
+  `agentIdCommitment`. Rewrote to make the two properties orthogonal.
+- **ADR-0003** — Canonicalization "shared between Node and browser
+  ports" was wrong — it's byte-parity-duplicated with paired vitest
+  cases. Clarified. Also clarified that the Claude Code skill wraps
+  the CLI rather than re-implementing it.
+- **ADR-0003 §"Negative"** — DCAP signature-chain verification was
+  framed as a deliberate scope boundary in prose only. silent-failure-
+  hunter caught that programmatic consumers can't detect "incomplete
+  verification" from prose. Added `dcapVerified: false` as a typed
+  literal field on `VerifyResult` (both `ok: true` and `ok: false`
+  variants) so downstream agents can branch on the field directly.
+- **`docs/adr/README.md`** — Template link pointed at a path inside
+  the user's global Claude config (`.claude/skills/...`) that doesn't
+  exist in this repo. Replaced with copy-an-existing-ADR guidance.
+- **`SUPPORT.md`** — Bug/Feature issue links used legacy `.md`
+  template names; the repo ships `.yml` issue forms. Fixed.
+  "Security disclosures (`security@…` per SECURITY.md)" referenced a
+  channel SECURITY.md doesn't expose — real channels are
+  `stephensookra@gmail.com` (subject `[Compass Security]`) and
+  Telegram `@stephensookra`. Aligned.
+
+### Added
+
+- **`.github/dependabot.yml`** — Docker ecosystem entries for
+  `/enclave/Dockerfile` and `/enclave/phala/Dockerfile`. Without
+  these, base-image CVEs got no Dependabot PRs. Codex round 4.
+
+### Audit attribution
+
+Round-4 reviewers (parallel, ~3-7 min each):
+- **Codex GPT-5.5** adversarial — 2 MEDIUM (ADR-0002 nullifier
+  claim, mainnet faucet copy), 2 LOW (docker dependabot,
+  SUPPORT.md links). INFO: Privy fix clean post-mounted-flag
+  rewrite; BlurText first-word skip clean.
+- **Gemini 2.5 Pro** long-context whole-repo — 3 SHIP doc drifts
+  (Aristotle row stale, `--bundle` lie, ERC-7857 mention), 1
+  DOCUMENT-as-limit (dstack version split).
+- **pr-review-toolkit:code-reviewer** — 1 CRITICAL (SSR break), 1
+  important (ADR README broken link).
+- **pr-review-toolkit:silent-failure-hunter** — 1 CRITICAL
+  (Privy fallback UI), 1 HIGH (DCAP framing).
+- **pr-review-toolkit:type-design-analyzer** — 1 HIGH (branded
+  crypto types — deferred to v0.6), 1 MEDIUM (VerifyResult failure
+  variant tightening — deferred).
+- **pr-review-toolkit:pr-test-analyzer** — 5 test-coverage gaps
+  (deferred to v0.6).
+- **vercel:deployment-expert** — CI/CD hardening recommendations
+  (deferred — orthogonal to project quality, batched for v0.6).
+- **security-audit skill** — verdict SAFE. No new findings beyond
+  prior 5 audit rounds.
+
+### Deferred to v0.6
+
+- Branded crypto identifier types (`EthAddress`, `HexBytes32`) —
+  refactor across `parseBundle` + all crypto call sites.
+- VerifyResult failure-variant field-tightening.
+- 8 test-coverage gaps (env-mode sentinel, quote-format errors,
+  report_data padding, forceLruEvict, /verify file-size cap,
+  compassEnclave.ts, crypto/vault.ts, enclave dstack helpers).
+- CI hardening (E2E job, `.next/cache`, Hardhat artifact pass-
+  through, concurrency group).
+- 4 user-action items (Vercel secrets, Vercel-Sensitive flags,
+  rollback-safety contract-address pinning).
+
+---
+
 All notable changes are tracked here. Older changes during the
 build-up phase are folded into milestone summaries; recent changes are
 listed by commit. The version cadence follows the hackathon timeline,

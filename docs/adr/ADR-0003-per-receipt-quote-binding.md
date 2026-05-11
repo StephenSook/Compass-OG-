@@ -84,7 +84,7 @@ Defeats archived-quote replay because attacker would need to forge a quote whose
 
 - **~80 ms quote-generation latency per `/api/consume` call.** Acceptable for the Compass UX (a worker checking eligibility is willing to wait 200 ms); not acceptable for high-frequency machine-to-machine attestation. Documented in [`docs/honest-limits.md`](../honest-limits.md) §10.
 - **Larger receipts.** Each receipt carries ~5 KB of `perReceiptQuoteHex` (TDX v4 quote is ~10K hex chars). Storage cost on 0G Storage is sub-cent per million receipts; not a blocker but worth noting.
-- **Full Intel DCAP signature-chain verification is out of scope** for the in-repo verifier — running the DCAP cert-chain check + Quoting Enclave attestation is left to the DStack Verifier or Intel QVL externally. Documented in [`docs/honest-limits.md`](../honest-limits.md) §12 and in the verifier output: *"Out of scope (next layer): full Intel DCAP verification of the TDX quote signature chain — run via the DStack Verifier or Intel QVL externally."*
+- **Full Intel DCAP signature-chain verification is out of scope** for the in-repo verifier — running the DCAP cert-chain check + Quoting Enclave attestation is left to the DStack Verifier or Intel QVL externally. Documented in [`docs/honest-limits.md`](../honest-limits.md) §12 and surfaced **programmatically**, not just in prose: the verifier's `VerifyResult` includes `dcapVerified: false` (typed as a literal `false` in v1; the field flips to `true` only when a verifier wraps the 4 checks with an external DCAP run). Downstream agents that consume Compass receipts can branch on `dcapVerified` rather than parsing a free-text caveat. silent-failure-hunter 2026-05-11 round 2.
 
 ### Neutral
 

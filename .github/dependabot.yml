@@ -54,3 +54,34 @@ updates:
       - ci
     commit-message:
       prefix: "ci(deps)"
+
+  - package-ecosystem: docker
+    directory: /enclave
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Asia/Hong_Kong"
+    labels:
+      - dependencies
+      - security
+      - enclave
+      - docker
+    commit-message:
+      prefix: "deps(enclave-image)"
+
+  - package-ecosystem: docker
+    directory: /enclave/phala
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Asia/Hong_Kong"
+    labels:
+      - dependencies
+      - security
+      - enclave
+      - docker
+      - phala
+    commit-message:
+      prefix: "deps(phala-image)"
