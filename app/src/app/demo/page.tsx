@@ -37,7 +37,7 @@ const STEPS: Step[] = [
     href: "/vault",
     what: "See the credential ciphertext, the AES-GCM IV, and the metadata. Open DevTools → IndexedDB to confirm the decryption key is non-extractable.",
     whyItMatters:
-      "Plaintext SD-JWT VC never enters localStorage. The WebCrypto key handle persists across page reloads but cannot be exported by any extension or script.",
+      "Plaintext SD-JWT VC never enters localStorage. The WebCrypto key handle persists across page reloads and cannot be exported via WebCrypto APIs (extractable=false); same-origin script execution can still call decrypt() with it, which is why a strict CSP is on the v0.6 hardening list.",
     whatLandsOnChain:
       "Nothing. The vault lives client-side; the ciphertext upload to 0G Storage is the v2 path (currently behind COMPASS_LIVE_STORAGE=1).",
   },
@@ -64,7 +64,7 @@ const STEPS: Step[] = [
   {
     number: "06",
     title: "Verify the chain yourself",
-    href: "https://github.com/StephenSook/Compass-OG-#tutorial--verify-someone-elses-compass-receipt",
+    href: "https://github.com/StephenSook/Compass-OG-#c-tutorial--verify-someone-elses-compass-receipt",
     what: "Clone the repo and run the verify-receipt CLI against a bundled fixture or a real on-chain receipt.",
     whyItMatters:
       "Don't trust the maintainer. Don't trust the website. Re-derive the cryptographic chain locally — signer recovery, quote freshness, image binding, attestation digest — from the receipt bundle alone.",

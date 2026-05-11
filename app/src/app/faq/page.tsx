@@ -94,8 +94,8 @@ const FAQ_TECHNICAL: QA[] = [
         <pre className="mt-3 overflow-x-auto rounded-lg border border-border/40 bg-card/40 p-4 font-mono text-xs text-muted-foreground">
 {`git clone https://github.com/StephenSook/Compass-OG-.git
 cd Compass-OG-/enclave
-npm install
-npm run verify-receipt -- --bundle ./fixtures/sample-receipt.json`}
+npm install --legacy-peer-deps
+npm run verify-receipt -- --bundle ./samples/receipt-sample.json`}
         </pre>
         <p className="mt-3">
           The verifier re-derives the entire cryptographic chain locally:

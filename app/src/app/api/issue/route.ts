@@ -14,14 +14,18 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 
 export const runtime = "nodejs";
 
+// The route accepts ONLY the holder address — vct and claims are
+// server-controlled. This is intentional: an open route that signs
+// arbitrary caller-supplied claims with the Compass issuer key would
+// let anyone mint a credential asserting any eligibility property.
+// v1 hardcodes the HELP FDH demo VC; v2 will move issuance to per-NGO
+// authenticated endpoints with schema validation per partner.
 type IssueRequestBody = {
-  vct?: string;
-  claims?: Record<string, unknown>;
   holderAddress?: `0x${string}`;
 };
 
-const DEFAULT_VCT = "https://compass.0g.ai/vct/help-fdh.v1";
-const DEFAULT_CLAIMS: Record<string, unknown> = {
+const DEMO_VCT = "https://compass.0g.ai/vct/help-fdh.v1";
+const DEMO_CLAIMS: Record<string, unknown> = {
   is_FDH_in_HK: true,
   has_pending_case: true,
   employment_active: true,
@@ -101,8 +105,8 @@ export async function POST(req: Request) {
     // Empty / malformed body — fall through to defaults.
   }
 
-  const vct = body.vct ?? DEFAULT_VCT;
-  const claims = body.claims ?? DEFAULT_CLAIMS;
+  const vct = DEMO_VCT;
+  const claims = DEMO_CLAIMS;
   const holderAddress = body.holderAddress;
 
   const issuerDid = ed25519PublicKeyToDidKey(key.publicKey);

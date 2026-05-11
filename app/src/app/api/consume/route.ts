@@ -29,13 +29,13 @@ import {
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { zeroGGalileoTestnet } from "@/lib/chains";
+import { activeChain, useMainnet } from "@/lib/chains";
 import {
+  activeCompassHub,
   COMPASS_EIP712_DOMAIN_NAME,
   COMPASS_EIP712_DOMAIN_VERSION,
   COMPASS_GRANT_TYPES,
   COMPASS_HUB_ABI,
-  COMPASS_HUB_GALILEO,
   HELP_LEGAL_AID_POLICY_LABEL,
 } from "@/lib/contracts";
 import { callEnclave, getEnclaveUrl } from "@/lib/compassEnclave";
@@ -195,14 +195,21 @@ export async function POST(req: Request) {
   // contract enforces signer == ownerOf(tokenId) so a successful tx implies
   // the recovered address is the correct owner; if the sig is malformed the
   // contract reverts and we never persist the receipt.
+  // Resolve the active chain + contract address once. Every downstream
+  // step — EIP-712 domain separator, publicClient, walletClient,
+  // writeContract target — must use the SAME value or the recovered
+  // signer won't match what the contract expects.
+  const chain = activeChain();
+  const compassHubAddress = activeCompassHub();
+
   let agentOwner: Hex;
   try {
     agentOwner = await recoverTypedDataAddress({
       domain: {
         name: COMPASS_EIP712_DOMAIN_NAME,
         version: COMPASS_EIP712_DOMAIN_VERSION,
-        chainId: zeroGGalileoTestnet.id,
-        verifyingContract: COMPASS_HUB_GALILEO,
+        chainId: chain.id,
+        verifyingContract: compassHubAddress,
       },
       types: COMPASS_GRANT_TYPES,
       primaryType: "Grant",
@@ -260,6 +267,26 @@ export async function POST(req: Request) {
     }
   }
 
+  // Fail closed if the enclave was reachable but did not return a real
+  // TDX attestation. Without this guard the route would silently mint an
+  // on-chain ReceiptIssued event with the stub digest the moment the
+  // Phala CVM is stopped — contradicting the "receipts are TDX-attested"
+  // claim in /about and the whitepaper. The stub-only path is reserved
+  // for local dev with COMPASS_ENCLAVE_URL unset, where no mainnet tx
+  // ever fires (the route returns 503 if PROVIDER_PRIVATE_KEY is also
+  // unset and the demo stays in fixture mode).
+  if (enclaveUrl && teeSource !== "tee") {
+    return NextResponse.json(
+      {
+        error: "tee_required",
+        message:
+          "Phala dstack TDX enclave did not return a valid TEE attestation. Refusing to mint a receipt with a stub digest. Restart the CVM and retry; see /api/tee-status for live state.",
+        teeError,
+      },
+      { status: 503 },
+    );
+  }
+
   const grantTuple = {
     agentTokenId: BigInt(body.grant.agentTokenId),
     policyId: body.grant.policyId,
@@ -277,11 +304,11 @@ export async function POST(req: Request) {
   } as const;
 
   const publicClient = createPublicClient({
-    chain: zeroGGalileoTestnet,
+    chain,
     transport: http(),
   });
   const walletClient = createWalletClient({
-    chain: zeroGGalileoTestnet,
+    chain,
     transport: http(),
     account,
   });
@@ -289,7 +316,7 @@ export async function POST(req: Request) {
   let txHash: Hex;
   try {
     txHash = await walletClient.writeContract({
-      address: COMPASS_HUB_GALILEO,
+      address: compassHubAddress,
       abi: COMPASS_HUB_ABI,
       functionName: "consumeGrantAndIssueReceipt",
       args: [grantTuple, sig, receiptTuple],
@@ -335,23 +362,34 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({
-    txHash,
-    blockNumber: Number(txReceipt.blockNumber),
-    receiptId: issued.args.receiptId,
-    policyId: issued.args.policyId,
-    nullifier: issued.args.nullifier,
-    agentIdCommitment: issued.args.agentIdCommitment,
-    resultHash: issued.args.resultHash,
-    attestationDigest: issued.args.attestationDigest,
-    timestampBucket: Number(issued.args.timestampBucket),
-    receiptExpiry: Number(issued.args.expiry),
-    tee: {
-      source: teeSource,
-      signerAddress: teeSignerAddress,
-      perReceiptQuoteHex,
-      receiptVersion: teeReceiptVersion,
-      error: teeError,
+  return NextResponse.json(
+    {
+      txHash,
+      blockNumber: Number(txReceipt.blockNumber),
+      receiptId: issued.args.receiptId,
+      policyId: issued.args.policyId,
+      nullifier: issued.args.nullifier,
+      agentIdCommitment: issued.args.agentIdCommitment,
+      resultHash: issued.args.resultHash,
+      attestationDigest: issued.args.attestationDigest,
+      timestampBucket: Number(issued.args.timestampBucket),
+      receiptExpiry: Number(issued.args.expiry),
+      network: useMainnet() ? "aristotle" : "galileo",
+      chainId: chain.id,
+      tee: {
+        source: teeSource,
+        signerAddress: teeSignerAddress,
+        perReceiptQuoteHex,
+        receiptVersion: teeReceiptVersion,
+        error: teeError,
+      },
     },
-  });
+    {
+      headers: {
+        "X-RateLimit-Limit": "5",
+        "X-RateLimit-Remaining": String(rl.remaining),
+        "X-RateLimit-Reset": String(Math.ceil(rl.resetMs / 1000)),
+      },
+    },
+  );
 }

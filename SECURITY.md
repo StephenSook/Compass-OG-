@@ -71,10 +71,13 @@ once the fix lands.
   replay, receipt-id replay, signer binding, expiry, and provider
   binding. See `contracts/test/invariants.t.ts`.
 - Codex GPT-5.5 adversarial pre-submission review caught 1 BLOCKER
-  (agentIdCommitment encoding mismatch) before mainnet deploy. Full
-  findings: `docs/audits/codex-prereview-2026-05-10.md`.
+  (agentIdCommitment encoding mismatch) before mainnet deploy. Findings
+  + remediation tracked in `CHANGELOG.md` (v0.5 "Fixed") and
+  `docs/honest-limits.md`.
 - Per-receipt TDX RA quote binds `(signer, image, receiptId)` to defeat
-  archived-quote replay across deployments. See `enclave/src/quote.ts`.
+  archived-quote replay across deployments. Quote-commitment derivation
+  lives in `enclave/src/receipt.ts` (`quoteCommitmentFromQuoteHex`);
+  verifier-side trust chain in `enclave/src/verify-attestation.ts`.
 - AES-256-GCM browser vault keys are non-extractable WebCrypto handles
   in IndexedDB; plaintext never enters `localStorage`. See
   `app/src/lib/crypto/vault.ts`.

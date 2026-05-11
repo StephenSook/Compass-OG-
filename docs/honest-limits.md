@@ -194,6 +194,58 @@ in-house verifier accepts the address-shaped `cnf` because the receipt
 chain doesn't load-bear on it — agent ownership is tracked on-chain via
 `AgentRegistry.ownerOf`, not via the credential's `cnf`.
 
+### 18. CompassHub does not gate `consumeGrantAndIssueReceipt` on provider authorization (by design)
+
+`CompassHub.consumeGrantAndIssueReceipt` requires only that
+`msg.sender == grant.provider`, that the `policyId` is active, that the
+EIP-712 grant signer matches `agentRegistry.ownerOf(agentTokenId)`, and
+that the receipt fields are non-zero. There is no per-policy provider
+allowlist. Because `AgentRegistry.mintAgent` is permissionless, anyone
+can mint an agent, sign a grant with their own `provider` address, and
+emit a `ReceiptIssued` event with an arbitrary `resultHash` and an
+arbitrary non-zero `attestationDigest` for any active policy.
+
+This is **by design**, not an oversight. The contract is the *public
+audit log*, not the source of receipt validity. Receipt validity is
+established off-chain via the TDX attestation chain:
+- The receipt's `attestationDigest` must hash a canonicalized
+  receipt-doc that the receipt-signer key signed.
+- The receipt-signer key is sealed inside the attested Phala dstack
+  image; the public-key handle is committed to the per-receipt RA
+  quote's `report_data` as `sha256(ethAddress || composeHash || receiptId)`.
+- The off-chain verifier in `enclave/src/verify-attestation.ts` plus
+  the `verify-receipt` CLI re-derive the chain locally; a fake on-chain
+  event with a forged attestationDigest fails the off-chain check.
+
+A v2 fix lands an on-chain provider allowlist per policy (`PolicyMeta.provider`
+gated to a set of authorized relayer addresses), making the on-chain
+log self-consistent rather than just verifiable. The trade-off: that
+breaks the "permissionless agent + permissionless eligibility check"
+property today, which is the property we actually want for migrant-worker
+intake where any NGO worker should be able to relay a receipt without
+asking the contract owner to allowlist them first.
+
+Tracked in `docs/trust-list-governance.md` (the trust-list and the
+provider allowlist are the same v2 governance surface).
+
+### 19. No enforced Content Security Policy (v0.5 ships report-only)
+
+`app/next.config.ts` sets `Content-Security-Policy-Report-Only` with the
+intended allowlist (Privy auth, Phala enclave URL, 0G RPC + chainscan,
+Spline runtime, 3d-force-graph CDN). A *report-only* CSP does not block
+violations — it surfaces them so the maintainer can tighten the policy
+before enforcement.
+
+The vault's `extractable=false` AES-256-GCM key prevents `crypto.subtle.exportKey()`,
+but same-origin script *can* call `crypto.subtle.decrypt()` with the
+non-extractable handle. A successful XSS injection therefore can decrypt
+vault contents in place even though the key cannot be exfiltrated. CSP
+enforcement is the right belt-and-braces defense, and `v0.6` graduates
+the report-only header to an enforced policy after a one-week observation
+window confirms zero false-positive violations.
+
+Tracked in `docs/notes/sentry-setup.md` and `CHANGELOG.md` v0.6.
+
 ---
 
 ## What Compass v1 DOES protect

@@ -31,8 +31,8 @@ const INTEGRATION = [
 type RealityState = "real" | "draft" | "mocked" | "stubbed";
 
 const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: string }> = [
-  { component: "AgentRegistry contract", state: "real", note: "ERC-7857 stripped, Galileo deployed" },
-  { component: "CompassHub contract", state: "real", note: "policies + Authwit + receipts, Galileo deployed" },
+  { component: "AgentRegistry contract", state: "real", note: "ERC-7857 stripped; deployed to both 0G Galileo testnet (0x461e…c2D8) and 0G Aristotle mainnet (0xf1FA…0Bf9, 2026-05-11)" },
+  { component: "CompassHub contract", state: "real", note: "policies + Authwit + receipts; deployed to both 0G Galileo testnet (0x60Bb…7c3b) and 0G Aristotle mainnet (0xe42f…C58b, 2026-05-11)" },
   { component: "Browser AES-256-GCM encryption", state: "real", note: "live on /onboard step 3 — non-extractable AES-256 in IndexedDB encrypts the issued SD-JWT VC before localStorage persist; plaintext never enters localStorage" },
   { component: "0G Storage ciphertext upload", state: "draft", note: "AES-256-GCM round-trip on Node CLI; live 0G upload behind COMPASS_LIVE_STORAGE=1; browser-side upload is v2" },
   { component: "Receipt-signer service", state: "real", note: "dstack TDX dual-boot; per-receipt quote freshness binding" },
@@ -47,7 +47,7 @@ const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: str
   { component: "/onboard step 2 — live mintAgent", state: "draft", note: "Privy embedded wallet → AgentRegistry.mintAgent on Galileo (chainId 16602), gated on user-funded gas; fixture timer when Privy is unset" },
   { component: "Authwit grant — browser-side EIP-712 signing", state: "real", note: "Privy embedded wallet signs the Compass Grant typed data on /onboard step 4 (Galileo chainId 16602, CompassHub verifying contract), no popup-required sub-flow" },
   { component: "CompassHub.consumeGrantAndIssueReceipt — atomic on-chain", state: "real", note: "POST /api/consume relays Maria's signed grant; PROVIDER_PRIVATE_KEY-held wallet calls Galileo CompassHub; emits GrantConsumed + ReceiptIssued in one tx; nullifier + receiptId stored as used" },
-  { component: "Aristotle mainnet (chainId 16661) deploy", state: "real", note: "deployed 2026-05-10 — AgentRegistry 0xf1FA…0Bf9, CompassHub 0xe42f…C58b. HELP policy registered (tx 0xc19a567d…c0f2); provider relayer 0xaD7…b0a funded 0.05 OG. Funding path: MoonPay → ETH on Ethereum L1 → hub.0g.ai TokenFlight Cross-Chain Swap (Hyperstream/Khalani) → native OG on Aristotle. Frontend defaults to Galileo until NEXT_PUBLIC_COMPASS_USE_MAINNET=1 is set" },
+  { component: "Aristotle mainnet (chainId 16661) deploy", state: "real", note: "deployed 2026-05-11 — AgentRegistry 0xf1FA…0Bf9, CompassHub 0xe42f…C58b. All 3 demo policies registered on-chain (HELP, Bethune, Hospital); provider relayer 0xaD7…b0a funded 0.05 OG. Funding path: MoonPay → ETH on Ethereum L1 → hub.0g.ai TokenFlight Cross-Chain Swap (Hyperstream/Khalani) → native OG on Aristotle. /api/consume reads NEXT_PUBLIC_COMPASS_USE_MAINNET=1 and routes the relayer to Aristotle; unset routes it to Galileo." },
   { component: "Kiosk mode for NGO drop-in centres", state: "draft", note: "live at /kiosk — locked nav, 4-step welcome→sign-in→mint→credential→request-eligibility flow with large touch targets + plain-language labels + receipt-as-intake-artifact ending. Reuses Privy + on-chain primitives from /onboard, restyled for shared tablet use. v2 adds auto-reset timer + audio cues for low-literacy assistance" },
   { component: "Kiosk localization (5 languages)", state: "draft", note: "live at /kiosk welcome screen — language picker for English, Filipino (Tagalog), Bahasa Indonesia, Bahasa Malaysia, 廣東話 (Cantonese). All non-English strings are AI-generated baseline pending native-speaker review (gated on C.4 outreach replies). String table at app/src/lib/i18n/kiosk-strings.ts; current scope is kiosk-only — the rest of the app stays English. Honest-limits disclosure in the file header" },
   { component: "Spline 3D scene on /about", state: "real", note: "activated 2026-05-10. @splinetool/react-spline + @splinetool/runtime installed; <SplineScene /> renders below the architecture diagram when NEXT_PUBLIC_COMPASS_SPLINE_SCENE_URL is set. Lazy-imported behind Suspense so the runtime (~530KB) loads off the critical path. Falls back to null when env var is unset, so the route stays unchanged on a clean clone with no env file. R13 LCP guard still in force: if Lighthouse mobile drops below 85, swap to environmental SVG." },
@@ -65,8 +65,8 @@ const REALITY_TONE: Record<RealityState, "positive" | "warning" | "neutral"> = {
 const CHAIN = [
   {
     n: 1,
-    title: "SD-JWT VC encrypted with user-derived key",
-    detail: "AES-256-GCM with PBKDF2(600k iter); ciphertext uploaded to 0G Storage. v1 encryption runs from a Node CLI; browser-side encryption is on the v2 roadmap.",
+    title: "SD-JWT VC encrypted in the browser",
+    detail: "Per-device AES-256-GCM key generated in WebCrypto with extractable=false, persisted as an opaque CryptoKey handle in IndexedDB; only ciphertext + IV land in localStorage. 0G Storage upload (Merkle-root committed to AgentRegistry.encryptedURI) is on the v0.6 roadmap.",
   },
   {
     n: 2,
@@ -173,8 +173,8 @@ export default function AboutPage() {
                     <td className="py-4 text-sm text-muted-foreground">Compass is not tied to a specific issuer-of-record. Any NGO with an Ed25519 key can issue a credential that Compass verifies; the trust list is governed separately. The migrant-worker context typically has <em>no</em> trusted government issuer; NGO-issued credentials are the only available path.</td>
                   </tr>
                   <tr className="border-b border-border/20">
-                    <td className="py-4 pr-4 text-sm text-foreground">zkPass / zkBob</td>
-                    <td className="py-4 pr-4 text-sm text-muted-foreground">Web2 data → ZK proofs; prove claims about your bank account, social profile, etc.</td>
+                    <td className="py-4 pr-4 text-sm text-foreground">zkPass</td>
+                    <td className="py-4 pr-4 text-sm text-muted-foreground">Web2 data → ZK proofs; prove claims about your bank account, social profile, etc. without revealing the underlying account.</td>
                     <td className="py-4 text-sm text-muted-foreground">Compass operates on NGO-issued attestations of physical-world status (visa, employment, residency), not Web2 scraped data. The threat model — subpoena resistance for already-issued credentials — is different from "import my Web2 attribute privately."</td>
                   </tr>
                   <tr className="border-b border-border/20">

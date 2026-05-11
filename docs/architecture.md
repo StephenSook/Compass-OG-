@@ -43,12 +43,15 @@
 │  ──────────────────────────      ──────────────────────────  │
 │  • ERC-721 + soulbound _update   • EIP-712 "Compass" v1      │
 │  • mintAgent (zero-hash reject)  • IAgentRegistry binding    │
-│  • updateMetadata (owner-gated)  • consumeGrant Authwit-style│
-│  • authorizeUsage (ERC-7857)     • Policy registry (admin    │
-│  • attestEligibility (oracle)    │   = first registrant)     │
-│  • verifyAttestation v1 stub     • issueReceipt (oracle-only,│
-│  • setOracle (owner-only)        │   dedup, expiry-checked)  │
-│                                   • setOracle / xfer admin   │
+│  • updateMetadata (owner-gated)  • consumeGrantAndIssueReceipt│
+│  • authorizeUsage (ERC-7857)     │   atomic; 8 sequenced     │
+│  • verifyAttestation v1 stub     │   validations + 2 effects │
+│                                  │   + 2 events in 1 tx      │
+│                                  • Policy registry (admin    │
+│                                  │   = first registrant)     │
+│                                  • registerPolicy /          │
+│                                  │   deactivatePolicy        │
+│                                  • transferOracleAdmin       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -81,39 +84,67 @@ signer are the same principal" from public on-chain data + the VC. Today, the
 on-chain primitive (AgentRegistry + CompassHub) is real; the wallet wiring on
 the receipt-mint flow is fixture.
 
-## Receipt lifecycle (target; v2 frontend wire-up)
+## Receipt lifecycle (v0.5 — shipped end-to-end)
 
-The enclave half is real (see `enclave/src/`); the frontend signing flow
-described below is v2.
+Both the enclave half (see `enclave/src/`) and the frontend
+signing flow are real. The full sequence as of v0.5:
 
-1. Provider sends fresh `challenge` + `policyId` to Maria's app
-2. App signs Authwit Grant via Privy → POSTs to enclave  *(v2)*
-3. Enclave fetches encrypted VC bundle from 0G Storage by Maria's `agentId`
-4. Enclave decrypts inside TEE (AES-256-GCM, key wrapped via Privy device key)  *(v2)*
-5. Enclave loads canonical policy JSON from `docs/policies/<policyId>.json`
-6. Enclave evaluates predicate
-7. Enclave constructs receipt per `docs/schemas/receipt-v1.json`
-8. Enclave signs the canonicalized receipt with the key derived inside the
-   dstack TDX VM. The corresponding Ethereum address is bound into the TDX
-   quote's `report_data` field on boot.
-9. Provider calls `broker.inference.verifyService(...)`; consumer-side
-   verifier runs Intel DCAP (or dstack verifier) on the quote, then asserts
-   the signer recovered from the receipt signature equals the Ethereum
-   address embedded in `report_data` — proves the key was generated inside
-   this exact attested image. See honest-limits.md §5b.
-10. Provider calls `CompassHub.issueReceipt(receiptId, policyId, resultHash,
-    expiry, attestationDigest)` — emits event with bucketed timestamp.
-    Same tx emits `GrantConsumed` carrying agentIdCommitment (NOT raw
-    tokenId — fixed Day 3 to prevent on-chain correlation to Maria).
-11. Receipt is now public-readable but non-identifying. The
-    `/clinic/subpoena` page renders this exact event log
+1. Provider sends a fresh `challenge` + `policyId` to Maria's app
+   (currently fixture-supplied; per-NGO providers in v0.7).
+2. App signs the EIP-712 Compass `Grant` via Privy's embedded wallet.
+   The signed grant carries `{agentTokenId, policyId, provider, nonce,
+   expiry, nullifier}`.
+3. Browser POSTs `{grant, sig}` to `/api/consume`. The route:
+   - Rate-limits the caller (5 req/min/IP, sliding window, in-memory
+     bucket — see `app/src/lib/ratelimit.ts`).
+   - Recovers the EIP-712 signer.
+   - Computes `agentIdCommitment = keccak256(abi.encode(uint256,
+     address))` matching the contract's on-chain encoding.
+   - Calls the live Phala dstack TDX enclave at `COMPASS_ENCLAVE_URL`
+     with the receipt inputs.
+4. The enclave (sealed-image, dstack `getKey('compass-receipt-signer')`
+   derives a deterministic secp256k1 priv inside the attested image):
+   - Loads canonical policy JSON for the requested `policyId`.
+   - Evaluates the predicate against the receipt inputs.
+   - Computes a per-receipt RA quote whose `report_data` commits to
+     `sha256(ethAddress || composeHash || receiptId)` — defeats
+     archived-quote replay across deployments.
+   - Constructs the receipt-doc per `docs/schemas/receipt-v1.json`.
+   - Signs the canonicalized receipt with the sealed key.
+   - Returns `{attestationDigest, signerAddress, perReceiptQuoteHex,
+     receiptVersion}`.
+5. `/api/consume` fails closed if the enclave was reachable but did not
+   return a real TDX attestation (`teeSource !== "tee"`). The route
+   never mints a receipt with the placeholder stub digest when an
+   enclave URL is configured — see `app/src/app/api/consume/route.ts`.
+6. Provider relayer (`PROVIDER_PRIVATE_KEY`) calls
+   `CompassHub.consumeGrantAndIssueReceipt(grant, sig, receipt)` on
+   the active chain (`activeChain()` returns Aristotle when
+   `NEXT_PUBLIC_COMPASS_USE_MAINNET=1`, Galileo otherwise).
+7. The contract validates 8 conditions atomically: `msg.sender ==
+   grant.provider`, grant expiry, policy existence + active, nullifier
+   replay, signature length, signer recovery + binding via
+   `agentRegistry.ownerOf(grant.agentTokenId)`, receipt-fields
+   non-zero, receipt expiry, receiptId replay.
+8. The same tx emits `GrantConsumed` and `ReceiptIssued`. The
+   `ReceiptIssued` event carries
+   `{receiptId, policyId, nullifier, agentIdCommitment, resultHash,
+   expiry, attestationDigest, timestampBucket}` — no name, HKID,
+   employer, or document fields.
+9. The off-chain verifier (`enclave/src/verify-receipt.ts` —
+   `--bundle` mode) re-derives the entire chain locally: signer
+   recovery, quote freshness, image binding, attestation digest.
+   A fake on-chain event with a forged `attestationDigest` fails this
+   check — receipt validity is established off-chain, not by the
+   on-chain log alone. See `docs/honest-limits.md` §18 for the
+   "audit log vs source of truth" design choice.
 
 ## What's deployed where
 
 | Network | Status |
 |---|---|
-| Galileo Testnet (16602) | Deploy targets — Phase 2.11 / 3a.8 |
-| Aristotle Mainnet (16661 / possibly 16600 — see docs/notes/0g-ecosystem-status.md) | Phase 8 (Day 24) |
+| Galileo Testnet (chainId 16602) | **Live** — AgentRegistry `0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8`, CompassHub `0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b`. All 3 demo policies (HELP, Bethune, Hospital) registered. |
+| Aristotle Mainnet (chainId 16661) | **Live** (deployed 2026-05-11) — AgentRegistry `0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9`, CompassHub `0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b`. All 3 demo policies registered. Frontend uses Aristotle when `NEXT_PUBLIC_COMPASS_USE_MAINNET=1`. |
 
 ## Composition of Compass primitives outside Track 5
 

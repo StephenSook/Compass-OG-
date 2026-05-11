@@ -15,9 +15,10 @@ public hospital care — through an autonomous agent. The clinic learns a
 bucketed timestamp and a cryptographic commitment, **and nothing else**.
 The agent runs in a TEE (Phala dstack TDX) on 0G; the receipt is a
 non-identifying event on 0G Chain. Even under a subpoena, the clinic
-cannot disclose what it never held. We deploy on 0G Galileo testnet
-today; mainnet (Aristotle) deploy is one configuration flip away once
-funded.
+cannot disclose what it never held. Compass is deployed on both 0G
+Galileo testnet and 0G Aristotle mainnet (chainId 16661, deployed
+2026-05-11); the frontend switches relayer paths via the
+`NEXT_PUBLIC_COMPASS_USE_MAINNET=1` env flag.
 
 Live demo: <https://app-psi-pied.vercel.app> · Repo:
 <https://github.com/StephenSook/Compass-OG->.
@@ -79,7 +80,7 @@ verification done on-chain (gas-prohibitive; off-chain via the
 └────────────────────────┬─────────────────────────────┘
                          ▼  ReceiptIssued
 ┌──────────────────────────────────────────────────────┐
-│  0G CHAIN  (Galileo today, Aristotle next)           │
+│  0G CHAIN  (Galileo + Aristotle mainnet — both live) │
 │  AgentRegistry — soulbound INFT                      │
 │  CompassHub — Authwit grants + nullifier replay      │
 │  protection + receipt log                            │
@@ -149,8 +150,10 @@ read this before forming first impressions. Full version at
 
 ## Roadmap
 
-**v1.5 (June 2026):** Aristotle mainnet deploy. Browser-side 0G Storage
-ciphertext upload. Standards-compliant `cnf: { jwk }` emission.
+**v0.6 (June 2026):** Browser-side 0G Storage ciphertext upload.
+Standards-compliant `cnf: { jwk }` emission. Enforced CSP (currently
+report-only). Vercel-KV-backed rate limiter to replace the in-memory
+bucket. `/api/consume` ownerOf pre-check before the enclave call.
 
 **v2 (Q3 2026):** In-contract `receiptId` derivation. Provider relayer
 inside the TEE. Per-NGO provider keys (HELP, Bethune House, MFMW each
@@ -174,6 +177,10 @@ Bahasa Malaysia).
   [`0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8`](https://chainscan-galileo.0g.ai/address/0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8)
 - CompassHub on Galileo:
   [`0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b`](https://chainscan-galileo.0g.ai/address/0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b)
+- AgentRegistry on Aristotle mainnet:
+  [`0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9`](https://chainscan.0g.ai/address/0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9)
+- CompassHub on Aristotle mainnet:
+  [`0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b`](https://chainscan.0g.ai/address/0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b)
 
 NGO inspirations: HELP for Domestic Workers, Bethune House Migrant
 Women's Refuge, Mission for Migrant Workers (HK). The personas in this

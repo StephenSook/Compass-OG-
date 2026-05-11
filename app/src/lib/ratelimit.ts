@@ -8,10 +8,13 @@
 // prevents reusing one grant, but does nothing about a flood of *new*
 // grants from a single client.
 //
-// Implementation: a Map keyed by the client IP (from
-// x-forwarded-for / x-real-ip) holding a sliding window of timestamps.
+// Implementation: a Map keyed by the client IP (extracted only when the
+// process is running on Vercel) holding a sliding window of timestamps.
 // On each request, we evict timestamps older than WINDOW_MS, then check
-// the remaining count against LIMIT.
+// the remaining count against LIMIT. Empty buckets are deleted so the
+// Map doesn't leak under high-cardinality input. Total keys are also
+// capped at MAX_KEYS — if we hit the cap we evict the oldest bucket to
+// make room.
 //
 // Honest limits:
 //  - Vercel Functions are stateless across cold starts; this Map lives
@@ -19,19 +22,22 @@
 //    starts (or hits multiple Vercel regions) bypasses the in-memory
 //    bucket. The right v2 fix is Vercel KV / Upstash Redis. Tracked in
 //    docs/honest-limits.md.
-//  - We trust the x-forwarded-for header. Vercel sets this from the
-//    actual TCP source IP at its edge; spoofing requires bypassing the
-//    edge, which is the same threat surface as bypassing the entire
-//    Vercel CDN. Good enough for the hackathon window.
+//  - We trust the x-forwarded-for header ONLY when process.env.VERCEL is
+//    set — i.e., when the runtime confirms we are behind the Vercel
+//    edge, which itself sets the header from the actual TCP source IP.
+//    On any other deployment path, callers can send arbitrary
+//    x-forwarded-for values; outside Vercel we fall back to a single
+//    shared bucket so the limiter still bites but cannot be bypassed
+//    via header spoofing.
 
 export type RateLimitResult =
   | { ok: true; remaining: number; resetMs: number }
   | { ok: false; remaining: 0; resetMs: number };
 
-const WINDOW_MS = 60_000; // 1 minute
-const LIMIT = 5;          // 5 requests per minute per IP
+const WINDOW_MS = 60_000;
+const LIMIT = 5;
+const MAX_KEYS = 10_000;
 
-// One Map per route; the caller passes its own to avoid cross-route bleed.
 export type BucketStore = Map<string, number[]>;
 
 export function createBucketStore(): BucketStore {
@@ -39,18 +45,19 @@ export function createBucketStore(): BucketStore {
 }
 
 export function extractClientIp(headers: Headers): string {
-  // Vercel forwards the public client IP in x-forwarded-for. The first
-  // entry is the original client; subsequent entries are proxy hops.
-  const xff = headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]!.trim();
+  // Only trust forwarding headers when the runtime confirms we are
+  // behind Vercel's edge — Vercel sets x-forwarded-for from the actual
+  // TCP source IP at its CDN layer. Outside Vercel the headers are
+  // attacker-controllable.
+  if (process.env.VERCEL === "1") {
+    const xff = headers.get("x-forwarded-for");
+    if (xff) return xff.split(",")[0]!.trim();
 
-  const xri = headers.get("x-real-ip");
-  if (xri) return xri.trim();
+    const xri = headers.get("x-real-ip");
+    if (xri) return xri.trim();
+  }
 
-  // Local dev / non-Vercel fallback. Pinning to a constant means everyone
-  // shares one bucket — fine for dev because we hit the route a few
-  // times and want the limit to actually trip during testing.
-  return "local-fallback";
+  return "shared-bucket";
 }
 
 export function check(
@@ -64,6 +71,7 @@ export function check(
 
   if (live.length >= LIMIT) {
     const oldest = live[0]!;
+    store.set(key, live);
     return {
       ok: false,
       remaining: 0,
@@ -73,9 +81,28 @@ export function check(
 
   live.push(now);
   store.set(key, live);
+
+  if (store.size > MAX_KEYS) evictOldest(store, now);
+
+  const oldest = live[0]!;
   return {
     ok: true,
     remaining: LIMIT - live.length,
-    resetMs: WINDOW_MS,
+    resetMs: Math.max(0, oldest + WINDOW_MS - now),
   };
+}
+
+// Cleans up buckets whose entries have all expired. Called by check()
+// when the store grows past MAX_KEYS; also safe to call from a periodic
+// timer if a future maintainer wants more aggressive pruning.
+export function evictOldest(store: BucketStore, now: number = Date.now()): void {
+  const windowStart = now - WINDOW_MS;
+  for (const [k, ts] of store) {
+    const live = ts.filter((t) => t > windowStart);
+    if (live.length === 0) {
+      store.delete(k);
+    } else if (live.length < ts.length) {
+      store.set(k, live);
+    }
+  }
 }

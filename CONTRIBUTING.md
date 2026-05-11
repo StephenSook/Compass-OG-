@@ -70,10 +70,11 @@ For any new contract-state-mutating function, add:
    invariant (nullifier set, receipt-id set, owner binding, etc.).
 
 For any new app route, add a Playwright test in
-`app/playwright/<route>.spec.ts` exercising the happy path.
+`app/tests/e2e/<route>.spec.ts` exercising the happy path. The
+Playwright config lives at `app/playwright.config.ts`.
 
 For any new enclave behaviour, extend the vitest suite under
-`enclave/src/__tests__/`.
+`enclave/test/`.
 
 ## Tone
 
