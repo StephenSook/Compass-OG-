@@ -6,9 +6,9 @@ import {
   createPublicClient,
   createWalletClient,
   custom,
-  decodeEventLog,
   http,
   keccak256,
+  parseEventLogs,
   toHex,
   type Address,
   type Hex,
@@ -120,19 +120,18 @@ export function MintAgentButton({ walletAddress, onMinted }: Props) {
       if (receipt.status !== "success") {
         throw new Error(`Tx reverted: ${hash}`);
       }
-      const mintedLog = receipt.logs.find(
-        (l) => l.address.toLowerCase() === AGENT_REGISTRY_GALILEO.toLowerCase(),
-      );
-      if (!mintedLog) throw new Error("AgentMinted event missing in receipt");
-      const decoded = decodeEventLog({
+      // AgentRegistry extends ERC721 → mintAgent emits BOTH a Transfer event
+      // (from _safeMint) AND our AgentMinted event from the same address.
+      // Filtering by address alone hits Transfer first; parseEventLogs with
+      // eventName narrows to the one we care about and ignores unknown topics.
+      const events = parseEventLogs({
         abi: AGENT_REGISTRY_ABI,
-        data: mintedLog.data,
-        topics: mintedLog.topics,
+        eventName: "AgentMinted",
+        logs: receipt.logs,
       });
-      if (decoded.eventName !== "AgentMinted") {
-        throw new Error(`Unexpected event: ${decoded.eventName}`);
-      }
-      const tokenId = decoded.args.tokenId;
+      const ev = events[0];
+      if (!ev) throw new Error("AgentMinted event missing in receipt");
+      const tokenId = ev.args.tokenId;
       setPhase("done");
       onMinted({ tokenId, txHash: hash });
     } catch (err) {

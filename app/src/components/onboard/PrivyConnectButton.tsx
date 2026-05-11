@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getEmbeddedConnectedWallet,
   useLogin,
@@ -12,7 +12,7 @@ import type { Address } from "viem";
 const PROVISION_TIMEOUT_MS = 30_000;
 
 type Props = {
-  /** Called once when Privy reports authenticated + an embedded wallet is ready. */
+  /** Called when Privy reports authenticated + an embedded wallet is ready. */
   onConnected: (address: Address) => void;
 };
 
@@ -22,32 +22,38 @@ export function PrivyConnectButton({ onConnected }: Props) {
   const { login } = useLogin({
     onError: (err) => {
       console.error("[privy] login failed", err);
-      setHasStarted(false);
     },
   });
-
-  // hasStarted gates onConnected so a returning-already-authed user does NOT
-  // auto-advance step 1 on first paint — they have to click Connect.
-  const [hasStarted, setHasStarted] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
+  const inFlightRef = useRef(false);
 
   const wallet = getEmbeddedConnectedWallet(wallets);
   const address = wallet?.address as Address | undefined;
 
+  // Sync parent state whenever Privy reports a connected embedded wallet.
+  // This covers BOTH "user just clicked Connect" AND "warm session, page
+  // refresh" — both produce identical SDK state, and both should leave the
+  // parent's step 1 in `done` so step 2 unlocks.
   useEffect(() => {
-    if (!hasStarted || !ready || !authenticated || !address) return;
+    if (!ready || !authenticated || !address) return;
     onConnected(address);
-  }, [hasStarted, ready, authenticated, address, onConnected]);
+  }, [ready, authenticated, address, onConnected]);
 
+  // Provisioning timeout only applies to a freshly-started login flow that
+  // never produced an address.
   useEffect(() => {
-    if (!hasStarted || !authenticated || address) return;
+    if (!inFlightRef.current || !authenticated || address) return;
     const t = window.setTimeout(() => {
       console.error("[privy] embedded wallet provisioning timed out (30s)");
       setTimedOut(true);
-      setHasStarted(false);
+      inFlightRef.current = false;
     }, PROVISION_TIMEOUT_MS);
     return () => window.clearTimeout(t);
-  }, [hasStarted, authenticated, address]);
+  }, [authenticated, address]);
+
+  useEffect(() => {
+    if (address) inFlightRef.current = false;
+  }, [address]);
 
   if (!ready) {
     return (
@@ -66,7 +72,7 @@ export function PrivyConnectButton({ onConnected }: Props) {
     );
   }
 
-  if (hasStarted && authenticated && !address) {
+  if (inFlightRef.current && authenticated && !address) {
     return (
       <span className="rounded-full border border-amber-400/30 px-4 py-2 font-mono text-[10px] tracking-[0.3em] text-amber-400/80 uppercase">
         provisioning…
@@ -79,7 +85,7 @@ export function PrivyConnectButton({ onConnected }: Props) {
       type="button"
       onClick={() => {
         setTimedOut(false);
-        setHasStarted(true);
+        inFlightRef.current = true;
         login();
       }}
       className="rounded-full border border-border px-4 py-2 font-mono text-[10px] tracking-[0.3em] text-foreground uppercase transition-colors hover:border-foreground/40"

@@ -19,7 +19,7 @@ export function PrivyClientProvider({ children }: { children: ReactNode }) {
           logo: undefined,
           showWalletLoginFirst: false,
         },
-        loginMethods: ["email", "google", "wallet"],
+        loginMethods: ["email", "google"],
         embeddedWallets: {
           ethereum: { createOnLogin: "users-without-wallets" },
         },
