@@ -44,6 +44,7 @@ jobs:
           target: contracts/
           slither-args: --filter-paths "node_modules"
           fail-on: high
+          ignore-compile: true
 
   app:
     name: App (Next.js)
