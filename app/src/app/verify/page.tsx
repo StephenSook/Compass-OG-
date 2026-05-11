@@ -15,6 +15,14 @@ import {
 const DEFAULT_COMPOSE_HASH =
   "0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0";
 
+// Compose hash used by the bundled fixture sample. Matches the value
+// pinned in enclave/scripts/mint-sample-receipt.ts (0xab repeated 32
+// times). The sample is a test vector — it MUST NOT use the production
+// composeHash because the test signer is not the production signer and
+// using prod-anchored test bundles would let a malicious actor produce
+// "valid-looking" fake receipts.
+const SAMPLE_COMPOSE_HASH = "0x" + "ab".repeat(32);
+
 const SAMPLE_BUNDLE_URL = "/samples/receipt-sample.json";
 
 type Phase = "idle" | "loading-sample" | "verifying" | "done";
@@ -34,6 +42,12 @@ export default function VerifyPage() {
       if (!res.ok) throw new Error(`fetch ${SAMPLE_BUNDLE_URL} → HTTP ${res.status}`);
       const text = await res.text();
       setBundleText(text);
+      // The bundled sample is a test fixture; swap composeHash to match
+      // so all four checks pass on first verify. Visitors swapping in
+      // their own bundle should also swap composeHash if they're
+      // verifying a different deployment.
+      setComposeHash(SAMPLE_COMPOSE_HASH);
+      setResult(null);
       setPhase("idle");
     } catch (e) {
       setError((e as Error).message);
@@ -165,8 +179,9 @@ export default function VerifyPage() {
               />
               <p className="text-xs leading-relaxed text-muted-foreground">
                 Out-of-band trust anchor. Defaults to Compass&apos; live Phala
-                dstack TDX image. Swap if you&apos;re verifying a bundle
-                produced by a different deployment.
+                dstack TDX image. <strong>Try sample</strong> swaps this to the
+                test-fixture composeHash so the bundled sample verifies
+                cleanly; reset to the default when verifying a real receipt.
               </p>
 
               <button
