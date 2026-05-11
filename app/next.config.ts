@@ -27,6 +27,11 @@ const CSP_REPORT_ONLY = [
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
+  // Violation reporter. Without this, the Report-Only header was theatre
+  // — violations land in the browser console only. The endpoint at
+  // app/src/app/api/csp-report/route.ts forwards them to Vercel function
+  // logs so an operator can prepare for v0.6 enforce.
+  "report-uri /api/csp-report",
 ].join("; ");
 
 const securityHeaders = [
@@ -57,6 +62,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Strip `X-Powered-By: Next.js` — OWASP API8 LOW: information
+  // disclosure helping attackers fingerprint stack. Already obvious
+  // from /_next/ paths in HTML, but no reason to advertise.
+  poweredByHeader: false,
   async headers() {
     return [
       {

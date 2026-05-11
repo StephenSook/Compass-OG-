@@ -11,6 +11,10 @@ import { NextResponse } from "next/server";
 import { SDJwtVcInstance } from "@sd-jwt/sd-jwt-vc";
 import { digest, generateSalt } from "@sd-jwt/crypto-nodejs";
 import { ed25519 } from "@noble/curves/ed25519.js";
+import { isAddress } from "viem";
+import { check as rateLimitCheck, createBucketStore, extractClientIp } from "@/lib/ratelimit";
+
+const RATE_LIMIT_STORE = createBucketStore();
 
 export const runtime = "nodejs";
 
@@ -86,6 +90,31 @@ function loadIssuerKey(): { privateKey: Uint8Array; publicKey: Uint8Array } | nu
 }
 
 export async function POST(req: Request) {
+  // Rate-limit BEFORE issuer-key load + signing. OWASP API4 / API6:
+  // /api/issue performs Ed25519 sign + SD-JWT issuance on every call.
+  // Without throttling, a flood would (a) pollute the Compass issuer
+  // DID's reputation by minting thousands of credentials and (b)
+  // exhaust Vercel function-minute budget. Same 5/min/IP cap as
+  // /api/consume.
+  const clientIp = extractClientIp(req.headers);
+  const rl = rateLimitCheck(RATE_LIMIT_STORE, clientIp);
+  if (!rl.ok) {
+    return NextResponse.json(
+      {
+        error: "rate_limited",
+        message: `Too many requests — try again in ${Math.ceil(rl.resetMs / 1000)}s.`,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(rl.resetMs / 1000)),
+          "X-RateLimit-Limit": "5",
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
+
   const key = loadIssuerKey();
   if (!key) {
     return NextResponse.json(
@@ -98,16 +127,44 @@ export async function POST(req: Request) {
     );
   }
 
+  // Body parsing. Empty body is valid (holderAddress is optional). A
+  // body that's present but unparseable is 400, not silently default —
+  // silent fall-through hid configuration mistakes (silent-failure-
+  // hunter 2026-05-11).
   let body: IssueRequestBody = {};
-  try {
-    body = (await req.json()) as IssueRequestBody;
-  } catch {
-    // Empty / malformed body — fall through to defaults.
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > 0) {
+    try {
+      body = (await req.json()) as IssueRequestBody;
+    } catch {
+      return NextResponse.json(
+        {
+          error: "bad_request",
+          message: "body must be JSON with optional holderAddress (0x-20-byte EVM address)",
+        },
+        { status: 400 },
+      );
+    }
+  }
+
+  // OWASP API3: holderAddress is the ONLY caller-supplied field that
+  // makes it into the signed credential (via cnf.holderAddress). The
+  // `0x${string}` TypeScript template is erased at runtime; we MUST
+  // validate the shape so an attacker can't stamp arbitrary strings
+  // (e.g. <script>) into a Compass-issuer-signed VC.
+  const holderAddress = body.holderAddress;
+  if (holderAddress !== undefined && !isAddress(holderAddress)) {
+    return NextResponse.json(
+      {
+        error: "bad_request",
+        message: "holderAddress must be a valid 0x-prefixed 20-byte EVM address",
+      },
+      { status: 400 },
+    );
   }
 
   const vct = DEMO_VCT;
   const claims = DEMO_CLAIMS;
-  const holderAddress = body.holderAddress;
 
   const issuerDid = ed25519PublicKeyToDidKey(key.publicKey);
   const sdjwt = new SDJwtVcInstance({
@@ -144,7 +201,12 @@ export async function POST(req: Request) {
     );
   } catch (err) {
     console.error("[/api/issue] sd-jwt issue failed", err);
-    const msg = err instanceof Error ? err.message : "unknown";
+    // Truncate the upstream library's error to 200 chars — matches the
+    // pattern in /api/consume + compassEnclave; defense-in-depth against
+    // a future @sd-jwt/sd-jwt-vc release that surfaces sensitive
+    // material (key bytes, stack paths, env-derived hints) in error
+    // strings.
+    const msg = err instanceof Error ? err.message.slice(0, 200) : "unknown";
     return NextResponse.json(
       { error: "sign_failed", message: msg },
       { status: 500 },

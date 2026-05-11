@@ -133,6 +133,28 @@ export async function POST(req: Request) {
     );
   }
 
+  // Production gate: in production (Vercel), require COMPASS_ENCLAVE_URL
+  // to be set + valid. silent-failure-hunter 2026-05-11 caught the gap:
+  // a malformed URL was silently nulled in getEnclaveUrl(), which then
+  // bypassed the fail-closed guard further down (line 278) because the
+  // guard only fires when enclaveUrl is truthy. Net effect was an
+  // on-chain stub-digest mint — same BLOCKER-2 outcome as commit
+  // 758cf5d closed, reached via a different door.
+  const isProduction = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+  if (isProduction) {
+    const url = process.env.COMPASS_ENCLAVE_URL;
+    if (!url || url.trim().length === 0) {
+      return NextResponse.json(
+        {
+          error: "enclave_unconfigured",
+          message:
+            "COMPASS_ENCLAVE_URL is required in production. Refusing to mint receipts with a stub digest.",
+        },
+        { status: 503 },
+      );
+    }
+  }
+
   let body: ConsumeBody = {};
   try {
     body = (await req.json()) as ConsumeBody;

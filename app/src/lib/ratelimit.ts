@@ -82,7 +82,20 @@ export function check(
   live.push(now);
   store.set(key, live);
 
-  if (store.size > MAX_KEYS) evictOldest(store, now);
+  if (store.size > MAX_KEYS) {
+    const evicted = evictOldest(store, now);
+    // silent-failure-hunter 2026-05-11: if every bucket has at least one
+    // live timestamp (10K+ distinct IPs within WINDOW_MS = flood
+    // scenario), evictOldest is a no-op and the Map grows unbounded.
+    // Force-evict the single oldest-timestamp bucket as a true LRU
+    // fallback + warn so the pressure is observable in Vercel logs.
+    if (evicted === 0 && store.size > MAX_KEYS) {
+      forceLruEvict(store);
+      console.warn(
+        "[ratelimit] MAX_KEYS pressure under flood — forced LRU evict; consider Vercel KV migration (v0.6)",
+      );
+    }
+  }
 
   const oldest = live[0]!;
   return {
@@ -92,17 +105,37 @@ export function check(
   };
 }
 
-// Cleans up buckets whose entries have all expired. Called by check()
-// when the store grows past MAX_KEYS; also safe to call from a periodic
-// timer if a future maintainer wants more aggressive pruning.
-export function evictOldest(store: BucketStore, now: number = Date.now()): void {
+// Cleans up buckets whose entries have all expired. Returns the count
+// of buckets actually deleted so check() can detect an under-pressure
+// no-op and force a true LRU eviction.
+export function evictOldest(store: BucketStore, now: number = Date.now()): number {
   const windowStart = now - WINDOW_MS;
+  let deleted = 0;
   for (const [k, ts] of store) {
     const live = ts.filter((t) => t > windowStart);
     if (live.length === 0) {
       store.delete(k);
+      deleted++;
     } else if (live.length < ts.length) {
       store.set(k, live);
     }
   }
+  return deleted;
+}
+
+// True LRU fallback: deletes the bucket whose oldest timestamp is the
+// smallest (i.e., the bucket that has been "stuck" the longest). Used
+// when evictOldest() returned 0 but we're still over MAX_KEYS — see
+// the silent-failure note in check().
+function forceLruEvict(store: BucketStore): void {
+  let oldestKey: string | null = null;
+  let oldestTs = Number.POSITIVE_INFINITY;
+  for (const [k, ts] of store) {
+    if (ts.length === 0) continue;
+    if (ts[0]! < oldestTs) {
+      oldestTs = ts[0]!;
+      oldestKey = k;
+    }
+  }
+  if (oldestKey !== null) store.delete(oldestKey);
 }

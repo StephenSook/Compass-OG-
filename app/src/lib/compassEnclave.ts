@@ -91,13 +91,29 @@ const HELP_FIXTURE_CLAIMS = {
 } as const;
 
 export function getEnclaveUrl(): string | null {
-  const url = process.env.COMPASS_ENCLAVE_URL;
-  if (!url) return null;
+  const raw = process.env.COMPASS_ENCLAVE_URL;
+  if (!raw) return null;
   try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
-    return url.replace(/\/$/, "");
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      // silent-failure-hunter 2026-05-11: prior versions returned null
+      // silently on malformed URLs, which bypassed /api/consume's
+      // fail-closed guard and silently minted stub-digest receipts on
+      // mainnet. Now we log + return null so the operator sees the
+      // misconfiguration; /api/consume then refuses to mint in
+      // production (see the production-gate check there).
+      console.error(
+        "[enclave] COMPASS_ENCLAVE_URL has unsupported protocol, treating as unset:",
+        parsed.protocol,
+      );
+      return null;
+    }
+    return raw.replace(/\/$/, "");
   } catch {
+    console.error(
+      "[enclave] COMPASS_ENCLAVE_URL is not a valid URL, treating as unset:",
+      raw.slice(0, 40),
+    );
     return null;
   }
 }
@@ -155,6 +171,7 @@ export async function callEnclave(
     signature?: string;
     signerAddress?: string;
     perReceiptQuoteHex?: string | null;
+    source?: string;
     receipt?: { version?: string };
   };
   if (
@@ -163,22 +180,49 @@ export async function callEnclave(
   ) {
     throw new Error("enclave attestationDigest missing or malformed");
   }
-  if (!parsed.signature || !parsed.signerAddress) {
-    throw new Error("enclave signature or signerAddress missing");
+  // OWASP API10 (LOW): shape-validate signature + signerAddress from
+  // the enclave response. The enclave is trusted infrastructure but
+  // defense-in-depth — a future Phala bug surfacing garbage strings
+  // would otherwise propagate to the caller's response body without
+  // notice. attestationDigest is already validated above.
+  if (!parsed.signature || !/^0x[0-9a-fA-F]{130}$/.test(parsed.signature)) {
+    throw new Error("enclave signature missing or not 65-byte 0x-hex");
   }
+  if (!parsed.signerAddress || !/^0x[0-9a-fA-F]{40}$/.test(parsed.signerAddress)) {
+    throw new Error("enclave signerAddress missing or not 20-byte 0x-hex");
+  }
+  // Parse + validate perReceiptQuoteHex separately so we can be
+  // explicit about regex failure vs absence.
+  let perReceiptQuoteHex: `0x${string}` | null = null;
+  if (parsed.perReceiptQuoteHex) {
+    if (!/^0x[0-9a-fA-F]+$/.test(parsed.perReceiptQuoteHex)) {
+      // silent-failure-hunter 2026-05-11: prior version silently
+      // downgraded source to "env" when this regex failed, masking a
+      // client-side parse bug as a TEE failure. Now throw so the caller
+      // (/api/consume's fail-closed guard) gets a clear signal.
+      throw new Error(
+        "enclave perReceiptQuoteHex present but malformed: " +
+          parsed.perReceiptQuoteHex.slice(0, 40),
+      );
+    }
+    perReceiptQuoteHex = parsed.perReceiptQuoteHex as `0x${string}`;
+  }
+  // Prefer the enclave's explicit `source` field when present; only
+  // fall back to truthiness-inference for older enclave images that
+  // predated the explicit field. silent-failure-hunter 2026-05-11.
+  const source: "tee" | "env" =
+    parsed.source === "tee" || parsed.source === "env"
+      ? parsed.source
+      : perReceiptQuoteHex
+        ? "tee"
+        : "env";
   return {
     attestationDigest: parsed.attestationDigest as `0x${string}`,
     signature: parsed.signature as `0x${string}`,
     signerAddress: parsed.signerAddress as `0x${string}`,
-    perReceiptQuoteHex:
-      parsed.perReceiptQuoteHex && /^0x[0-9a-fA-F]+$/.test(parsed.perReceiptQuoteHex)
-        ? (parsed.perReceiptQuoteHex as `0x${string}`)
-        : null,
+    perReceiptQuoteHex,
     receiptVersion: parsed.receipt?.version ?? "unknown",
-    // Source is implicit: if the enclave returned a non-null
-    // perReceiptQuoteHex, the signer was sourced from a TEE; null means
-    // the deployment is in env-fallback mode.
-    source: parsed.perReceiptQuoteHex ? "tee" : "env",
+    source,
   };
 }
 
