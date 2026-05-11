@@ -39,7 +39,7 @@ jobs:
         working-directory: ./contracts
         run: npm ci --legacy-peer-deps && npx hardhat compile
       - name: Run Slither analyzer
-        uses: crytic/slither-action@v0.4.0
+        uses: crytic/slither-action@v0.4.2
         with:
           target: contracts/
           slither-args: --filter-paths "node_modules"
