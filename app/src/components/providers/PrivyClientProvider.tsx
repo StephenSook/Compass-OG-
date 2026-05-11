@@ -1,6 +1,6 @@
 "use client";
 
-import { PrivyProvider } from "@privy-io/react-auth";
+import dynamic from "next/dynamic";
 import {
   PRIVY_APP_ID,
   activeChain,
@@ -8,6 +8,15 @@ import {
   zeroGGalileoTestnet,
 } from "@/lib/chains";
 import type { ReactNode } from "react";
+
+// Privy ships ~1.2 MB of vendor JS. Static-import would hoist it into the
+// root layout chunk and ship it on every route — including /verify, which
+// does not use a wallet. Dynamic-import keeps the chunk lazy: the bundle
+// only loads when PRIVY_APP_ID is set AND this provider mounts.
+const PrivyProvider = dynamic(
+  () => import("@privy-io/react-auth").then((m) => m.PrivyProvider),
+  { ssr: false },
+);
 
 // Mounts PrivyProvider only when NEXT_PUBLIC_PRIVY_APP_ID is set; otherwise
 // children render directly so /onboard step 1 stays the 800ms fixture timer.

@@ -27,17 +27,20 @@ export function BlurText({
       {words.map((word, i) => {
         const isItalic = italicSet.has(word.toLowerCase().replace(/[^a-z]/g, ""));
         const wordClass = isItalic ? "inline-block font-serif italic" : "inline-block";
+        // First word skips the blur stagger so Chrome's LCP picker counts
+        // it on the first paint instead of waiting for opacity > 0.
+        const skipAnim = prefersReducedMotion || i === 0;
         return (
           <Fragment key={`${word}-${i}`}>
             <motion.span
               className={wordClass}
               initial={
-                prefersReducedMotion
+                skipAnim
                   ? false
                   : { filter: "blur(10px)", opacity: 0, y: 50 }
               }
               animate={
-                prefersReducedMotion
+                skipAnim
                   ? { opacity: 1 }
                   : {
                       filter: ["blur(10px)", "blur(5px)", "blur(0px)"],
@@ -46,7 +49,7 @@ export function BlurText({
                     }
               }
               transition={
-                prefersReducedMotion
+                skipAnim
                   ? { duration: 0 }
                   : {
                       duration: 0.7,

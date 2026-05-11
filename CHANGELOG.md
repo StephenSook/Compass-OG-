@@ -5,6 +5,45 @@ build-up phase are folded into milestone summaries; recent changes are
 listed by commit. The version cadence follows the hackathon timeline,
 not semver — this is `v0.x` until the post-hackathon hardening pass.
 
+## Unreleased — Vercel perf audit SHIP fixes (2026-05-11, fourth wave)
+
+Independent Vercel `performance-optimizer` agent audit flagged two
+SHIP-priority wins. Both applied.
+
+### Changed
+
+- **`app/src/components/providers/PrivyClientProvider.tsx`** —
+  static `import { PrivyProvider } from "@privy-io/react-auth"`
+  replaced with `next/dynamic({ ssr: false })`. The Privy vendor
+  chunk (~1.22 MB uncompressed, ~290 KB brotli) was being hoisted
+  into the root layout bundle and shipped on **every route** —
+  including `/verify`, which uses no wallet. Now it loads only
+  when `PRIVY_APP_ID` is set AND this provider mounts (i.e.,
+  `/onboard` step 1). Expected: `/verify` loses ~1.0 MB of JS;
+  `/` LCP drops ~150 ms on slower devices.
+- **`app/src/components/primitives/BlurText.tsx`** — first word
+  (`i === 0`) now skips the blur/opacity stagger animation. Reason:
+  Chrome's LCP picker waits for `opacity > 0` and `filter: blur(0)`
+  before counting a glyph as paint-complete. Animating the LCP
+  word delayed real LCP by ~400 ms (4 words × 100 ms stagger).
+  Other words still animate; only the first is instant. No visual
+  regression unless the first word matters less than the others
+  for the design — for the hero "Prove eligibility, not identity.",
+  it does not.
+
+### Honest scope notes
+
+- Two `CONSIDER`-tier fixes from the same audit (Floating-UI 147 KB
+  tooltip chunk dynamic-load; drop Instrument_Serif italic 15 KB)
+  not applied yet — left for v0.6 if the perf budget justifies it.
+- The audit ran without PSI access (quota exhausted earlier); chunk
+  sizes were derived from direct `curl` of brotli-served bundles
+  plus identifier extraction. The "expected" LCP/TTI improvements
+  are projections, not measured. Validate post-deploy via
+  Vercel Analytics Real User Monitoring or local Lighthouse.
+
+---
+
 ## Unreleased — ADRs + Mermaid C4 + social preview + Discussions (2026-05-11, third wave)
 
 Doc-deep + community surfaces.
