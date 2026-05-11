@@ -5,6 +5,53 @@ build-up phase are folded into milestone summaries; recent changes are
 listed by commit. The version cadence follows the hackathon timeline,
 not semver — this is `v0.x` until the post-hackathon hardening pass.
 
+## Unreleased — UI/UX polish push (2026-05-11)
+
+The "tighten before submission" milestone. No new features; polish of
+existing surfaces.
+
+### Added
+
+- **OG image generation** — 8 per-route `opengraph-image.tsx`
+  generators using `next/og` `ImageResponse`. Routes: `/`, `/about`,
+  `/clinic/subpoena`, `/audit`, `/onboard`, `/demo`, `/faq`,
+  `/roadmap`. Shared template at `app/src/lib/og.tsx`. Every shared
+  link now unfurls with a custom 1200×630 hero card on the canonical
+  black background.
+- **PWA manifest + dynamic favicon + apple-touch-icon** —
+  `app/src/app/manifest.ts`, `icon.tsx`, `apple-icon.tsx`. Black square
+  with white italic `C` mark. Add-to-home-screen affordance on iOS +
+  Android Chrome.
+- **Custom `not-found.tsx` + `error.tsx`** — on-brand 404 ("Neither
+  does Maria's HKID, on-chain") + 500 ("The receipt-signer probably
+  didn't") with retry, home, and `/api/tee-status` CTAs. Replaces the
+  Vercel default fallback pages.
+- **`<Term>` glossary tooltip primitive** — Radix-Tooltip-backed,
+  keyboard-focusable, screen-reader-friendly via `aria-describedby`,
+  portal-mounted. 20 glossary entries in `app/src/lib/glossary.ts`
+  covering SD-JWT VC, EIP-712, PDPO §57, agentIdCommitment, dstack,
+  composeHash, RA quote, MR_TD, soulbound INFT, nullifier, 0G TeeML,
+  Phala dstack TDX, Authwit, non-extractable WebCrypto key, secp256k1,
+  Ed25519, bucketed timestamp, Merkle root, HKID, FDH. Applied to
+  `/faq` (4 questions) and `/clinic/subpoena` (PDPO §57 header).
+- **`<CursorSpotlight>` primitive** — pointer-following 420px radial
+  gradient (4.5% alpha) on every dark-themed page. Pure CSS variable
+  + pointermove listener; no WebGL, no library. Honors
+  `prefers-reduced-motion`.
+- **`<Reveal>` primitive** — IntersectionObserver-driven fade-in +
+  translate-up wrapper. Applied to 5 Sections on `/about` with
+  staggered delays (0/60/120/180/240ms) for a gentle scroll cascade.
+- **`<DemoCta>` primitive** — sticky bottom-right "Watch the
+  3-min demo →" CTA. Env-gated on
+  `NEXT_PUBLIC_COMPASS_DEMO_VIDEO_URL`; renders null until F.1 lands.
+  Shows after 800ms or 30%-viewport scroll. Session-dismissible.
+
+### Dependency added
+
+- `@radix-ui/react-tooltip ^1.2.8` (~10kb gzipped, AA accessibility)
+
+---
+
 ## v0.5 — Aristotle mainnet (2026-05-10)
 
 The "make it real on the canonical chain" milestone. Compass now runs
