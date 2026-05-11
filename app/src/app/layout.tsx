@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Instrument_Serif, Geist_Mono } from "next/font/google";
 import { PrivyClientProvider } from "@/components/providers/PrivyClientProvider";
+import { CursorSpotlight } from "@/components/primitives/CursorSpotlight";
+import { DemoCta } from "@/components/primitives/DemoCta";
+import { TermProvider } from "@/components/primitives/Term";
 import "./globals.css";
 
 const inter = Inter({
@@ -38,7 +41,11 @@ export default function RootLayout({
       className={`${inter.variable} ${instrumentSerif.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PrivyClientProvider>{children}</PrivyClientProvider>
+        <CursorSpotlight />
+        <TermProvider>
+          <PrivyClientProvider>{children}</PrivyClientProvider>
+        </TermProvider>
+        <DemoCta />
       </body>
     </html>
   );
