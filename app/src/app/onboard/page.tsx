@@ -1,17 +1,41 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { Address, Hex } from "viem";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
-import { PrivyConnectButton } from "@/components/onboard/PrivyConnectButton";
-import { MintAgentButton } from "@/components/onboard/MintAgentButton";
+// Wallet-using buttons MUST be dynamic({ ssr: false }). They call
+// useWallets() / usePrivy() which throw "outside the PrivyProvider
+// component" during SSR (Privy is mounted only after client hydration
+// per the mounted-flag pattern in PrivyClientProvider). Without ssr:false
+// the build fails at prerender + the runtime SSR errors.
+const PrivyConnectButton = dynamic(
+  () =>
+    import("@/components/onboard/PrivyConnectButton").then(
+      (m) => m.PrivyConnectButton,
+    ),
+  { ssr: false, loading: () => null },
+);
+const MintAgentButton = dynamic(
+  () =>
+    import("@/components/onboard/MintAgentButton").then(
+      (m) => m.MintAgentButton,
+    ),
+  { ssr: false, loading: () => null },
+);
+const RequestEligibilityButton = dynamic(
+  () =>
+    import("@/components/onboard/RequestEligibilityButton").then(
+      (m) => m.RequestEligibilityButton,
+    ),
+  { ssr: false, loading: () => null },
+);
 import {
   IssueCredentialButton,
   type IssueResponse,
 } from "@/components/onboard/IssueCredentialButton";
-import { RequestEligibilityButton } from "@/components/onboard/RequestEligibilityButton";
 import { activeChain, isPrivyEnabled, useMainnet } from "@/lib/chains";
 
 const COMPASS_PROVIDER_ADDRESS = process.env.NEXT_PUBLIC_COMPASS_PROVIDER_ADDRESS as
