@@ -146,6 +146,54 @@ export default function AboutPage() {
             </div>
           </Section>
 
+          <Section title="How Compass differs from adjacent projects">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-border/40">
+                    <Th>Project</Th>
+                    <Th>What it proves</Th>
+                    <Th>Where Compass differs</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border/20">
+                    <td className="py-4 pr-4 text-sm text-foreground">Worldcoin / World ID</td>
+                    <td className="py-4 pr-4 text-sm text-muted-foreground">Proof of personhood via iris scan; one-human-one-vote primitive.</td>
+                    <td className="py-4 text-sm text-muted-foreground">Compass proves <em>eligibility for a specific service</em>, not personhood. We don't take biometrics; the worker's claims live in an SD-JWT VC she controls, encrypted with a key only she holds.</td>
+                  </tr>
+                  <tr className="border-b border-border/20">
+                    <td className="py-4 pr-4 text-sm text-foreground">Polygon ID</td>
+                    <td className="py-4 pr-4 text-sm text-muted-foreground">ZK-proof-based verifiable credentials; selective disclosure of issuer-signed claims.</td>
+                    <td className="py-4 text-sm text-muted-foreground">Compass v1 uses SD-JWT + sealed TEE inference instead of in-browser ZK proofs — sub-second receipt mint vs ~5-30s ZK proving. The v2 dual-path roadmap adds an optional ZK route for higher-threat contexts; see <span className="font-mono">docs/zk-future-work.md</span>.</td>
+                  </tr>
+                  <tr className="border-b border-border/20">
+                    <td className="py-4 pr-4 text-sm text-foreground">Anon Aadhaar</td>
+                    <td className="py-4 pr-4 text-sm text-muted-foreground">ZK proofs over India's Aadhaar ID; prove residency / age without revealing the Aadhaar number.</td>
+                    <td className="py-4 text-sm text-muted-foreground">Compass is not tied to a specific issuer-of-record. Any NGO with an Ed25519 key can issue a credential that Compass verifies; the trust list is governed separately. The migrant-worker context typically has <em>no</em> trusted government issuer; NGO-issued credentials are the only available path.</td>
+                  </tr>
+                  <tr className="border-b border-border/20">
+                    <td className="py-4 pr-4 text-sm text-foreground">zkPass / zkBob</td>
+                    <td className="py-4 pr-4 text-sm text-muted-foreground">Web2 data → ZK proofs; prove claims about your bank account, social profile, etc.</td>
+                    <td className="py-4 text-sm text-muted-foreground">Compass operates on NGO-issued attestations of physical-world status (visa, employment, residency), not Web2 scraped data. The threat model — subpoena resistance for already-issued credentials — is different from "import my Web2 attribute privately."</td>
+                  </tr>
+                  <tr className="border-b border-border/20">
+                    <td className="py-4 pr-4 text-sm text-foreground">Privacy Pools / Tornado Cash v2</td>
+                    <td className="py-4 pr-4 text-sm text-muted-foreground">Anonymous transactions with optional inclusion proofs into a set of "honest" deposits.</td>
+                    <td className="py-4 text-sm text-muted-foreground">Compass is not a transaction-privacy primitive — it's a credential-privacy primitive. The on-chain receipt is the audit trail the system <em>wants</em>; the privacy property is on the inputs the receipt commits to, not on hiding the receipt itself.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-6 max-w-3xl text-sm text-muted-foreground">
+              We respect every project in this table — most of Compass'
+              primitives were inspired by their work. The differentiation
+              is in the migrant-worker threat model: <em>asynchronous
+              subpoena resistance for NGO-issued service eligibility</em>,
+              optimised for interactive intake at clinic kiosks.
+            </p>
+          </Section>
+
           <Section title="What's real / what's mocked">
             <div className="mb-4">
               <TeeStatusBadge />
