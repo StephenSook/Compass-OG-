@@ -118,7 +118,13 @@ export default function VerifyPage() {
     reader.onload = () => {
       onBundleEdit(String(reader.result ?? ""));
     };
-    reader.onerror = () => setError("could not read file");
+    reader.onerror = () => {
+      // Surface FileReader.error details rather than a generic message —
+      // disk error vs permission denied vs file-deleted-during-read all
+      // need different fixes (silent-failure-hunter 2026-05-11).
+      const e = reader.error;
+      setError(`could not read file: ${e?.name ?? "unknown"} ${e?.message ?? ""}`.trim());
+    };
     reader.readAsText(file);
   }
 

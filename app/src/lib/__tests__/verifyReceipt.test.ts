@@ -108,13 +108,27 @@ describe("verifyBundle — Step 2 (ECDSA recovery)", () => {
 
   it("fails when signature bytes are random garbage", () => {
     const bundle = loadSample();
-    bundle.signature = "0x" + "ab".repeat(65);
+    bundle.signature = "0x" + "ab".repeat(64);
     const r = verifyBundle({
       bundle,
       expectedComposeHash: SAMPLE_COMPOSE_HASH,
     });
     expect(r.ok).toBe(false);
     expect(r.steps[1]!.ok).toBe(false);
+  });
+
+  it("rejects a malformed signature (wrong byte length) with explicit detail", () => {
+    const bundle = loadSample();
+    bundle.signature = "0x" + "ab".repeat(50);
+    const r = verifyBundle({
+      bundle,
+      expectedComposeHash: SAMPLE_COMPOSE_HASH,
+    });
+    expect(r.ok).toBe(false);
+    const step2 = r.steps[1]!;
+    if (!step2.ok) {
+      expect(step2.detail).toMatch(/signature must be 64 bytes/);
+    }
   });
 });
 

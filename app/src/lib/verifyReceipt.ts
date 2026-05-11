@@ -190,6 +190,14 @@ function deriveEthAddressFromUncompressed(uncompressed: Uint8Array): string {
 function recoverEthAddress(digestHex: string, sigHex: string): string[] {
   const digest = hexToBytes(digestHex);
   const sigBytes = hexToBytes(sigHex);
+  // Pre-check length so a malformed signature surfaces as "signature
+  // must be 64 bytes (compact r || s), got N" rather than the less-
+  // helpful "candidates []" path. @noble/curves Signature.fromBytes
+  // takes the compact 64-byte form; the recovery byte is added
+  // separately via addRecoveryBit(). silent-failure-hunter 2026-05-11.
+  if (sigBytes.length !== 64) {
+    throw new Error(`signature must be 64 bytes (compact r || s), got ${sigBytes.length}`);
+  }
   const candidates: string[] = [];
   for (const v of [0, 1] as const) {
     try {

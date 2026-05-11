@@ -19,11 +19,18 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Surface to console for local debugging; in production this lands in
-    // Vercel function logs. When Sentry activates (see
+    // In production, log only the redaction-safe Next.js digest so the
+    // raw Error object (which may contain unrecovered viem RPC payloads,
+    // stack paths, or env-derived hints in `message`) doesn't leak into
+    // visitor DevTools. Full object stays available for local debugging.
+    // silent-failure-hunter 2026-05-11. When Sentry activates (see
     // docs/notes/sentry-setup.md), wire Sentry.captureException(error)
-    // here.
-    console.error("[compass/error.tsx]", error);
+    // here instead.
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[compass/error.tsx]", error);
+    } else {
+      console.error("[compass/error.tsx] digest=", error.digest, "name=", error.name);
+    }
   }, [error]);
 
   return (
