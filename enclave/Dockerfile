@@ -1,5 +1,5 @@
 # Compass receipt-signer image for 0G TeeML / dstack TDX deployment.
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund --legacy-peer-deps
@@ -9,7 +9,7 @@ RUN npx tsc --noEmit && \
     npx tsc --outDir dist src/server.ts && \
     cp -r src/types dist/types 2>/dev/null || true
 
-FROM node:22-alpine
+FROM node:26-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/dist /app/dist
