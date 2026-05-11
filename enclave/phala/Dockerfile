@@ -3,7 +3,7 @@
 # detects it and switches to TEE mode (deterministic secp256k1 key derived
 # inside the enclave, eth address committed into TDX quote report_data).
 # Build context: enclave/ (parent of this Dockerfile).
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 RUN apk add --no-cache python3 make g++ libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -12,7 +12,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npx tsc -p tsconfig.json
 
-FROM node:22-alpine
+FROM node:26-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/dist /app/dist
