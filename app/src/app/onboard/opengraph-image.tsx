@@ -7,7 +7,7 @@ export const alt = "Compass — Maria's onboarding flow in four steps. Connect, 
 export default async function Image() {
   return renderOg({
     eyebrow: "Onboard · 4 steps",
-    title: "Maria&apos;s agent,",
+    title: "Maria's agent,",
     accent: "in three steps.",
     subtitle:
       "Connect Privy wallet · mint soulbound agent INFT · issue SD-JWT credential · request eligibility. Each step real on 0G Aristotle mainnet.",

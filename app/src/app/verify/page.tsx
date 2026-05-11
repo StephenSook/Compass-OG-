@@ -25,6 +25,14 @@ const SAMPLE_COMPOSE_HASH = "0x" + "ab".repeat(32);
 
 const SAMPLE_BUNDLE_URL = "/samples/receipt-sample.json";
 
+// Cap dropped/picked files at 1 MB. A Compass receipt bundle is ~2 KB;
+// 1 MB is 500× headroom and prevents an accidental huge JSON paste from
+// freezing the tab inside FileReader.readAsText.
+const MAX_BUNDLE_BYTES = 1_048_576;
+
+// 32-byte 0x-hex regex for composeHash + receipt-id shape validation.
+const HEX32 = /^0x[0-9a-fA-F]{64}$/;
+
 type Phase = "idle" | "loading-sample" | "verifying" | "done";
 
 export default function VerifyPage() {
@@ -33,6 +41,11 @@ export default function VerifyPage() {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
+  // Track whether composeHash was last auto-filled from "Try sample".
+  // If yes, a subsequent manual edit to the bundle text resets the
+  // composeHash to the production default — prevents a "stale fixture
+  // composeHash falsely fails a real receipt" trap.
+  const [composeFromSample, setComposeFromSample] = useState(false);
 
   async function loadSample() {
     setPhase("loading-sample");
@@ -42,11 +55,12 @@ export default function VerifyPage() {
       if (!res.ok) throw new Error(`fetch ${SAMPLE_BUNDLE_URL} → HTTP ${res.status}`);
       const text = await res.text();
       setBundleText(text);
-      // The bundled sample is a test fixture; swap composeHash to match
-      // so all four checks pass on first verify. Visitors swapping in
-      // their own bundle should also swap composeHash if they're
-      // verifying a different deployment.
+      // Sample is a test fixture pinned to a non-prod composeHash; swap
+      // both fields together so the first-click demo path lands green.
+      // composeFromSample flips so a later manual receipt edit can reset
+      // composeHash back to the production default.
       setComposeHash(SAMPLE_COMPOSE_HASH);
+      setComposeFromSample(true);
       setResult(null);
       setPhase("idle");
     } catch (e) {
@@ -55,9 +69,32 @@ export default function VerifyPage() {
     }
   }
 
+  function onBundleEdit(next: string) {
+    setBundleText(next);
+    // Manually editing the bundle after a Try-sample run means the
+    // visitor is verifying a different (probably real) receipt;
+    // restore the production composeHash so they don't get a stale-
+    // fixture false negative on Step 4.
+    if (composeFromSample) {
+      setComposeHash(DEFAULT_COMPOSE_HASH);
+      setComposeFromSample(false);
+    }
+  }
+
+  function onComposeEdit(next: string) {
+    setComposeHash(next.trim());
+    setComposeFromSample(false);
+  }
+
   function runVerify() {
     setError(null);
     setResult(null);
+    if (!HEX32.test(composeHash)) {
+      setError(
+        `composeHash must be 32-byte 0x-hex (64 hex chars after 0x). Got "${composeHash.slice(0, 12)}…" (${composeHash.length} chars).`,
+      );
+      return;
+    }
     setPhase("verifying");
     try {
       const bundle = parseBundle(bundleText);
@@ -71,9 +108,15 @@ export default function VerifyPage() {
   }
 
   function handleFile(file: File) {
+    if (file.size > MAX_BUNDLE_BYTES) {
+      setError(
+        `file too large: ${file.size} bytes (max ${MAX_BUNDLE_BYTES}). A Compass receipt bundle is ~2 KB; refusing to read multi-MB inputs to avoid freezing the tab.`,
+      );
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
-      setBundleText(String(reader.result ?? ""));
+      onBundleEdit(String(reader.result ?? ""));
     };
     reader.onerror = () => setError("could not read file");
     reader.readAsText(file);
@@ -132,7 +175,7 @@ export default function VerifyPage() {
                 <textarea
                   id="bundle-input"
                   value={bundleText}
-                  onChange={(e) => setBundleText(e.target.value)}
+                  onChange={(e) => onBundleEdit(e.target.value)}
                   placeholder='{"receipt": {...}, "attestationDigest": "0x...", "signature": "0x...", "signerAddress": "0x...", "perReceiptQuoteHex": "0x..."}'
                   className="h-72 w-full resize-y rounded-lg border border-border/40 bg-background/60 p-4 font-mono text-xs text-foreground placeholder:text-muted-foreground/40 focus:border-foreground/40 focus:outline-none"
                 />
@@ -174,7 +217,7 @@ export default function VerifyPage() {
               <input
                 id="compose-input"
                 value={composeHash}
-                onChange={(e) => setComposeHash(e.target.value.trim())}
+                onChange={(e) => onComposeEdit(e.target.value)}
                 className="rounded-lg border border-border/40 bg-background/60 p-3 font-mono text-xs text-foreground focus:border-foreground/40 focus:outline-none"
               />
               <p className="text-xs leading-relaxed text-muted-foreground">

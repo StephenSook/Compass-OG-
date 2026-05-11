@@ -71,6 +71,20 @@ const TDX_V4_REPORT_DATA_OFFSET = 568;
 const TDX_REPORT_DATA_LEN = 64;
 const SHA256_LEN = 32;
 
+// Pinned schema version. Must match enclave/src/receipt.ts ReceiptDocument.
+// v1.1.0 bound the boot quote and is no longer accepted; v1.2.0 binds a
+// per-receipt quote. Strict pin prevents downgrade-acceptance.
+const ACCEPTED_RECEIPT_VERSION = "compass-receipt-1.2.0";
+
+// Sentinel for env-mode receipts (CVM stopped or local dev without an
+// attested image). The dstack server emits this exact quoteCommitment on
+// the non-attested path; rejecting it here matches enclave/src/verify-
+// attestation.ts:113-118. Computed once at module load.
+const ENV_MODE_QUOTE_COMMITMENT = (() => {
+  const digest = sha256(new TextEncoder().encode("compass-env-mode-no-attestation"));
+  return bytesToHex(digest);
+})();
+
 function hexToBytes(hex: string): Uint8Array {
   const stripped = hex.replace(/^0x/i, "");
   if (stripped.length % 2 !== 0) throw new Error("odd-length hex");
@@ -88,7 +102,13 @@ function bytesToHex(bytes: Uint8Array): string {
   return s;
 }
 
-// JCS-subset canonicalization — must match enclave/src/receipt.ts.
+// JCS-subset canonicalization — MUST match enclave/src/receipt.ts byte-for-byte.
+// The lone-surrogate rejection is load-bearing: JSON.stringify happily emits
+// "\uD800" for an unpaired surrogate, producing a different canonical bytestring
+// than the CLI canonical verifier (which throws). Without this check, a malicious
+// receipt with a lone surrogate in any string field would pass browser
+// verification while failing CLI verification — a false-positive authenticity
+// claim on the load-bearing security path. Mirror Codex + code-reviewer 2026-05-11.
 function canonicalize(value: unknown): string {
   if (value === null) return "null";
   if (typeof value === "boolean") return value ? "true" : "false";
@@ -96,7 +116,21 @@ function canonicalize(value: unknown): string {
     if (!Number.isFinite(value)) throw new Error(`non-finite number: ${value}`);
     return JSON.stringify(value);
   }
-  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "string") {
+    for (let i = 0; i < value.length; i++) {
+      const code = value.charCodeAt(i);
+      if (code >= 0xd800 && code <= 0xdbff) {
+        const next = value.charCodeAt(i + 1);
+        if (next < 0xdc00 || next > 0xdfff) {
+          throw new Error("lone high surrogate in string");
+        }
+        i++;
+      } else if (code >= 0xdc00 && code <= 0xdfff) {
+        throw new Error("lone low surrogate in string");
+      }
+    }
+    return JSON.stringify(value);
+  }
   if (Array.isArray(value)) return "[" + value.map(canonicalize).join(",") + "]";
   if (typeof value === "object") {
     const proto = Object.getPrototypeOf(value);
@@ -251,13 +285,36 @@ export function verifyBundle(args: {
     });
   }
 
-  // Step 3 — quoteCommitment = sha256(perReceiptQuoteHex)
-  if (!bundle.perReceiptQuoteHex) {
+  // Step 3 — quoteCommitment = sha256(perReceiptQuoteHex).
+  // CLI canonical guard: reject env-mode-sentinel receipts FIRST (matches
+  // enclave/src/verify-attestation.ts:113-118). Without this, an env-mode
+  // bundle with a synthetic quote hex whose sha256 happens to hash to the
+  // sentinel would pass Step 3 incorrectly.
+  if (bundle.receipt.quoteCommitment.toLowerCase() === ENV_MODE_QUOTE_COMMITMENT.toLowerCase()) {
+    steps.push({
+      label: "receipt.quoteCommitment = sha256(perReceiptQuoteHex)",
+      ok: false,
+      detail:
+        "env-mode receipt sentinel detected — receipt was minted without TEE attestation and cannot be production-verified",
+    });
+    steps.push({
+      label: "quote report_data binds (signerAddress || composeHash || receiptId)",
+      ok: false,
+      detail: "skipped — env-mode receipt cannot bind a TEE attestation",
+    });
+  } else if (!bundle.perReceiptQuoteHex) {
     steps.push({
       label: "receipt.quoteCommitment = sha256(perReceiptQuoteHex)",
       ok: false,
       detail:
         "bundle has no perReceiptQuoteHex (env-mode dev receipt; cannot be production-verified)",
+    });
+    // Always emit Step 4 even when quote is absent, so the user sees the
+    // full 4-step trace rather than silently dropping a step.
+    steps.push({
+      label: "quote report_data binds (signerAddress || composeHash || receiptId)",
+      ok: false,
+      detail: "skipped — no perReceiptQuoteHex in bundle",
     });
   } else {
     try {
@@ -277,10 +334,8 @@ export function verifyBundle(args: {
         detail: (e as Error).message,
       });
     }
-  }
 
-  // Step 4 — quote report_data binds (signer || composeHash || receiptId)
-  if (bundle.perReceiptQuoteHex) {
+    // Step 4 — quote report_data binds (signer || composeHash || receiptId)
     try {
       verifyPerReceiptQuoteBinding({
         quoteHex: bundle.perReceiptQuoteHex,
@@ -323,6 +378,34 @@ export function parseBundle(text: string): ReceiptBundle {
   ) {
     throw new Error(
       "bundle missing required fields: {receipt, attestationDigest, signature, signerAddress}",
+    );
+  }
+  const r = parsed.receipt;
+  if (typeof r !== "object" || r === null || Array.isArray(r)) {
+    throw new Error("bundle.receipt must be a JSON object");
+  }
+  for (const field of [
+    "version",
+    "receiptId",
+    "challenge",
+    "policyHash",
+    "agentIdCommitment",
+    "verifierPubKey",
+    "credentialBundleHash",
+    "result",
+    "resultHash",
+    "quoteCommitment",
+  ]) {
+    if (typeof r[field] !== "string") {
+      throw new Error(`bundle.receipt.${field} must be a string`);
+    }
+  }
+  if (typeof r.expiry !== "number" || typeof r.issuedAt !== "number") {
+    throw new Error("bundle.receipt.expiry and issuedAt must be numbers");
+  }
+  if (r.version !== ACCEPTED_RECEIPT_VERSION) {
+    throw new Error(
+      `bundle.receipt.version "${r.version}" not accepted; expected "${ACCEPTED_RECEIPT_VERSION}" (v1.1.0 bound the boot quote and is no longer accepted; upgrade to v1.2.0 per-receipt quote)`,
     );
   }
   return parsed as ReceiptBundle;
