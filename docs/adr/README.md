@@ -25,7 +25,7 @@ Do **not** write an ADR for:
 
 ## Template
 
-See [`references/adr-template.md`](../../.claude/skills/adr-writer/references/adr-template.md) in the [`adr-writer`](https://github.com/anthropics/claude-code) skill, or copy any of the three ADRs above as a starting point.
+Copy any of the three ADRs above as a starting point — same MADR-lite structure (Context / Decision / Alternatives Considered / Consequences / References).
 
 ## Supersession
 

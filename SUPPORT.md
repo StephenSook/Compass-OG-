@@ -9,8 +9,8 @@ Thanks for your interest in Compass. This file points you to the right channel f
 | Report a security issue (privately) | [`SECURITY.md`](./SECURITY.md) — do **not** open a public issue |
 | Verify a Compass receipt | <https://app-psi-pied.vercel.app/verify> (browser, no install) |
 | Reproduce the live deploy's attestation | [`README.md` § "Replicate the TEE binding yourself"](./README.md#replicate-the-tee-binding-yourself) |
-| File a bug | [Open a Bug issue](https://github.com/StephenSook/Compass-OG-/issues/new?template=bug.md) |
-| Suggest a feature | [Open a Feature issue](https://github.com/StephenSook/Compass-OG-/issues/new?template=feature.md) |
+| File a bug | [Open a Bug issue](https://github.com/StephenSook/Compass-OG-/issues/new?template=bug.yml) |
+| Suggest a feature | [Open a Feature issue](https://github.com/StephenSook/Compass-OG-/issues/new?template=feature.yml) |
 | Understand the architecture | [`docs/architecture.md`](./docs/architecture.md) or [/about on the live app](https://app-psi-pied.vercel.app/about) |
 | Understand the threat model | [`docs/threat-model.md`](./docs/threat-model.md) |
 | Understand what Compass does **not** protect against | [`docs/honest-limits.md`](./docs/honest-limits.md) |
@@ -24,7 +24,7 @@ Compass is a solo hackathon build (0G APAC 2026 Track 5). Best-effort response t
 
 | Channel | Target |
 |---|---|
-| Security disclosures (`security@…` per [SECURITY.md](./SECURITY.md)) | 72 hours initial acknowledgement |
+| Security disclosures (email `stephensookra@gmail.com` with subject `[Compass Security]` or Telegram `@stephensookra` per [SECURITY.md](./SECURITY.md)) | 72 hours initial acknowledgement |
 | Public issues (bug / feature) | 5 business days |
 | Pull requests | Reviewed in the order received |
 

@@ -44,8 +44,9 @@
 │  • ERC-721 + soulbound _update   • EIP-712 "Compass" v1      │
 │  • mintAgent (zero-hash reject)  • IAgentRegistry binding    │
 │  • updateMetadata (owner-gated)  • consumeGrantAndIssueReceipt│
-│  • authorizeUsage (ERC-7857)     │   atomic; 8 sequenced     │
-│  • verifyAttestation v1 stub     │   validations + 2 effects │
+│  • (ERC-7857 stripped — no       │   atomic; 8 sequenced     │
+│    authorizeUsage by design)     │   validations + 2 effects │
+│  • verifyAttestation v1 stub     │                           │
 │                                  │   + 2 events in 1 tx      │
 │                                  • Policy registry (admin    │
 │                                  │   = first registrant)     │

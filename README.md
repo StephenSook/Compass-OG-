@@ -115,7 +115,7 @@ Maria is a composite — built from research, not a real person. The persona is 
 | 0G broker `processResponse` co-signature | draft | out of scope for v1; receipt has its own signature chain |
 | Privy embedded wallet integration | draft | wired in `/onboard` step 1 + root provider; live behind `NEXT_PUBLIC_PRIVY_APP_ID`, fixture timer in default build |
 | `/onboard` step 2 — live `mintAgent` | draft | Privy embedded wallet → `AgentRegistry.mintAgent` on Galileo, gated on user-funded gas via faucet; fixture timer when Privy unset |
-| Aristotle mainnet (chainId 16661) deploy | draft | scaffolded — chain-selector helpers + `activeAgentRegistry`/`activeCompassHub` guards wired; deploy gated on OG funding (see [`docs/notes/0g-mainnet-funding-options.md`](./docs/notes/0g-mainnet-funding-options.md) + [`docs/notes/0g-aristotle-deploy-checklist.md`](./docs/notes/0g-aristotle-deploy-checklist.md)) |
+| Aristotle mainnet (chainId 16661) deploy | **real** | deployed 2026-05-11 — AgentRegistry [`0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9`](https://chainscan.0g.ai/address/0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9), CompassHub [`0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b`](https://chainscan.0g.ai/address/0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b); chain-selector helpers + `activeAgentRegistry`/`activeCompassHub` guards wired; `/api/consume` routes to mainnet when `NEXT_PUBLIC_COMPASS_USE_MAINNET=1` |
 
 This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the frontend with the same status badges and a live `/api/tee-status` probe above the table.
 
@@ -168,14 +168,16 @@ C4Context
   Person(judge, "Court / Auditor", "Issues PDPO §57 disclosure orders")
   System(compass, "Compass", "Private eligibility firewall on 0G")
   System_Ext(ngo, "NGO Issuer", "HELP / Bethune / Mission for Migrant Workers")
-  System_Ext(zerog, "0G Chain + 0G Storage", "Aristotle mainnet 16661 + encrypted blob store")
+  System_Ext(chain, "0G Chain", "Aristotle mainnet 16661 — ReceiptIssued events")
+  System_Ext(storage, "0G Storage (v2 / draft)", "Encrypted SD-JWT VC blob — v1 keeps the credential in the browser vault only")
   System_Ext(phala, "Phala dstack TDX", "Sealed enclave receipt-signer")
   Rel(maria, compass, "Holds SD-JWT VC; requests eligibility check")
   Rel(ngo, maria, "Issues SD-JWT VC (Ed25519 signed)")
   Rel(compass, phala, "Sends selectively-disclosed claims")
   Rel(phala, compass, "Returns signed receipt + per-receipt RA quote")
-  Rel(compass, zerog, "Mints ReceiptIssued + stores ciphertext")
-  Rel(clinic, zerog, "Reads receipt; learns only 15-min timestamp bucket")
+  Rel(compass, chain, "Mints ReceiptIssued atomically")
+  Rel(compass, storage, "Uploads encrypted vault (v2; draft in v1)")
+  Rel(clinic, chain, "Reads receipt; learns only 15-min timestamp bucket")
   Rel(judge, clinic, "PDPO §57: 'who came in at 14:32?'")
 ```
 
@@ -385,10 +387,8 @@ Skill inputs:
 
 - a live Phala enclave URL — the CLI mints a fresh receipt and verifies
   the chain end-to-end (`--live` mode), OR
-- the bundled sample fixture for offline demos (`--sample` mode)
-
-(A `--bundle <path>` mode for verifying a previously-saved receipt JSON
-is on the v2 roadmap.)
+- the bundled sample fixture for offline demos (`--sample` mode), OR
+- a `--bundle <path>` to a previously-saved receipt JSON (offline verify).
 
 Skill output: structured JSON with `verified: true/false` plus the
 recovered `signerAddress`, `composeHash`, `policyId`, `timestampBucket`,

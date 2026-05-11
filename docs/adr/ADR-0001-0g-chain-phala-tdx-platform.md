@@ -19,7 +19,7 @@ Constraints driving the decision:
 
 ## Decision
 
-We use **0G Chain (Aristotle mainnet, chainId 16661)** for `AgentRegistry` + `CompassHub` + `ReceiptIssued` events, and **Phala dstack-0.5.9 production-channel CVMs (Intel TDX)** for the receipt-signing enclave. The enclave's deterministic-key-sealed-to-MR_TD primitive plus per-receipt RA quote (see [ADR-0003](./ADR-0003-per-receipt-quote-binding.md)) provides the cryptographic root the verifier chain unwinds to.
+We use **0G Chain (Aristotle mainnet, chainId 16661)** for `AgentRegistry` + `CompassHub` + `ReceiptIssued` events, and **Phala dstack production-channel CVMs (Intel TDX)** for the receipt-signing enclave. The CVM image is built against `dstack-0.5.9` (production channel, not DEV); the in-process SDK is `@phala/dstack-sdk@0.5.7` — the SDK pin lags the CVM image by one patch level, which is the normal cadence on Phala's release line. The enclave's deterministic-key-sealed-to-MR_TD primitive plus per-receipt RA quote (see [ADR-0003](./ADR-0003-per-receipt-quote-binding.md)) provides the cryptographic root the verifier chain unwinds to.
 
 ## Alternatives Considered
 
