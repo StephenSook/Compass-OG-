@@ -23,8 +23,13 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { keccak_256 } from "@noble/hashes/sha3.js";
 
+// Schema version pinned to the canonical literal — type-design-analyzer
+// 2026-05-11 flagged that the browser mirror widened `version: string`
+// while the enclave declares the literal `"compass-receipt-1.2.0"`. The
+// runtime parser at parseBundle() already pins -1.2.0; the type now
+// matches so compile-time consumers can rely on the invariant.
 export type ReceiptDocument = {
-  version: string;
+  version: "compass-receipt-1.2.0";
   receiptId: string;
   challenge: string;
   policyHash: string;
@@ -52,19 +57,33 @@ export type ReceiptBundle = {
   perReceiptEventLog?: string | null;
 };
 
-export type StepResult = {
-  label: string;
-  ok: boolean;
-  detail?: string;
-};
+// Discriminated union — type-design-analyzer 2026-05-11. A failed step
+// MUST have a detail; a success may omit it. Pre-fix `ok: boolean` let
+// the constructor push `{ ok: false, label }` and render an empty error
+// in the UI; this type-level upgrade prevents that at compile time.
+export type StepResult =
+  | { label: string; ok: true; detail?: string }
+  | { label: string; ok: false; detail: string };
 
-export type VerifyResult = {
-  ok: boolean;
-  steps: StepResult[];
-  receipt?: ReceiptDocument;
-  signerAddress?: string;
-  composeHash?: string;
-};
+// Discriminated union — type-design-analyzer 2026-05-11. When `ok` is
+// true, `receipt`, `signerAddress`, `composeHash` are all REQUIRED;
+// the UI can drop the `result.ok && result.receipt` re-narrow at
+// verify/page.tsx and just check `result.ok`.
+export type VerifyResult =
+  | {
+      ok: true;
+      steps: StepResult[];
+      receipt: ReceiptDocument;
+      signerAddress: string;
+      composeHash: string;
+    }
+  | {
+      ok: false;
+      steps: StepResult[];
+      receipt?: ReceiptDocument;
+      signerAddress?: string;
+      composeHash?: string;
+    };
 
 const QUOTE_VERSION_OFFSET = 0;
 const TDX_V4_REPORT_DATA_OFFSET = 568;
@@ -356,8 +375,21 @@ export function verifyBundle(args: {
     }
   }
 
+  // Return the appropriate discriminated-union variant. When all steps
+  // passed, the receipt+signer+compose fields are REQUIRED (and present).
+  // When any step failed, the same fields are still useful for diagnosis
+  // but typed as optional. type-design-analyzer 2026-05-11.
+  if (steps.every((s) => s.ok)) {
+    return {
+      ok: true,
+      steps,
+      receipt: bundle.receipt,
+      signerAddress: recoveredAddr ?? bundle.signerAddress,
+      composeHash: expectedComposeHash,
+    };
+  }
   return {
-    ok: steps.every((s) => s.ok),
+    ok: false,
     steps,
     receipt: bundle.receipt,
     signerAddress: recoveredAddr ?? bundle.signerAddress,

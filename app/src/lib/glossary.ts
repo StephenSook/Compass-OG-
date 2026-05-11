@@ -20,7 +20,14 @@ export type GlossaryEntry = {
   link?: string;
 };
 
-export const GLOSSARY: Record<string, GlossaryEntry> = {
+// `as const satisfies Record<string, GlossaryEntry>` keeps the runtime
+// shape AND narrows `keyof typeof GLOSSARY` to the exact literal union
+// of slugs ("sd-jwt-vc" | "eip-712" | …). Pre-fix the annotation
+// `Record<string, GlossaryEntry>` widened keys to `string`, neutralizing
+// the compile-time check at `TermProps.k: keyof typeof GLOSSARY` —
+// misspelled <Term k="…"> sites only surfaced as runtime console.warn,
+// not type errors. type-design-analyzer 2026-05-11.
+export const GLOSSARY = {
   "sd-jwt-vc": {
     term: "SD-JWT VC",
     definition:
@@ -124,4 +131,4 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     definition:
       "Foreign Domestic Helper. The largest migrant-worker visa category in Hong Kong (~340,000 visa holders, roughly 5% of the population). Subject to the 14-day rule: a worker whose contract ends must leave HK within 14 days unless rehired.",
   },
-};
+} as const satisfies Record<string, GlossaryEntry>;

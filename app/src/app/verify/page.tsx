@@ -313,7 +313,7 @@ export default function VerifyPage() {
                 ))}
               </ol>
 
-              {result.ok && result.receipt ? (
+              {result.ok ? (
                 <div className="mt-8 rounded-2xl border border-border/40 bg-card/30 p-6 text-sm text-muted-foreground">
                   <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
                     What this receipt says
@@ -325,7 +325,7 @@ export default function VerifyPage() {
                       label="result"
                       value={`${result.receipt.result.eligible ? "eligible" : "denied"} — ${result.receipt.result.reason}`}
                     />
-                    <Row label="signerAddress" value={result.signerAddress ?? "—"} mono />
+                    <Row label="signerAddress" value={result.signerAddress} mono />
                     <Row
                       label="issuedAt"
                       value={new Date(result.receipt.issuedAt * 1000).toISOString()}
