@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Compass — Public Audit Graph</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Interactive 3D force graph of Compass on-chain ReceiptIssued events bucketed by 15-min timestamp." />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; background: #000; color: #f5f5f5; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+      #graph { position: fixed; inset: 0; }
+      header {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        padding: 1.25rem 1.5rem;
+        z-index: 10;
+        pointer-events: none;
+      }
+      header p, header h1 {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 10px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        opacity: 0.6;
+      }
+      header h1 {
+        font-size: 12px;
+        opacity: 0.9;
+        margin-top: 0.4rem;
+      }
+      footer {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        padding: 1rem 1.5rem;
+        z-index: 10;
+        pointer-events: none;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        opacity: 0.4;
+      }
+      footer a { color: #f5f5f5; opacity: 1; pointer-events: auto; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <p>Compass · Public audit log · 3D view</p>
+      <h1>Receipts bucketed by 15-min timestamp. No identities. No edges between receipts.</h1>
+    </header>
+    <div id="graph"></div>
+    <footer>
+      Powered by <a href="https://github.com/vasturiano/3d-force-graph" target="_blank" rel="noopener">3d-force-graph</a> ·
+      <a href="/audit">Back to /audit</a>
+    </footer>
+
+    <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/3d-force-graph@1.73.0/dist/3d-force-graph.min.js"></script>
+    <script>
+      // Static fixture mirroring app/src/lib/fixtures/receipts.ts. v2 replaces
+      // this with a Galileo RPC query for live ReceiptIssued events bucketed by
+      // the on-chain timestampBucket field. The privacy property holds either
+      // way: nodes carry only bucket time + result + policy slug; no edges
+      // imply correlation between receipts.
+      const FIXTURE_RECEIPTS = [
+        { receiptId: "0x4e6d...3a1b", policyId: "help-legal-aid",      eligible: true,  bucket: 1747542720 },
+        { receiptId: "0x8b2f...c9d4", policyId: "help-legal-aid",      eligible: true,  bucket: 1747543620 },
+        { receiptId: "0xa1c5...e8b3", policyId: "bethune-shelter",     eligible: true,  bucket: 1747542720 },
+        { receiptId: "0xf3a7...d2c8", policyId: "help-legal-aid",      eligible: false, bucket: 1747544520 },
+        { receiptId: "0xc9e1...b6a4", policyId: "hk-fdh-hospital",     eligible: true,  bucket: 1747545420 },
+        { receiptId: "0x7d8b...4f2e", policyId: "help-legal-aid",      eligible: true,  bucket: 1747546320 },
+      ];
+
+      const POLICY_COLOR = {
+        "help-legal-aid":   "#90cdf4",
+        "bethune-shelter":  "#fbb6ce",
+        "hk-fdh-hospital":  "#9ae6b4",
+      };
+
+      // Synthesize a bucket-cluster: one invisible center node per bucket; each
+      // receipt links to its bucket center so spatially-grouped clusters fall
+      // out of the force-directed layout. No receipt-to-receipt edges — the
+      // graph cannot suggest correlation between disclosures.
+      const buckets = {};
+      const nodes = [];
+      const links = [];
+      FIXTURE_RECEIPTS.forEach((r) => {
+        const bucketId = "b:" + r.bucket;
+        if (!(bucketId in buckets)) {
+          buckets[bucketId] = true;
+          nodes.push({
+            id: bucketId,
+            label: new Date(r.bucket * 1000).toISOString().slice(11, 16) + " UTC",
+            color: "#555555",
+            size: 6,
+            isBucket: true,
+          });
+        }
+        nodes.push({
+          id: r.receiptId,
+          label: r.policyId + " · " + (r.eligible ? "eligible" : "denied"),
+          color: POLICY_COLOR[r.policyId] || "#cccccc",
+          size: r.eligible ? 8 : 5,
+        });
+        links.push({ source: r.receiptId, target: bucketId });
+      });
+
+      const graph = ForceGraph3D()(document.getElementById("graph"))
+        .graphData({ nodes, links })
+        .nodeLabel((n) => n.label)
+        .nodeColor((n) => n.color)
+        .nodeVal((n) => n.size)
+        .nodeOpacity(0.9)
+        .linkColor(() => "rgba(255,255,255,0.15)")
+        .linkOpacity(0.4)
+        .backgroundColor("#000000")
+        .showNavInfo(false);
+
+      // Gentle camera orbit — judges see motion without needing to drag
+      let angle = 0;
+      const radius = 220;
+      const interval = setInterval(() => {
+        angle += 0.0035;
+        graph.cameraPosition({
+          x: radius * Math.cos(angle),
+          y: 80,
+          z: radius * Math.sin(angle),
+        });
+      }, 30);
+
+      // Stop orbit on user interaction so manual exploration isn't fought
+      ["mousedown", "wheel", "touchstart"].forEach((evt) =>
+        document.addEventListener(evt, () => clearInterval(interval), { once: true }),
+      );
+    </script>
+  </body>
+</html>

@@ -131,6 +131,23 @@ export default function AuditPage() {
               open the disclosure scene →
             </Link>
           </p>
+
+          <div className="mt-12 flex flex-wrap gap-4">
+            <a
+              href="/audit-graph.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-foreground/40 px-8 py-4 font-mono text-xs tracking-[0.3em] text-foreground uppercase transition-colors hover:border-foreground/80"
+            >
+              3D force-graph view →
+            </a>
+            <Link
+              href="/analytics"
+              className="rounded-full border border-border px-8 py-4 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground hover:border-foreground/40"
+            >
+              Receipts over time →
+            </Link>
+          </div>
         </div>
       </section>
     </main>
