@@ -2,8 +2,10 @@ import Link from "next/link";
 import { BlurText } from "@/components/primitives/BlurText";
 import { LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { AmbientSphere } from "@/components/primitives/AmbientSphere";
+import { VideoBackground, heroVideoEnabled } from "@/components/primitives/VideoBackground";
 
 export default function HomePage() {
+  const useVideo = heroVideoEnabled();
   return (
     <main className="relative flex flex-1 flex-col bg-background overflow-hidden">
       <header className="fixed top-6 left-1/2 z-50 -translate-x-1/2">
@@ -14,12 +16,16 @@ export default function HomePage() {
         </LiquidGlass>
       </header>
 
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-60">
-        <AmbientSphere
-          className="h-[80vmin] w-[80vmin] max-h-[640px] max-w-[640px]"
-          size={640}
-        />
-      </div>
+      {useVideo ? (
+        <VideoBackground />
+      ) : (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-60">
+          <AmbientSphere
+            className="h-[80vmin] w-[80vmin] max-h-[640px] max-w-[640px]"
+            size={640}
+          />
+        </div>
+      )}
 
       <section className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pt-24 pb-16 sm:pt-0 sm:pb-0">
         <p className="mb-6 text-center font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase sm:mb-8 sm:text-xs">
