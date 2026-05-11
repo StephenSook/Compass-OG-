@@ -34,18 +34,21 @@ import { Suspense, lazy } from "react";
 const SPLINE_SCENE_URL = process.env.NEXT_PUBLIC_COMPASS_SPLINE_SCENE_URL;
 
 // Lazy import the Spline runtime ONLY when the env var is set, so a clean
-// clone with no .env still builds.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SplineRuntime = lazy<any>(() =>
+// clone with no .env still builds. Typed as a React component that accepts
+// a `scene` URL — matches @splinetool/react-spline's default-export shape.
+type SplineRuntimeProps = { scene: string };
+type SplineRuntimeComponent = React.ComponentType<SplineRuntimeProps>;
+
+const SplineRuntime = lazy<SplineRuntimeComponent>(() =>
   // @ts-expect-error — module is install-gated; types absent until devDep is added
   import("@splinetool/react-spline").catch(() => ({
-    default: () => (
+    default: (() => (
       <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4 font-mono text-xs tracking-[0.2em] text-amber-400/80 uppercase">
         Spline scene env-gated and @splinetool/react-spline not installed.
         See app/src/components/about/SplineScene.tsx header for the
         activation steps.
       </div>
-    ),
+    )) satisfies SplineRuntimeComponent,
   })),
 );
 
