@@ -12,7 +12,7 @@ import {
   type IssueResponse,
 } from "@/components/onboard/IssueCredentialButton";
 import { RequestEligibilityButton } from "@/components/onboard/RequestEligibilityButton";
-import { isPrivyEnabled } from "@/lib/chains";
+import { activeChain, isPrivyEnabled } from "@/lib/chains";
 
 const COMPASS_PROVIDER_ADDRESS = process.env.NEXT_PUBLIC_COMPASS_PROVIDER_ADDRESS as
   | `0x${string}`
@@ -266,7 +266,13 @@ export default function OnboardPage() {
               footer={
                 liveMint ? (
                   <a
-                    href={`https://chainscan-galileo.0g.ai/tx/${liveMint.txHash}`}
+                    // liveMint comes from MintAgentButton, which now uses
+                    // activeChain() — link must point at the matching
+                    // scanner (whole-codebase review 2026-05-11). The
+                    // fixture AGENT_MINT_TX_HASH below stays on chainscan-
+                    // galileo because that specific hash was minted on
+                    // Galileo and exists only there.
+                    href={`${activeChain().blockExplorers.default.url}/tx/${liveMint.txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase transition-colors hover:text-foreground"

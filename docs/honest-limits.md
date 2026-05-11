@@ -292,7 +292,28 @@ The 2026-05-11 audit shipped a WCAG 2.1 §2.4.1 skip-to-content link plus a `#ma
 
 Tracked in the public GitHub v0.6 milestone.
 
-### 24. Enclave does not enforce `issuedAt` freshness (v0.6 fix)
+### 25. `npm audit` reports vulnerabilities in dead-code transitive dependencies
+
+`npm audit` against the three workspaces reports 57 total findings (app 5,
+contracts 29, enclave 23). All highs are in dependencies Compass does not
+exercise:
+
+| Severity | Package | Path | Reachable from Compass code? |
+|---|---|---|---|
+| HIGH | axios (CVE) | `@privy-io/react-auth → x402 → wagmi → @wagmi/connectors → @base-org/account → @coinbase/cdp-sdk → axios` | NO. Compass uses Privy's embedded-EOA path only (`embeddedWallets.ethereum.createOnLogin`); the wagmi connector graph is not invoked. |
+| MODERATE | postcss | build-time CSS toolchain | Build only — does not ship to runtime bundle. |
+| MODERATE | next | framework | Next 16.2.5 disclosed CVE not yet patched upstream; tracking the 16.2.x release stream. |
+| MODERATE | @splinetool/react-spline | runtime 3D scene | Lazy-loaded only on `/about`; no untrusted-input surface (scene URL is server-controlled via env). |
+
+Contracts + enclave workspace highs are in hardhat-test-stack transitive
+deps (e.g., older lodash, regular dev-only paths) that never reach
+production runtime — `contracts/` ships bytecode, `enclave/` is rebuilt
+into a sealed Phala CVM image, neither carries the dev-only npm graph
+into production.
+
+**v0.6 plan:** roll Privy / Next / Spline forward as upstream patches
+land. Compass is not running any dev-deps in production runtime, so the
+audit findings are tracked-not-blocking for v0.5 submission.
 
 `enclave/src/server.ts:110-118` validates `expiry > issuedAt` but does NOT require `issuedAt` to be within a small clock-skew window of current enclave time, and does NOT cap `expiry - issuedAt`. A direct caller can mint a TEE-signed receipt with `issuedAt = 1` (epoch zero) and `expiry = 2^32`, producing a "valid forever" credential.
 
