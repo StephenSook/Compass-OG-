@@ -61,6 +61,7 @@ jobs:
           cache-dependency-path: ./app/package-lock.json
       - run: npm ci --legacy-peer-deps
       - run: npm run build
+      - run: npm test
 
   enclave:
     name: Enclave (TypeScript)
