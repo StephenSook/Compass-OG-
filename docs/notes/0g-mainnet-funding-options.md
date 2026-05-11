@@ -10,23 +10,23 @@ holds on bank transfer). Below are alternate paths in order of preference.
 
 ---
 
-## Path 1 — 0G hackathon ecosystem credits (FREE, RECOMMENDED FIRST)
+## Path 1 — 0G hackathon ecosystem credits — **NOT A THING for mainnet**
 
-The 0G APAC hackathon supports active builders with mainnet credits to
-unblock production deploys. Lead-time: same-day to 3 days.
+**Confirmed by 0G Labs (Asad Khalid, Discord 2026-05-08):** there are no
+hackathon ecosystem credits for Aristotle mainnet. Mainnet is
+CEX-buy-and-withdraw OR bridge from USDT. Full reply quoted in the
+project memory at `project_og_funding_replies.md`.
 
-**Steps:**
-1. Open https://hackquest.io and find the 0G APAC Hackathon submission
-   portal. Look for an "Ecosystem Credits" / "Mainnet Grants" form.
-2. Alternative: ping the 0G Discord (`#builders` channel — see project memory
-   for invite). Mention: "Submitting Compass for Track 5; need ~0.2 OG on
-   Aristotle for AgentRegistry + CompassHub deploy. Galileo testnet flow
-   already shipped at github.com/StephenSook/Compass-OG-." Keep it short.
-3. Provide deployer wallet address: `0x05b5Bb550eb8401fC4b8a33bf566C03f49ef5d34`
-4. They wire OG directly to that address.
+> Buy 0G on a CEX and withdraw to chain 16661 or Bridge assets into
+> Aristotle directly.
 
-**Why this first:** free, designed for this case, hackathon team is the
-gate-keeper that wants you to ship anyway.
+The hackathon-team-funded faucet that exists is **testnet only** at
+https://faucet.0g.ai (Galileo). There's a hackathon promo code
+`0G-APAC-HACKATHON` (10 OG testnet, valid until May 16 23:59 GMT+8,
+1-per-wallet, 300-wallet FCFS cap) — useful for additional Galileo demos
+but not for A.5 mainnet.
+
+**Move to Path 2-4 below for mainnet funding.**
 
 ---
 
@@ -96,43 +96,49 @@ MoonPay second, Transak third (only worth it if they support direct OG).
 
 ---
 
-## Path 4 — Alternate exchanges (different KYC stack than Coinbase)
+## Path 4 — Alternate exchanges (0G's official recommendation list)
 
-If you'd rather use an exchange-style flow:
+Per 0G Labs' Discord reply, the recommended CEXes that list 0G (OG)
+spot and support withdrawals to Aristotle chain 16661 are:
 
-### Kraken (https://kraken.com)
-- US-friendly, different KYC + bank-link than Coinbase. Smaller-amount
-  card buys often clear when Coinbase bounces.
-- Buy ETH or USDC, withdraw to deployer wallet, then bridge per Path 2.
-- KYC verification typically same-day for individual accounts.
+### Bitget (https://www.bitget.com) — FIRST on 0G's list
+- Different KYC + payment stack than Coinbase. Often clears when CB holds.
+- Buy 0G spot directly (no bridge needed). Withdraw to deployer wallet
+  on chain 16661.
+- US-availability: limited; check the front-page country selector.
 
-### Binance (https://binance.com — non-US users) / Binance.US (https://binance.us)
-- Largest exchange globally. Strong fiat-on-ramp for non-US.
-- US users: Binance.US; smaller asset list but USDC available.
-- Same flow: buy → withdraw to deployer → bridge.
+### MEXC (https://www.mexc.com) — SECOND on 0G's list
+- Another non-CB processor. Spot listing for 0G confirmed by 0G team.
+- KYC fairly relaxed for small amounts.
 
-### Bybit (https://bybit.com)
-- Often has direct OG listing on their spot market — eliminates the bridge.
-  Verify at https://www.bybit.com/en/trade/spot before assuming.
-- KYC clears in 1–2 business days for small accounts.
+### Bybit (https://www.bybit.com) — THIRD on 0G's list
+- Direct 0G spot listing per 0G team. Withdraw to chain 16661.
+- KYC clears 1–2 business days for small accounts.
 
-**Recommendation order:** Bybit first if they list OG directly (one less
-hop). Kraken if you're US-based and want a regulated alternative.
+### Kraken (https://kraken.com) — FOURTH on 0G's list
+- US-friendly. Different KYC + bank-link than Coinbase.
+- Buy 0G spot, withdraw to deployer wallet on chain 16661.
+
+**Recommendation order:** Bitget first (cited first by 0G team, different
+processor than Coinbase). If Bitget unavailable in your jurisdiction:
+MEXC → Bybit → Kraken. Coinbase is conspicuously absent from 0G's list
+— don't fight that channel.
 
 ---
 
 ## Cost-benefit check — defer until Day 24
 
 A.5 isn't urgent today (May 10). The original plan put mainnet at Day 25
-(May 30). 20 days of buffer means there's no need to rush funding.
+(May 30). 20 days of buffer means no need to rush funding.
 
-**Better sequencing:**
-1. Apply for 0G ecosystem credits TODAY (lead-time 1–3 days, free)
-2. If credits granted by Day 20: deploy A.5 immediately
-3. If credits don't land by Day 22: pivot to Path 2 (L1 bridge) or Path 3
-   (Ramp onramp)
-4. Cap mainnet deploy at Day 24 to leave 7+ days of demo + recording buffer
-5. Stop Phala TEE after demo + 48hr submission buffer (~Day 30)
+**Updated sequencing (post 0G-Labs reply):**
+1. Sign up for **Bitget** today (KYC takes 0-24h). Different processor
+   than Coinbase, listed first by the 0G team.
+2. If Bitget jurisdiction-blocked: try **MEXC** or **Bybit**.
+3. In parallel: bridge ~$5 from L1 ETH via `bridge.0g.ai` (Path 2) as a
+   cheap backstop if no CEX clears.
+4. Cap mainnet deploy at Day 24 to leave 7+ days of demo + recording buffer.
+5. Stop Phala TEE after demo + 48hr submission buffer (~Day 30).
 
 **Why no rush:** Galileo testnet demo flow already covers everything except
 the network label. Mainnet is a one-click chain switch once funded; there's
