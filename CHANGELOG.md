@@ -5,6 +5,71 @@ build-up phase are folded into milestone summaries; recent changes are
 listed by commit. The version cadence follows the hackathon timeline,
 not semver — this is `v0.x` until the post-hackathon hardening pass.
 
+## Unreleased — Repo hygiene + visualizations (2026-05-11, second wave)
+
+Repository-health pass aligned with current OSS best practices, plus three
+pre-rendered visualizations of the codebase.
+
+### Added
+
+- **README table of contents** — 22-entry section index near the top
+  for fast judge skim. Anchors map to existing H2 headers (no rename
+  churn).
+- **README "Why this matters" elevator pitch** — 2-sentence opener
+  above Maria's story that frames the privacy gap in concrete legal
+  terms (14-day FDH deportation window + subpoena vulnerability).
+- **`docs/visualizations/`** — three pre-rendered codebase views:
+  - `compass-architecture-3d.html` — hand-curated 22-node / 27-edge
+    3D force graph of the holder / credential / 0G Storage / 0G Chain
+    / TEE / verifier layers. Built on three.js + 3d-force-graph with
+    bloom post-processing, hover-to-trace neighbors, click-for-detail
+    info panel. Standalone, CDN-only, no build step.
+  - `compass-knowledge-graph.html` + `.json` — auto-generated
+    full-codebase graph via `graphify update .`: 484 nodes (files +
+    symbols), 491 edges (containment, imports, calls), 132
+    communities. RAG-ready node-link JSON.
+  - `compass-gource.mp4` — animated git-history time-lapse rendered
+    with gource 0.56 + ffmpeg, 1280×720 H.264, ~3.2 MB.
+  - `compass-graph-report.md` — plain-language audit of every node +
+    edge in the graphify output (35 KB).
+  - `README.md` — index + regeneration commands for all three.
+- **`.github/dependabot.yml`** — weekly npm + github-actions updates
+  on Monday 06:00 HKT for `/app`, `/enclave`, `/contracts`, and
+  workflow files. Labels routed to `dependencies` + `security`.
+- **`.github/CODEOWNERS`** — pre-wired review routing (currently all
+  paths → `@StephenSook`; adding a co-maintainer is now a one-line
+  change instead of a repo-wide refactor).
+- **`SUPPORT.md`** — channel-by-channel help index (security
+  disclosures → SECURITY.md; verifier UX → `/verify`; threat model →
+  `docs/threat-model.md`; etc.). Sets explicit response-time
+  expectations.
+- **`.github/ISSUE_TEMPLATE/bug.yml`** + **`feature.yml`** + **`config.yml`** —
+  modern GitHub issue *forms* (dropdowns, validation, required fields,
+  contact-link routing for security disclosures). Replaces the
+  legacy `.md` templates which GitHub no longer detects as templates
+  in the community-profile API.
+
+### Changed
+
+- Repo metadata via `gh repo edit`:
+  - **Homepage URL** set to <https://app-psi-pied.vercel.app>
+    (previously empty).
+  - **Topics** populated with 20 entries for discoverability: `0g`,
+    `0g-foundation`, `web3`, `privacy`, `zero-knowledge`,
+    `verifiable-credentials`, `sd-jwt`, `selective-disclosure`, `tee`,
+    `intel-tdx`, `phala-network`, `dstack`, `confidential-computing`,
+    `remote-attestation`, `ethereum`, `solidity`, `nextjs`,
+    `typescript`, `hackathon`, `self-sovereign-identity`.
+  - **Wiki + Projects disabled** (both unused; reduces surface area
+    for typo-squat issues and orphan content).
+
+### Removed
+
+- `.github/ISSUE_TEMPLATE/bug.md` + `feature.md` — superseded by
+  `.yml` issue forms (same content, modern surface).
+
+---
+
 ## Unreleased — UI/UX polish push + /verify differentiator (2026-05-11)
 
 The "tighten before submission" milestone. No new features; polish of

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Compass — 3D Architecture Graph</title>
+<meta name="description" content="Compass — Private Eligibility Firewall on 0G. Interactive 3D knowledge graph of the holder/credential/storage/on-chain/TEE/verifier layers.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000003; overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+  #header {
+    position: absolute; top: 20px; left: 24px; z-index: 10;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  #header h1 {
+    color: #58a6ff; font-size: 18px; font-weight: 700; letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(88, 166, 255, 0.5);
+  }
+  #header p { color: #484f58; font-size: 11px; letter-spacing: 1px; }
+
+  #legend {
+    position: absolute; bottom: 24px; left: 24px; z-index: 10;
+    background: rgba(5, 5, 15, 0.92); border: 1px solid #21262d;
+    border-radius: 10px; padding: 16px 20px; backdrop-filter: blur(12px);
+  }
+  .legend-title {
+    color: #8b949e; font-size: 9px; font-weight: 700;
+    letter-spacing: 2px; margin-bottom: 10px; text-transform: uppercase;
+  }
+  .legend-item { display: flex; align-items: center; gap: 10px; margin: 6px 0; color: #c9d1d9; font-size: 11px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  #info-panel {
+    position: absolute; bottom: 24px; right: 24px; z-index: 10;
+    background: rgba(5, 5, 15, 0.92); border: 1px solid #21262d;
+    border-radius: 10px; padding: 16px 20px; backdrop-filter: blur(12px);
+    max-width: 380px; display: none; white-space: pre-wrap;
+  }
+  #info-panel .info-title { color: #58a6ff; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  #info-panel .info-group { color: #484f58; font-size: 10px; letter-spacing: 1.5px; margin-bottom: 8px; text-transform: uppercase; }
+  #info-panel .info-desc { color: #c9d1d9; font-size: 11px; line-height: 1.6; }
+
+  #controls {
+    position: absolute; top: 20px; right: 24px; z-index: 10;
+    display: flex; gap: 8px;
+  }
+  #controls button {
+    background: rgba(5, 5, 15, 0.85); border: 1px solid #21262d;
+    color: #c9d1d9; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+    font-family: inherit; font-size: 11px; letter-spacing: 1px;
+    backdrop-filter: blur(8px); transition: all 0.2s;
+  }
+  #controls button:hover { border-color: #58a6ff; color: #58a6ff; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>COMPASS &mdash; ARCHITECTURE GRAPH</h1>
+  <p>HOLDER &middot; CREDENTIAL &middot; STORAGE &middot; ON-CHAIN &middot; TEE &middot; VERIFIER &nbsp;|&nbsp; HOVER TO TRACE &middot; CLICK FOR DETAILS</p>
+</div>
+
+<div id="controls">
+  <button id="btn-reset">RESET VIEW</button>
+  <button id="btn-spin">AUTO-ROTATE</button>
+</div>
+
+<div id="legend">
+  <div class="legend-title">Compass Layers</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b; box-shadow:0 0 12px #ff6b6b"></div>Holder (user device)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ffd93d; box-shadow:0 0 12px #ffd93d"></div>Credential (SD-JWT VC)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f472b6; box-shadow:0 0 12px #f472b6"></div>0G Storage</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4d96ff; box-shadow:0 0 12px #4d96ff"></div>0G Chain (on-chain)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#c084fc; box-shadow:0 0 12px #c084fc"></div>TEE (Phala dstack TDX)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6bcb77; box-shadow:0 0 12px #6bcb77"></div>Verifier</div>
+</div>
+
+<div id="info-panel">
+  <div class="info-group" id="info-group"></div>
+  <div class="info-title" id="info-title"></div>
+  <div class="info-desc" id="info-desc"></div>
+</div>
+
+<div id="graph"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://esm.sh/three@0.181.0",
+    "three/": "https://esm.sh/three@0.181.0/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import ForceGraph3D from 'https://esm.sh/3d-force-graph@1.73.4?external=three';
+import SpriteText from 'https://esm.sh/three-spritetext?external=three';
+
+const COLORS = {
+  holder:     '#ff6b6b',
+  credential: '#ffd93d',
+  storage:    '#f472b6',
+  onchain:    '#4d96ff',
+  tee:        '#c084fc',
+  verify:     '#6bcb77',
+};
+
+const GROUP_LABELS = {
+  holder:     'HOLDER (USER DEVICE)',
+  credential: 'CREDENTIAL (SD-JWT VC)',
+  storage:    '0G STORAGE',
+  onchain:    '0G CHAIN',
+  tee:        'TEE (PHALA DSTACK TDX)',
+  verify:     'VERIFIER',
+};
+
+const nodes = [
+  // ── Holder layer ─────────────────────────────────────────────────
+  { id: 'maria_eoa',    name: "Maria's EOA",         group: 'holder', val: 20, desc: "Privy embedded wallet on 0G chain.\nSecp256k1 key derives in IndexedDB, never leaves device.\nSigns the Compass Grant (EIP-712 typed) with no gas, no popup-required sub-flow." },
+  { id: 'privy',        name: 'Privy Wallet',         group: 'holder', val: 14, desc: "Privy embedded wallet provider.\nNon-custodial, browser-side.\nappId: cmoyrs37m00rn0cl2dv25hyf4 (prod).\nDefault chain: activeChain() — Galileo OR Aristotle based on env." },
+  { id: 'vault',        name: 'AES-256 Vault',        group: 'holder', val: 16, desc: "AES-256-GCM with non-extractable IndexedDB CryptoKey.\nEncrypts the issued SD-JWT VC before localStorage persist.\nPlaintext never enters localStorage." },
+
+  // ── Credential layer ─────────────────────────────────────────────
+  { id: 'sdjwt',        name: 'SD-JWT VC',            group: 'credential', val: 18, desc: "Selective-Disclosure JWT Verifiable Credential.\ndraft-ietf-oauth-sd-jwt-vc-15.\nEd25519 signed by NGO issuer.\nMaria reveals only the disclosures she chooses." },
+  { id: 'issuer',       name: 'NGO Issuer',           group: 'credential', val: 14, desc: "HELP / Bethune House / Mission for Migrant Workers — real NGOs.\nDemo uses local Ed25519 fixtures; not endorsed by the NGOs themselves.\nLive issuer behind /api/issue when ISSUER_PRIVATE_KEY set." },
+  { id: 'status_list',  name: 'Status List',          group: 'credential', val: 10, desc: "@sd-jwt/jwt-status-list.\nRevocation without phoning home.\nNGO can revoke a leaked credential without learning who's using it." },
+
+  // ── Storage layer ────────────────────────────────────────────────
+  { id: 'og_storage',   name: '0G Storage',           group: 'storage', val: 14, desc: "AES-256-GCM ciphertext of the SD-JWT VC bundle.\nMerkle root → AgentRegistry.encryptedURI.\nCiphertext upload draft (live behind COMPASS_LIVE_STORAGE=1)." },
+
+  // ── On-chain layer ───────────────────────────────────────────────
+  { id: 'agent_registry', name: 'AgentRegistry',       group: 'onchain', val: 18, desc: "ERC-7857-stripped soulbound INFT bound to user EOA.\nCarries encryptedURI → 0G Storage.\nGalileo: 0x461eda…2D8 · Aristotle: 0xf1FAa…0Bf9.\nSlither audit: 0 sec findings." },
+  { id: 'compass_hub',  name: 'CompassHub',           group: 'onchain', val: 22, desc: "Atomic consumeGrantAndIssueReceipt.\nPolicies + Authwit + receipts + nullifier replay protection.\nGalileo: 0x60BbE…7c3b · Aristotle: 0xe42fd…C58b.\n40 unit tests + 5 property invariants." },
+  { id: 'grant',        name: 'Authwit Grant',        group: 'onchain', val: 12, desc: "EIP-712 typed data signed by Maria's EOA.\nFields: agent, provider, policyId, nullifier, expiry.\nProvider relays atomically; Maria pays no gas." },
+  { id: 'receipt',      name: 'Receipt',              group: 'onchain', val: 18, desc: "On-chain ReceiptIssued event.\nFields: receiptId, policyId, nullifier, agentIdCommitment, resultHash, attestationDigest, expiry, 15-min timestamp bucket.\nVersion 1.2.0 pinned." },
+  { id: 'nullifier',    name: 'Nullifier',            group: 'onchain', val: 10, desc: "Replay protection.\nMonotonic per (agent, policy).\nProperty-invariant tested under fuzz." },
+
+  // ── TEE layer ────────────────────────────────────────────────────
+  { id: 'tee_dstack',   name: 'Phala dstack TDX',     group: 'tee', val: 24, desc: "Intel TDX TEE on Phala Cloud.\ndstack-0.5.9 production channel (not DEV).\nReceives selectively-disclosed claims; signs the receipt with sealed key.\nLive: app ID 65c93172e22403466eecee47dd1cc90375014a0f." },
+  { id: 'tee_signer',   name: 'TEE Signer',           group: 'tee', val: 18, desc: "dstack getKey derived secp256k1.\nSealed to MR_TD — key cannot leave the enclave.\nAddress: 0xaba6b92ff8199275eb090c9b3049141fd431a7e7." },
+  { id: 'composehash',  name: 'composeHash',          group: 'tee', val: 14, desc: "dstack composeHash trust anchor.\n0x1884e756bba03fc75f8354a04b294372c770a2720a10b7b3c6cd970a42bdcea0.\nPinned in docs/notes/phala-deployment.md.\nImage-identity binding for the verifier." },
+  { id: 'quote',        name: 'TDX Quote',            group: 'tee', val: 16, desc: "Per-receipt TDX v4 quote.\nreport_data = sha256(ethAddress || composeHash || receiptId).\nDefeats archived-quote replay across deployments.\nFreshness binding stronger than boot-quote." },
+  { id: 'policy_eval',  name: 'Policy Evaluator',     group: 'tee', val: 12, desc: "Pure function inside the enclave.\nEvaluates selectively-disclosed SD-JWT claims against an on-chain policy.\nReturns eligible / denied + the bucketed timestamp." },
+
+  // ── Verifier layer ───────────────────────────────────────────────
+  { id: 'browser_verifier', name: 'Browser Verifier', group: 'verify', val: 18, desc: "/verify page on https://app-psi-pied.vercel.app.\nRe-runs the four cryptographic checks in ~150 ms.\n@noble/curves + @noble/hashes only.\nNo clone, no install, no terminal." },
+  { id: 'cli_verifier', name: 'verify-receipt CLI',   group: 'verify', val: 14, desc: "enclave/scripts/verify-receipt.ts.\nCanonical reference verifier.\nSame 4 checks, same canonicalization, same curve library — the browser port is 1:1." },
+  { id: 'skill',        name: 'compass-eligibility skill', group: 'verify', val: 12, desc: "Reusable Claude Code / OpenClaw skill.\nAny agent or CI step in the 0G ecosystem can ask 'is this Compass receipt valid?' with one tool call." },
+  { id: 'attest_digest', name: 'attestationDigest',   group: 'verify', val: 10, desc: "sha256 of canonicalized receipt.\nFirst of four verification checks.\nByte-parity between CLI + browser ports (canonicalize fix lands in both)." },
+];
+
+const links = [
+  // Holder side
+  { source: 'maria_eoa', target: 'privy' },
+  { source: 'privy',     target: 'vault' },
+
+  // Credential issuance
+  { source: 'issuer',    target: 'sdjwt' },
+  { source: 'sdjwt',     target: 'status_list' },
+  { source: 'sdjwt',     target: 'vault' },
+
+  // Storage upload
+  { source: 'vault',          target: 'og_storage' },
+  { source: 'og_storage',     target: 'agent_registry' },
+
+  // On-chain mint + grant
+  { source: 'maria_eoa',  target: 'agent_registry' },
+  { source: 'maria_eoa',  target: 'grant' },
+  { source: 'grant',      target: 'compass_hub' },
+  { source: 'compass_hub', target: 'nullifier' },
+  { source: 'compass_hub', target: 'receipt' },
+
+  // TEE flow
+  { source: 'sdjwt',       target: 'tee_dstack' },
+  { source: 'tee_dstack',  target: 'policy_eval' },
+  { source: 'tee_dstack',  target: 'tee_signer' },
+  { source: 'tee_signer',  target: 'quote' },
+  { source: 'composehash', target: 'quote' },
+  { source: 'quote',       target: 'receipt' },
+  { source: 'policy_eval', target: 'receipt' },
+  { source: 'tee_signer',  target: 'receipt' },
+
+  // Verifier chain
+  { source: 'receipt',         target: 'attest_digest' },
+  { source: 'attest_digest',   target: 'browser_verifier' },
+  { source: 'receipt',         target: 'cli_verifier' },
+  { source: 'receipt',         target: 'skill' },
+  { source: 'composehash',     target: 'browser_verifier' },
+  { source: 'composehash',     target: 'cli_verifier' },
+  { source: 'composehash',     target: 'skill' },
+];
+
+// ── Pre-compute neighbors for hover highlighting ───────────────────
+nodes.forEach(n => { n.neighbors = []; n.links = []; });
+links.forEach(link => {
+  const a = nodes.find(n => n.id === link.source);
+  const b = nodes.find(n => n.id === link.target);
+  if (a && b) {
+    a.neighbors.push(b);
+    b.neighbors.push(a);
+    a.links.push(link);
+    b.links.push(link);
+  }
+});
+
+const highlightNodes = new Set();
+const highlightLinks = new Set();
+let hoverNode = null;
+
+function getSourceNode(link) {
+  const sid = typeof link.source === 'object' ? link.source.id : link.source;
+  return nodes.find(n => n.id === sid);
+}
+
+// ── Graph ──────────────────────────────────────────────────────────
+const graphEl = document.getElementById('graph');
+let spinning = true;
+
+const Graph = ForceGraph3D()(graphEl)
+  .graphData({ nodes, links })
+  .backgroundColor('#000003')
+  .width(window.innerWidth)
+  .height(window.innerHeight)
+  .showNavInfo(false)
+
+  .nodeColor(node => {
+    if (highlightNodes.size === 0) return COLORS[node.group];
+    return highlightNodes.has(node) ? COLORS[node.group] : COLORS[node.group] + '30';
+  })
+  .nodeVal(n => n.val)
+  .nodeRelSize(5)
+  .nodeOpacity(0.9)
+  .nodeResolution(24)
+
+  .nodeThreeObject(node => {
+    const sprite = new SpriteText(node.name);
+    sprite.color = COLORS[node.group];
+    sprite.backgroundColor = 'rgba(0, 0, 3, 0.65)';
+    sprite.padding = 1.5;
+    sprite.borderRadius = 2;
+    sprite.textHeight = 2.5;
+    sprite.material.depthWrite = false;
+    sprite.position.y = 10;
+    return sprite;
+  })
+  .nodeThreeObjectExtend(true)
+
+  .nodeLabel(n =>
+    `<div style="color:${COLORS[n.group]};background:rgba(0,0,3,0.9);padding:6px 12px;border-radius:6px;font-family:'SF Mono',monospace;font-size:11px;border:1px solid ${COLORS[n.group]}44;max-width:320px;line-height:1.5">${n.desc.split('\n')[0]}</div>`
+  )
+
+  .linkColor(link => {
+    const sn = getSourceNode(link);
+    const base = sn ? COLORS[sn.group] : '#ffffff';
+    if (highlightLinks.size === 0) return base + '44';
+    return highlightLinks.has(link) ? base + 'cc' : base + '12';
+  })
+  .linkWidth(link => highlightLinks.has(link) ? 2.5 : 0.6)
+  .linkOpacity(0.3)
+  .linkDirectionalParticles(link => highlightLinks.has(link) ? 6 : 2)
+  .linkDirectionalParticleWidth(link => highlightLinks.has(link) ? 3 : 1.5)
+  .linkDirectionalParticleSpeed(0.005)
+  .linkDirectionalParticleColor(link => {
+    const sn = getSourceNode(link);
+    return sn ? COLORS[sn.group] : '#ffffff';
+  })
+  .linkDirectionalArrowLength(5)
+  .linkDirectionalArrowRelPos(1)
+  .linkDirectionalArrowColor(link => {
+    const sn = getSourceNode(link);
+    return sn ? COLORS[sn.group] + '88' : '#ffffff88';
+  })
+  .linkCurvature(0.15)
+
+  .onNodeHover(node => {
+    if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
+    highlightNodes.clear();
+    highlightLinks.clear();
+    if (node) {
+      highlightNodes.add(node);
+      node.neighbors.forEach(n => highlightNodes.add(n));
+      node.links.forEach(l => highlightLinks.add(l));
+    }
+    hoverNode = node || null;
+    updateHighlight();
+    graphEl.style.cursor = node ? 'pointer' : 'default';
+  })
+
+  .onNodeClick(node => {
+    document.getElementById('info-group').textContent = GROUP_LABELS[node.group] || '';
+    document.getElementById('info-title').textContent = node.name;
+    document.getElementById('info-desc').textContent = node.desc;
+    document.getElementById('info-panel').style.display = 'block';
+
+    const dist = 100;
+    const ratio = 1 + dist / Math.hypot(node.x, node.y, node.z);
+    Graph.cameraPosition(
+      { x: node.x * ratio, y: node.y * ratio, z: node.z * ratio },
+      node, 1500
+    );
+  })
+  .onBackgroundClick(() => {
+    document.getElementById('info-panel').style.display = 'none';
+    highlightNodes.clear();
+    highlightLinks.clear();
+    hoverNode = null;
+    updateHighlight();
+  });
+
+function updateHighlight() {
+  Graph
+    .nodeColor(Graph.nodeColor())
+    .linkColor(Graph.linkColor())
+    .linkWidth(Graph.linkWidth())
+    .linkDirectionalParticles(Graph.linkDirectionalParticles())
+    .linkDirectionalParticleWidth(Graph.linkDirectionalParticleWidth());
+}
+
+Graph.d3Force('charge').strength(-260);
+Graph.d3Force('link').distance(70);
+
+try {
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    2.5,
+    0.8,
+    0
+  );
+  Graph.postProcessingComposer().addPass(bloomPass);
+} catch (e) {
+  console.warn('Bloom unavailable:', e);
+}
+
+const starGeometry = new THREE.BufferGeometry();
+const starPositions = new Float32Array(5000 * 3);
+for (let i = 0; i < 5000 * 3; i++) {
+  starPositions[i] = (Math.random() - 0.5) * 10000;
+}
+starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+Graph.scene().add(new THREE.Points(starGeometry, new THREE.PointsMaterial({
+  color: 0xffffff, size: 0.5, transparent: true, opacity: 0.4,
+})));
+
+Graph.scene().fog = new THREE.FogExp2(0x000003, 0.00025);
+
+setTimeout(() => {
+  Graph.cameraPosition({ x: 0, y: 0, z: 400 }, { x: 0, y: 0, z: 0 }, 2000);
+}, 300);
+
+function spin() {
+  if (!spinning) return;
+  const t = Date.now() * 0.00008;
+  Graph.cameraPosition({
+    x: 400 * Math.sin(t),
+    y: 80 * Math.sin(t * 0.6),
+    z: 400 * Math.cos(t),
+  });
+  requestAnimationFrame(spin);
+}
+spin();
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  Graph.cameraPosition({ x: 0, y: 0, z: 400 }, { x: 0, y: 0, z: 0 }, 1500);
+  document.getElementById('info-panel').style.display = 'none';
+  highlightNodes.clear();
+  highlightLinks.clear();
+  hoverNode = null;
+  updateHighlight();
+});
+
+document.getElementById('btn-spin').addEventListener('click', () => {
+  spinning = !spinning;
+  if (spinning) spin();
+});
+
+window.addEventListener('resize', () => {
+  Graph.width(window.innerWidth).height(window.innerHeight);
+});
+</script>
+</body>
+</html>

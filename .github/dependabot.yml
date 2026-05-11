@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /app
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Asia/Hong_Kong"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - security
+    commit-message:
+      prefix: "deps(app)"
+
+  - package-ecosystem: npm
+    directory: /enclave
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Asia/Hong_Kong"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - security
+      - enclave
+    commit-message:
+      prefix: "deps(enclave)"
+
+  - package-ecosystem: npm
+    directory: /contracts
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Asia/Hong_Kong"
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - security
+      - contracts
+    commit-message:
+      prefix: "deps(contracts)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "ci(deps)"

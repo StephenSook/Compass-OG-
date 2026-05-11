@@ -1,0 +1,93 @@
+name: Bug report
+description: Something is not working the way the docs / tests / live app say it should.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Before filing, please check the [honest-limits doc](../../docs/honest-limits.md) — some surprises are documented as known limits rather than bugs.
+
+        🔒 **Security vulnerabilities — do not file here.** Use the private reporting channel in [`SECURITY.md`](../../SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: One or two sentences. What did you observe?
+      placeholder: When I clicked "Request Eligibility" on /onboard, the receipt minted but `attestationDigest` was zero.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: One sentence. What should have happened?
+      placeholder: The receipt's attestationDigest should equal sha256(canonicalize(receipt)).
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: |
+        Step-by-step. Include the exact commit SHA you tested against if local, or the live frontend URL + browser if you observed it in production. If a Hardhat / Playwright / vitest test reproduces it, include that command.
+      placeholder: |
+        1. Visit https://app-psi-pied.vercel.app/onboard
+        2. Sign in via Privy (Galileo testnet)
+        3. Click "Request Eligibility"
+        4. Observe ReceiptIssued event — attestationDigest field is 0x0…
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: commit-sha
+    attributes:
+      label: Compass commit SHA
+      description: "Run: `git rev-parse HEAD`"
+      placeholder: 6b099a8b
+    validations:
+      required: false
+
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      options:
+        - 0G Aristotle mainnet (chainId 16661)
+        - 0G Galileo testnet (chainId 16602)
+        - Local Hardhat (chainId 31337)
+        - N/A — frontend-only bug
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (if frontend)
+      placeholder: "Chrome 142 / Firefox 134 / Safari 18 / iOS Safari …"
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: |
+        Screenshots, error console output, on-chain tx hashes that reverted, relevant `/api/tee-status` snapshot. **Trim secrets** before pasting.
+      placeholder: tx hash, console error, /api/tee-status JSON, …
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: This is not a security vulnerability (those go to `SECURITY.md` privately).
+          required: true

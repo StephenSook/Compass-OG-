@@ -16,6 +16,39 @@ A private eligibility firewall on 0G — vulnerable migrant workers prove they q
 
 ---
 
+## Table of contents
+
+1. [Watch the demo](#watch-the-demo) — live URLs + 3-minute video
+2. [See it live](#see-it-live) — frontend, TEE, contracts, container image
+3. [The "shouldn't be possible" moment](#the-shouldnt-be-possible-moment) — what a subpoena actually retrieves
+4. [Maria's story](#marias-story) — who Compass is for
+5. [What's real / what's mocked](#whats-real--whats-mocked) — honest scope table
+6. [Architecture](#architecture) — ASCII + 3D + auto-graph + gource time-lapse
+7. [0G integration](#0g-integration) — which 0G layer does what
+8. [Replicate the TEE binding yourself](#replicate-the-tee-binding-yourself) — browser + CLI verifier
+9. [End-to-end tests](#end-to-end-tests) — Playwright suite
+10. [Whitepaper](#whitepaper) — 3-page technical PDF
+11. [Pillar 5 — Honesty about traction](#pillar-5--honesty-about-traction) — NGO outreach log
+12. [Ecosystem citizenship — `compass-eligibility-check` skill](#ecosystem-citizenship--compass-eligibility-check-skill)
+13. [Live attestation evidence (pinned)](#live-attestation-evidence-pinned)
+14. [On-chain deployments](#on-chain-deployments) — Galileo + Aristotle addresses
+15. [Quickstart (local dev)](#quickstart-local-dev)
+16. [Tech stack](#tech-stack)
+17. [Pre-submission audit summary](#pre-submission-audit-summary) — Slither, Codex, Vitest, Hardhat, Playwright
+18. [Documentation map](#documentation-map)
+19. [Honest limits](#honest-limits)
+20. [Cite this work](#cite-this-work)
+21. [Contributing + security](#contributing--security)
+22. [License + credits](#license--credits)
+
+---
+
+## Why this matters
+
+Hong Kong's foreign domestic helpers can be deported in 14 days if they lose their job. Every time they ask for help, they hand over papers that can be subpoenaed back at them. **Compass closes that gap by letting them prove eligibility for a service without revealing who they are** — using verifiable credentials, a sealed enclave, and a 0G-chain receipt that contains no identifying fields. If a court asks the clinic "who came in at 2pm last Tuesday?", the honest answer is "someone qualified for the service." That's the whole disclosure.
+
+---
+
 ## Watch the demo
 
 > **3-minute walkthrough:** `[DEMO_VIDEO_URL]` *(YouTube unlisted — drop the URL here once F.1 lands; see `Demo/script.md` for the 6-beat shooting script and `Demo/storyboard.md` for the visual companion).*
@@ -124,6 +157,14 @@ This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the 
 ```
 
 Visual + section-by-section breakdown: [/about](https://app-psi-pied.vercel.app/about).
+
+### Three pre-rendered views in [`docs/visualizations/`](./docs/visualizations/README.md)
+
+| View | Best for | Open with |
+|---|---|---|
+| 🎬 [`compass-gource.mp4`](./docs/visualizations/compass-gource.mp4) — animated git-history time-lapse (3.2 MB) | Slide-deck B-roll, hackathon booth loop | Any video player |
+| 🛰️ [`compass-architecture-3d.html`](./docs/visualizations/compass-architecture-3d.html) — interactive 3D force graph of the 6 layers (22 hand-curated nodes, bloom + neon, hover-to-trace) | Live demo, judge walkthrough | `python3 -m http.server 8888` then open in browser |
+| 🕸️ [`compass-knowledge-graph.html`](./docs/visualizations/compass-knowledge-graph.html) — auto-generated full-codebase graph (484 nodes / 491 edges / 132 communities) via [graphify](https://github.com/sokratesgmbh/graphify) | "What touches `consumeGrantAndIssueReceipt`?" | Same as above |
 
 ---
 

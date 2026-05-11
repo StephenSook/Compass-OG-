@@ -168,3 +168,4 @@ mnemonic.txt
 
 # Per-run verify-receipt evidence (regenerable; canonical evidence is phala-deployment.md)
 docs/notes/verify-receipt-evidence.md
+graphify-out/
