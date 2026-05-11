@@ -10,6 +10,23 @@ holds on bank transfer). Below are alternate paths in order of preference.
 
 ---
 
+## Path 0 — 0G Discord support ticket (NEW endorsed path, 2026-05-10)
+
+Per Dolly bot guidance in the 0G Discord (2026-05-10): "For mainnet
+OG, please open a support ticket in Discord for guidance on acquiring
+tokens." This is now the officially endorsed path when CEX-buy-and-
+withdraw is blocked.
+
+OTC trades are explicitly DISCOURAGED ("OTC/DM trades carry scam risk
+and aren't endorsed here") — do not post OTC asks in #builders.
+
+Draft message + status checklist: `Demo/discord-support-ticket.md`.
+
+**Expect:** the support team likely confirms the bridge.0g.ai route as
+the answer for US-jurisdiction builders, since all four CEXes on their
+recommendation list are US-blocked (Bitget/MEXC/Bybit) or don't list
+0G (Kraken lists OGN, the unrelated Origin Protocol token).
+
 ## Path 1 — 0G hackathon ecosystem credits — **NOT A THING for mainnet**
 
 **Confirmed by 0G Labs (Asad Khalid, Discord 2026-05-08):** there are no
