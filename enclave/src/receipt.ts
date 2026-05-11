@@ -64,6 +64,16 @@ export function canonicalize(value: unknown): string {
     for (let i = 0; i < value.length; i++) {
       const code = value.charCodeAt(i);
       if (code >= 0xd800 && code <= 0xdbff) {
+        // Bug caught by browser-mirror vitest 2026-05-11: pre-fix
+        // this checked `charCodeAt(i+1)` against the surrogate range,
+        // but at EOS charCodeAt returns NaN, NaN < 0xdc00 is false,
+        // and the OR was false → the rejection didn't fire for a
+        // high surrogate at the last position. Now explicitly bounds-
+        // checks first. Enclave-image canonicalize still has the
+        // pre-fix behavior pending v0.6 CVM rebuild.
+        if (i + 1 >= value.length) {
+          throw new CanonicalizationError("lone high surrogate at end of string");
+        }
         const next = value.charCodeAt(i + 1);
         if (next < 0xdc00 || next > 0xdfff) {
           throw new CanonicalizationError("lone high surrogate in string");

@@ -139,6 +139,14 @@ function canonicalize(value: unknown): string {
     for (let i = 0; i < value.length; i++) {
       const code = value.charCodeAt(i);
       if (code >= 0xd800 && code <= 0xdbff) {
+        // Bug caught by vitest 2026-05-11: pre-fix this checked
+        // `charCodeAt(i+1)` against the surrogate range, but at EOS
+        // charCodeAt returns NaN, NaN < 0xdc00 is false, and the OR
+        // was false → the rejection didn't fire for a high surrogate
+        // at the last position. Now explicitly bounds-check first.
+        if (i + 1 >= value.length) {
+          throw new Error("lone high surrogate at end of string");
+        }
         const next = value.charCodeAt(i + 1);
         if (next < 0xdc00 || next > 0xdfff) {
           throw new Error("lone high surrogate in string");
