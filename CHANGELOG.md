@@ -1,5 +1,68 @@
 # Changelog
 
+## Unreleased — OG team May 11 announcement sync (2026-05-11, sixth wave)
+
+OG team's "Final Push — 5 DAYS TO GO" tweet (Dragon, May 11) + the
+"0G APAC Hackathon · Final Week Sprint" Discord post locked the
+HackQuest submission deadline at **May 16 2026, 23:59 GMT+8** — not
+June 5 as several Demo/* drafts had inherited from an earlier
+internal timeline.
+
+### Changed
+
+- **`SUPPORT.md`** — response-time table footnote updated from
+  "now → June 5 2026" to "now → **May 16 2026, 23:59 GMT+8**" with
+  attribution to the OG team's May 11 final-sprint announcement.
+- **`Demo/x-post-final.md`** — "Post timing" section: primary post
+  target moved from "June 3 evening US time / June 4 morning APAC"
+  to "**May 15 evening US time / May 16 morning APAC**, within
+  24hr of HackQuest submission." Added explanatory paragraph
+  citing the OG team announcement.
+- **`Demo/hackquest-submission-answers.md`** — replaced the
+  "Revised timeline (BEYOND Expo Macau = Yes)" section entirely.
+  Old timeline reached June 5; new "Final-week timeline" maps
+  May 11 (today) → May 16 (deadline) → May 17+ (community award
+  push). Removed Macau travel prep (per user 2026-05-10:
+  "leave out Macau, not confirmed I've won"). Added a
+  **Dragon's final-sprint checklist** sub-section mapping the
+  4 points from the May 11 tweet against Compass status:
+  (1) going-to-market via NGO outreach drafts;
+  (2) one-liner locked "Prove eligibility, not identity.";
+  (3) Pitch Video covers user-journey arc at 2:55 — separate
+      "How It Works" video deferred to v0.6;
+  (4) Community Award eligibility via 4 mandatory tags in F.5.
+  Added a "What's NOT in this submission (intentional)"
+  sub-section explicit about Macau, 0G Pay × Khalani,
+  CheckPoint deferral.
+- **`Demo/hackquest-submission-answers.pdf`** — regenerated to
+  match the .md changes (md-to-pdf, ~249 KB).
+- **`Demo/otc-discord-ping.md`** — June 5 → May 16 23:59 GMT+8.
+- **`Demo/discord-support-ticket.md`** — two June 5 references
+  → May 16 23:59 GMT+8.
+
+### Why this matters
+
+Both HackQuest submission and registration forms are editable until
+the deadline; the final submitted version is what gets judged
+(Dragon's "5 days to go" tweet, point 5). The Demo/* drafts
+needed to reflect the actual deadline so the final-sprint cadence
+matches what the OG team will actually grade against.
+
+### What this does NOT touch (verified clean)
+
+- `README.md`, `docs/whitepaper.md`, `docs/press-kit.md`,
+  `Demo/script.md`, `Demo/storyboard.md`, `docs/honest-limits.md`,
+  `docs/outreach/*.md` — none of these had embedded deadline
+  references; they are framed around the live product not the
+  submission window.
+- The one-liner "Prove eligibility, not identity." is already
+  locked across README, /about, social-preview PNG, /opengraph-image,
+  whitepaper, press kit, and every Demo/* file — no edit needed.
+- ADRs, threat model, architecture doc — frozen as historical
+  records; no deadline coupling.
+
+---
+
 ## Unreleased — Round-4 multi-agent audit cleanup (2026-05-11, fifth wave)
 
 7-subagent + 1-skill parallel review surfaced one CRITICAL SSR

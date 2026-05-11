@@ -79,30 +79,35 @@ Aristotle mainnet (chainId 16661): AgentRegistry 0xf1FAaBef1d00Db1a15b7637Dc0d85
 
 ---
 
-## Revised timeline (BEYOND Expo Macau = Yes)
+## Final-week timeline (per OG team May 11 final-sprint announcement)
 
-May 28 IRL demo at BEYOND Expo Macau is now a hard date 18 days from 2026-05-10. F.1 demo video and F.5 X post both move EARLIER so the HackQuest submission lands before travel — no Macau hotel Wi-Fi gambling.
+The 0G APAC Hackathon hard submission deadline is **May 16 2026, 23:59 GMT+8** (per Dragon's May 11 final-push tweet + the 0G-APAC-HACKATHON promo code expiry). HackQuest forms can keep being updated until the deadline; the final submitted version is what is judged. Today is 2026-05-11 → 5 days to go.
 
-| Date | Action |
-|------|--------|
-| May 10-22 | Polish · record F.1 demo video · upload YouTube unlisted |
-| May 23 | F.5 — post X tweet using `Demo/x-post-final.md` template; capture URL |
-| May 24 | HackQuest Submit Project (with X URL from May 23) — locks submission before travel |
-| May 26-27 | Fly NYC → Macau (US passport visa-free ≤30 days via Macau airport; HKG ferry alternative) |
-| **May 28** | **BEYOND Expo IRL demo showcase** — in-person to 0G team + judges |
-| May 29 - June 4 | Post-event X engagement; Community Award push (10× $1.3k voted via Discord/X) |
-| June 5 | Hackathon deadline (already submitted) |
+| Date (2026) | Action |
+|---|---|
+| May 11 (today) | Polish push; round-4 multi-agent audit shipped (see CHANGELOG). |
+| May 12-13 | Record F.1 demo video (per `Demo/script.md`, 6 beats, ~2:55). Upload YouTube unlisted; capture URL. |
+| May 14 | Stop the Phala TEE CVM cost meter only after recording finishes; restart it 24hr before any judge demo. Verify `/api/tee-status` returns `mode: tee` from a cold incognito session. |
+| May 15 | F.5 — post X tweet using `Demo/x-post-final.md` template within 24hr of HackQuest submission; capture URL. Update Google Form (registration) + HackQuest submission form with the X URL and demo URL. |
+| **May 16** | **23:59 GMT+8 hard HackQuest submission deadline.** Final-version-as-submitted is what is judged. |
+| May 17+ | Community Award push (10× $1.3k voted via Discord/X engagement). Reply to every @0g_labs / @HackQuest_ engagement for 48 hours after the primary X post. |
 
-### Travel prep checklist
+### Dragon's final-sprint checklist (from the 2026-05-11 "Final Push" tweet)
 
-- [ ] US passport valid 6+ months past travel
-- [ ] Book flights NYC → Macau (~$1200-1800 economy, 18-22hr; price climbs from here)
-- [ ] BEYOND Expo registration: `https://portal.beyondexpo.com/reg/beyond26/web/#/zh/ticket/mall?track=tk07`
-- [ ] Hotel near Cotai (where BEYOND Expo is held) — book by May 20
-- [ ] Demo gear: laptop + mobile hotspot SIM + offline kiosk fallback build
-- [ ] Printed materials: QR codes → live app + GitHub + whitepaper; one-page handout
-- [ ] Practice demo cold on hotel Wi-Fi on May 27 before Day 1
-- [ ] Confirm 0G team booth / session schedule via Telegram before flying
+The OG team's Dragon explicitly called out four things for the last 5 days. Compass status against each:
+
+| Dragon's point | Compass status |
+|---|---|
+| 1. Going-to-market, not just code | 6 NGO/foundation outreach drafts in `docs/outreach/` (HELP, Bethune, Mission, Open Society, Luminate, Jockey Club). Press kit at `docs/press-kit.md`. Cite-this-work block in README. |
+| 2. Nail one-liner | **"Prove eligibility, not identity."** Locked across README hero, /about, social-preview PNG, /opengraph-image, whitepaper, press kit, and every Demo/* file. |
+| 3. Two videos — How It Works + Pitch | F.1 (`Demo/script.md`) targets the Pitch Video (Problem → Product → Architecture → Why 0G → Why Solo Build) at ~2:55. Pure user-journey "How It Works" track is **not** a separate recording in this submission; the Pitch covers both arcs because the runtime budget is 3:00 and a separate user-journey video would require footage not yet captured. Documented as a v0.6 follow-up. |
+| 4. First 100 users the unsexy way | NGO + foundation cold-emails drafted. Pillar-5 traction log in README. F.5 X post tags 4 mandatory accounts (`@0G_labs @0g_CN @0g_Eco @HackQuest_`) for Community Award eligibility. |
+
+### What's NOT in this submission (intentional)
+
+- **BEYOND Expo Macau May 28 IRL demo** — out of scope until the hackathon submission lands; revisit post-May-16 if Compass gets shortlisted (per user feedback 2026-05-10: "leave out Macau until it's confirmed I have won").
+- **0G Pay × Khalani integration** — Compass is a free eligibility check (NGO → migrant worker), no payment rail needed.
+- **CheckPoint demo submission** — answered "No" on the Google Form because the v0.5 milestone landed after the CheckPoint window.
 
 ---
 

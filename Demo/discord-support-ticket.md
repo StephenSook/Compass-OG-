@@ -20,8 +20,9 @@ Sovereign Infrastructure), 0G APAC Hackathon
 
 Quick context: I need ~0.5 OG on Aristotle
 (chainId 16661) to deploy AgentRegistry +
-CompassHub contracts before the June 5
-submission deadline. Galileo flow already
+CompassHub contracts before the
+May 16 2026 23:59 GMT+8 HackQuest submission
+deadline. Galileo flow already
 shipped end-to-end:
 - Repo: https://github.com/StephenSook/Compass-OG-
 - Live demo: https://app-psi-pied.vercel.app
@@ -59,7 +60,7 @@ builder. Could the team:
    jurisdiction.
 
 Deployer wallet (Aristotle): 0x05b5Bb550eb8401fC4b8a33bf566C03f49ef5d34
-Submission deadline: June 5 2026.
+Submission deadline: May 16 2026, 23:59 GMT+8.
 
 Thank you — happy to share more context if
 useful.

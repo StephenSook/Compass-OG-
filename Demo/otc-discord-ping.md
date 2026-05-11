@@ -31,7 +31,7 @@ Would anyone be willing to OTC ~0.5 OG to my
 deployer for fair price? Sending USDC/USDT
 back on Ethereum L1 or USDC on Base. Just need
 enough to deploy AgentRegistry + CompassHub
-contracts before June 5 submission.
+contracts before the May 16 2026 23:59 GMT+8 HackQuest submission deadline.
 
 Repo (so this isn't a sybil):
 https://github.com/StephenSook/Compass-OG-

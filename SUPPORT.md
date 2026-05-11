@@ -28,7 +28,7 @@ Compass is a solo hackathon build (0G APAC 2026 Track 5). Best-effort response t
 | Public issues (bug / feature) | 5 business days |
 | Pull requests | Reviewed in the order received |
 
-Outside the active hackathon submission window (now → June 5 2026), expect slower turnaround.
+Outside the active hackathon submission window (now → **May 16 2026, 23:59 GMT+8** — the 0G APAC Hackathon hard submission deadline per the OG team's May 11 final-sprint announcement), expect slower turnaround.
 
 ## What this repo is *not* set up for
 

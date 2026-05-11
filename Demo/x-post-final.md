@@ -83,7 +83,9 @@ Per plan F.5: post within 24 hours of HackQuest submission. Must include the fou
 
 ## Post timing
 
-- **Primary post:** within 24 hours of HackQuest submission confirmation (target: June 3 evening US time / June 4 morning APAC).
+The 0G APAC Hackathon submission deadline per the OG team's May 11 final-sprint announcement is **May 16 2026, 23:59 GMT+8**. Schedule the X post accordingly:
+
+- **Primary post:** within 24 hours of HackQuest submission confirmation (target: **May 15 evening US time / May 16 morning APAC**). Post before the May 16 deadline so the Community Award track sees engagement during the active judging window.
 - **Thread continuation:** optional, post within 6 hours of the primary if engagement is moving (≥10 likes/RTs on the primary).
 - **Replies:** monitor for 48 hours after the primary. Reply to every @0g_labs / @HackQuest_ engagement.
 
