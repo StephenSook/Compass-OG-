@@ -15,6 +15,12 @@ import {
   type StoredLiveCredential,
 } from "@/lib/crypto/vault";
 import { isPrivyEnabled } from "@/lib/chains";
+import {
+  LOCALE_LABELS,
+  LOCALE_ORDER,
+  getKioskStrings,
+  type Locale,
+} from "@/lib/i18n/kiosk-strings";
 
 const LIVE_CREDENTIAL_STORAGE_KEY = "compass.live_credentials";
 
@@ -38,12 +44,14 @@ type Phase = "welcome" | "active" | "done";
 
 export default function KioskPage() {
   const [phase, setPhase] = useState<Phase>("welcome");
+  const [locale, setLocale] = useState<Locale>("en");
   const [walletAddress, setWalletAddress] = useState<Address | null>(null);
   const [liveMint, setLiveMint] = useState<{ tokenId: bigint; txHash: Hex } | null>(null);
   const [liveCredential, setLiveCredential] = useState<StoredLiveCredential | null>(null);
   const [receipt, setReceipt] = useState<ConsumeResponse | null>(null);
 
   const privyOn = isPrivyEnabled();
+  const t = getKioskStrings(locale);
 
   const handlePrivyConnected = useCallback((address: Address) => {
     setWalletAddress(address);
@@ -108,28 +116,37 @@ export default function KioskPage() {
   }, []);
 
   if (phase === "welcome") {
-    return <WelcomeScreen onStart={() => setPhase("active")} />;
+    return (
+      <WelcomeScreen
+        t={t}
+        locale={locale}
+        onSetLocale={setLocale}
+        onStart={() => setPhase("active")}
+      />
+    );
   }
 
   if (phase === "done" && receipt) {
-    return <ReceiptScreen receipt={receipt} onReset={reset} />;
+    return <ReceiptScreen t={t} receipt={receipt} onReset={reset} />;
   }
 
   return (
     <section className="flex flex-1 flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-2xl">
         <p className="font-mono text-sm tracking-[0.3em] text-muted-foreground uppercase">
-          HELP for Domestic Workers · Eligibility Check
+          {t.flowKicker}
         </p>
         <h1 className="mt-4 text-4xl leading-tight font-medium text-foreground md:text-5xl">
-          Three steps. <span className="font-serif italic">Private.</span>
+          {t.flowTitle}{" "}
+          <span className="font-serif italic">{t.flowTitleItalic}</span>
         </h1>
 
         <ol className="mt-10 space-y-4">
           <KioskStep
             n={1}
-            title="Sign in"
-            detail="Email login. We send a one-time code. No password, no personal information stored."
+            title={t.step1Title}
+            detail={t.step1Detail}
+            doneLabel={t.stepDone}
             done={!!walletAddress}
             child={
               privyOn && !walletAddress ? (
@@ -139,8 +156,9 @@ export default function KioskPage() {
           />
           <KioskStep
             n={2}
-            title="Create your private agent"
-            detail="A one-time setup. The agent acts on your behalf so the clinic never sees your name, your HKID, or your documents."
+            title={t.step2Title}
+            detail={t.step2Detail}
+            doneLabel={t.stepDone}
             disabled={!walletAddress}
             done={!!liveMint}
             child={
@@ -151,8 +169,9 @@ export default function KioskPage() {
           />
           <KioskStep
             n={3}
-            title="Prove you qualify"
-            detail="The agent checks your eligibility and prints a receipt. The receipt is the only thing the clinic ever sees about you."
+            title={t.step3Title}
+            detail={t.step3Detail}
+            doneLabel={t.stepDone}
             disabled={!liveMint}
             done={!!liveCredential}
             child={
@@ -166,8 +185,9 @@ export default function KioskPage() {
           />
           <KioskStep
             n={4}
-            title="Get your receipt"
-            detail="The receipt shows the clinic only that you qualified — nothing else. Show it at the intake desk."
+            title={t.step4Title}
+            detail={t.step4Detail}
+            doneLabel={t.stepDone}
             disabled={!liveCredential}
             done={false}
             child={
@@ -188,47 +208,72 @@ export default function KioskPage() {
           onClick={reset}
           className="mt-12 font-mono text-sm tracking-[0.3em] text-muted-foreground/60 uppercase transition-colors hover:text-foreground"
         >
-          Cancel and start over
+          {t.cancelOver}
         </button>
       </div>
     </section>
   );
 }
 
-function WelcomeScreen({ onStart }: { onStart: () => void }) {
+function WelcomeScreen({
+  t,
+  locale,
+  onSetLocale,
+  onStart,
+}: {
+  t: ReturnType<typeof getKioskStrings>;
+  locale: Locale;
+  onSetLocale: (l: Locale) => void;
+  onStart: () => void;
+}) {
   return (
     <section className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
+      <div className="mb-12 flex flex-wrap justify-center gap-3">
+        {LOCALE_ORDER.map((l) => (
+          <button
+            key={l}
+            type="button"
+            onClick={() => onSetLocale(l)}
+            className={`rounded-full border px-5 py-3 font-mono text-sm tracking-[0.2em] uppercase transition-colors ${
+              locale === l
+                ? "border-foreground bg-foreground/10 text-foreground"
+                : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+            }`}
+          >
+            {LOCALE_LABELS[l]}
+          </button>
+        ))}
+      </div>
       <p className="font-mono text-sm tracking-[0.3em] text-muted-foreground uppercase">
-        Welcome
+        {t.welcomeKicker}
       </p>
       <h1 className="mt-6 max-w-3xl text-5xl leading-tight font-medium text-foreground md:text-7xl">
-        Prove you qualify for help. <br />
-        <span className="font-serif italic">Without giving up your name.</span>
+        {t.welcomeTitleA} <br />
+        <span className="font-serif italic">{t.welcomeTitleB}</span>
       </h1>
       <p className="mt-8 max-w-xl text-lg text-muted-foreground md:text-xl">
-        This kiosk creates a private receipt the clinic can show under any
-        request — even a subpoena. The receipt proves you qualified. It does
-        not say who you are.
+        {t.welcomeBody}
       </p>
       <button
         type="button"
         onClick={onStart}
         className="mt-16 rounded-full border-2 border-foreground/60 bg-foreground/5 px-16 py-8 font-mono text-lg tracking-[0.3em] text-foreground uppercase transition-colors hover:bg-foreground/10 active:bg-foreground/15"
       >
-        Touch to start →
+        {t.welcomeCTA}
       </button>
       <p className="mt-12 max-w-md text-sm text-muted-foreground/60">
-        Operated by HELP for Domestic Workers · Compass v1 demo · No
-        information leaves this device without your consent.
+        {t.welcomeFooter}
       </p>
     </section>
   );
 }
 
 function ReceiptScreen({
+  t,
   receipt,
   onReset,
 }: {
+  t: ReturnType<typeof getKioskStrings>;
   receipt: ConsumeResponse;
   onReset: () => void;
 }) {
@@ -236,22 +281,24 @@ function ReceiptScreen({
   return (
     <section className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
       <p className="font-mono text-sm tracking-[0.3em] text-green-400/80 uppercase">
-        ✓ Eligibility confirmed
+        {t.doneStatus}
       </p>
       <h1 className="mt-6 max-w-3xl text-5xl leading-tight font-medium text-foreground md:text-7xl">
-        Show this to the <span className="font-serif italic">intake desk</span>.
+        {t.doneTitleA}{" "}
+        <span className="font-serif italic">{t.doneTitleItalic}</span>
+        {t.doneTitleB}
       </h1>
 
       <div className="mt-16 w-full max-w-xl rounded-3xl border-2 border-foreground/30 bg-foreground/5 px-8 py-12">
         <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground/60 uppercase">
-          Receipt
+          {t.doneReceiptLabel}
         </p>
         <p className="mt-4 font-mono text-2xl text-foreground md:text-3xl">
           {bucketTime.toLocaleDateString()} ·{" "}
           {bucketTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </p>
         <p className="mt-6 font-mono text-xs tracking-[0.3em] text-muted-foreground/60 uppercase">
-          Receipt ID
+          {t.doneReceiptIdLabel}
         </p>
         <p className="mt-2 break-all font-mono text-sm text-muted-foreground">
           {receipt.receiptId.slice(0, 10)}…{receipt.receiptId.slice(-8)}
@@ -259,8 +306,7 @@ function ReceiptScreen({
       </div>
 
       <p className="mt-12 max-w-xl text-base text-muted-foreground md:text-lg">
-        The clinic can verify this receipt on the 0G blockchain. Only that
-        you qualified — at this time bucket — is recorded. Nothing about you.
+        {t.doneBody}
       </p>
 
       <button
@@ -268,7 +314,7 @@ function ReceiptScreen({
         onClick={onReset}
         className="mt-16 rounded-full border-2 border-foreground/30 px-12 py-6 font-mono text-base tracking-[0.3em] text-foreground uppercase transition-colors hover:bg-foreground/5"
       >
-        Done — start over for next visitor →
+        {t.doneReset}
       </button>
     </section>
   );
@@ -278,6 +324,7 @@ function KioskStep({
   n,
   title,
   detail,
+  doneLabel,
   disabled,
   done,
   child,
@@ -285,6 +332,7 @@ function KioskStep({
   n: number;
   title: string;
   detail: string;
+  doneLabel: string;
   disabled?: boolean;
   done: boolean;
   child: React.ReactNode;
@@ -308,7 +356,7 @@ function KioskStep({
         </div>
         {done ? (
           <span className="rounded-full border-2 border-green-400/40 px-6 py-3 font-mono text-sm tracking-[0.3em] text-green-400/80 uppercase">
-            ✓ done
+            {doneLabel}
           </span>
         ) : (
           child
