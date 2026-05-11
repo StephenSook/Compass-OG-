@@ -39,6 +39,9 @@ import {
   HELP_LEGAL_AID_POLICY_LABEL,
 } from "@/lib/contracts";
 import { callEnclave, getEnclaveUrl } from "@/lib/compassEnclave";
+import { check as rateLimitCheck, createBucketStore, extractClientIp } from "@/lib/ratelimit";
+
+const RATE_LIMIT_STORE = createBucketStore();
 
 // Galileo on-chain policy hash for help-legal-aid (registered via
 // docs/notes/0g-galileo-policy-setup.md). The enclave receives the same
@@ -95,6 +98,29 @@ function validateGrant(g: GrantBody | undefined): { ok: boolean; reason?: string
 }
 
 export async function POST(req: Request) {
+  // Rate limit before any expensive work — drops floods at the cheapest
+  // possible boundary. The 5/min cap is generous for legitimate demo
+  // flows (judges mint at most a handful of receipts) and aggressive
+  // against drain-the-provider-wallet abuse.
+  const clientIp = extractClientIp(req.headers);
+  const rl = rateLimitCheck(RATE_LIMIT_STORE, clientIp);
+  if (!rl.ok) {
+    return NextResponse.json(
+      {
+        error: "rate_limited",
+        message: `Too many requests — try again in ${Math.ceil(rl.resetMs / 1000)}s.`,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(rl.resetMs / 1000)),
+          "X-RateLimit-Limit": "5",
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
+
   const sk = loadProviderKey();
   if (!sk) {
     return NextResponse.json(
