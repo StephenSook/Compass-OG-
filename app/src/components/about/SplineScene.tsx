@@ -40,7 +40,6 @@ type SplineRuntimeProps = { scene: string };
 type SplineRuntimeComponent = React.ComponentType<SplineRuntimeProps>;
 
 const SplineRuntime = lazy<SplineRuntimeComponent>(() =>
-  // @ts-expect-error — module is install-gated; types absent until devDep is added
   import("@splinetool/react-spline").catch(() => ({
     default: (() => (
       <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4 font-mono text-xs tracking-[0.2em] text-amber-400/80 uppercase">
