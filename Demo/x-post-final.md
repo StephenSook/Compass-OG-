@@ -6,7 +6,7 @@ Per plan F.5: post within 24 hours of HackQuest submission. Must include the fou
 
 ## Primary post (X / Twitter — 280 chars hard cap)
 
-> Compass — a private eligibility firewall on 0G. A vulnerable migrant worker proves she qualifies for free legal help without disclosing her name, HKID, or employer. The clinic gets a 15-min bucketed timestamp and a cryptographic commitment. That's it.
+> Compass — a private eligibility firewall on 0G. A vulnerable migrant worker proves she qualifies for free legal help without disclosing her name, HKID, or employer. The clinic gets a 15-min bucketed timestamp and a cryptographic commitment. That's it. Live on Aristotle mainnet.
 >
 > Demo: [DEMO_VIDEO_URL]
 > Live: https://app-psi-pied.vercel.app
@@ -35,7 +35,9 @@ Per plan F.5: post within 24 hours of HackQuest submission. Must include the fou
 ### Post 2 — the architecture beat
 
 > Built end-to-end on 0G:
-> · 0G Chain — AgentRegistry (soulbound INFT) + CompassHub (Authwit grants + receipt log) on Galileo
+> · 0G Chain — AgentRegistry + CompassHub deployed to BOTH Galileo testnet AND Aristotle mainnet (chainId 16661)
+>   · Aristotle AgentRegistry: 0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9
+>   · Aristotle CompassHub: 0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b
 > · 0G TeeML / Phala dstack TDX — per-receipt RA quote binds (signer, image, receiptId)
 > · 0G Storage — encrypted SD-JWT VC ciphertext (live upload v2)
 >

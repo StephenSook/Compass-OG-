@@ -342,7 +342,8 @@ receipts with one tool call.
 |---|---|---|
 | 0G Galileo (chainId 16602) | AgentRegistry | [`0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8`](https://chainscan-galileo.0g.ai/address/0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8) |
 | 0G Galileo (chainId 16602) | CompassHub | [`0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b`](https://chainscan-galileo.0g.ai/address/0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b) |
-| 0G Aristotle (mainnet) | AgentRegistry / CompassHub | scaffolded — gated on OG funding; deploy is a single command per [`docs/notes/0g-aristotle-deploy-checklist.md`](./docs/notes/0g-aristotle-deploy-checklist.md) |
+| **0G Aristotle (mainnet, chainId 16661)** | **AgentRegistry** | [`0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9`](https://chainscan.0g.ai/address/0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9) |
+| **0G Aristotle (mainnet, chainId 16661)** | **CompassHub** | [`0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b`](https://chainscan.0g.ai/address/0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b) |
 
 Deployer: `0x05b5Bb550eb8401fC4b8a33bf566C03f49ef5d34`. Provider relayer (server-side `consumeGrantAndIssueReceipt` caller): `0xaD736a7233847Cf1D73a7D820b32424CF8125b0a` — funded `0.1 OG` on Galileo, key in `app/.env` + Vercel env. Deployment record: [docs/deployments/](./docs/deployments/). HELP policy registered on Galileo CompassHub at policyId `0x21b8b0e6…2d08f` per [`docs/notes/0g-galileo-policy-setup.md`](./docs/notes/0g-galileo-policy-setup.md).
 
