@@ -2,10 +2,15 @@ import Link from "next/link";
 import { BlurText } from "@/components/primitives/BlurText";
 import { LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { AmbientSphere } from "@/components/primitives/AmbientSphere";
-import { VideoBackground, heroVideoEnabled } from "@/components/primitives/VideoBackground";
+import { VideoBackground } from "@/components/primitives/VideoBackground";
+
+// Server-side env probe — must NOT be imported from VideoBackground because
+// that module is "use client". NEXT_PUBLIC_* env vars are available on both
+// sides at build time so the SSR + client renders agree.
+const HERO_VIDEO_URL = process.env.NEXT_PUBLIC_COMPASS_HERO_VIDEO_URL;
 
 export default function HomePage() {
-  const useVideo = heroVideoEnabled();
+  const useVideo = !!HERO_VIDEO_URL;
   return (
     <main className="relative flex flex-1 flex-col bg-background overflow-hidden">
       <header className="fixed top-6 left-1/2 z-50 -translate-x-1/2">
