@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import {
   PRIVY_APP_ID,
@@ -7,21 +8,34 @@ import {
   zeroGAristotleMainnet,
   zeroGGalileoTestnet,
 } from "@/lib/chains";
-import type { ReactNode } from "react";
 
-// Privy ships ~1.2 MB of vendor JS. Static-import would hoist it into the
-// root layout chunk and ship it on every route — including /verify, which
-// does not use a wallet. Dynamic-import keeps the chunk lazy: the bundle
-// only loads when PRIVY_APP_ID is set AND this provider mounts.
+// Privy ships ~1.2 MB of vendor JS. We dynamic-import so the chunk loads
+// lazily, but the provider sits at root layout — so we MUST render
+// {children} pass-through on SSR + first hydration, otherwise the
+// ssr:false wrapper would render null and swallow every server-rendered
+// page on the entire site.
+//
+// The pattern below: mount Privy ONLY after the client has hydrated AND
+// PRIVY_APP_ID is set. Until then, render {children} directly so SSR
+// works for /about, /faq, /roadmap, /audit, /clinic/*, /vault, /analytics,
+// /demo, /policies/*, /receipt/* — none of those need a wallet provider.
+//
+// Failure handling: if the Privy chunk fails to load (CDN 4xx, offline,
+// ad-blocker, stale _next/static after deploy invalidation), the dynamic
+// import rejects and PrivyProvider stays null — the route degrades to
+// the fixture-timer path on /onboard step 1, NOT to a white-screen.
 const PrivyProvider = dynamic(
   () => import("@privy-io/react-auth").then((m) => m.PrivyProvider),
-  { ssr: false },
+  { ssr: false, loading: () => null },
 );
 
-// Mounts PrivyProvider only when NEXT_PUBLIC_PRIVY_APP_ID is set; otherwise
-// children render directly so /onboard step 1 stays the 800ms fixture timer.
 export function PrivyClientProvider({ children }: { children: ReactNode }) {
-  if (PRIVY_APP_ID === null) return <>{children}</>;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // SSR + dev (no APP_ID) + post-hydration-before-Privy-chunk-loaded:
+  // emit children directly so server-rendered HTML is correct.
+  if (PRIVY_APP_ID === null || !mounted) return <>{children}</>;
 
   return (
     <PrivyProvider
