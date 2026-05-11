@@ -158,6 +158,27 @@ This table also lives at [/about](https://app-psi-pied.vercel.app/about) on the 
 
 Visual + section-by-section breakdown: [/about](https://app-psi-pied.vercel.app/about).
 
+### C4 system-context (Mermaid)
+
+```mermaid
+C4Context
+  title Compass — System Context (C4 Level 1)
+  Person(maria, "Worker (Maria)", "FDH in HK with an open employment dispute")
+  Person(clinic, "Intake Clinician", "Verifies eligibility; cannot retain identifying data")
+  Person(judge, "Court / Auditor", "Issues PDPO §57 disclosure orders")
+  System(compass, "Compass", "Private eligibility firewall on 0G")
+  System_Ext(ngo, "NGO Issuer", "HELP / Bethune / Mission for Migrant Workers")
+  System_Ext(zerog, "0G Chain + 0G Storage", "Aristotle mainnet 16661 + encrypted blob store")
+  System_Ext(phala, "Phala dstack TDX", "Sealed enclave receipt-signer")
+  Rel(maria, compass, "Holds SD-JWT VC; requests eligibility check")
+  Rel(ngo, maria, "Issues SD-JWT VC (Ed25519 signed)")
+  Rel(compass, phala, "Sends selectively-disclosed claims")
+  Rel(phala, compass, "Returns signed receipt + per-receipt RA quote")
+  Rel(compass, zerog, "Mints ReceiptIssued + stores ciphertext")
+  Rel(clinic, zerog, "Reads receipt; learns only 15-min timestamp bucket")
+  Rel(judge, clinic, "PDPO §57: 'who came in at 14:32?'")
+```
+
 ### Three pre-rendered views in [`docs/visualizations/`](./docs/visualizations/README.md)
 
 | View | Best for | Open with |
@@ -482,6 +503,7 @@ Production TEE deploy via Phala Cloud: see [enclave/phala/deploy.md](./enclave/p
 | [docs/notes/0g-aristotle-deploy-checklist.md](./docs/notes/0g-aristotle-deploy-checklist.md) | 9-step Aristotle mainnet deploy procedure (gated on OG funding) |
 | [docs/notes/0g-mainnet-funding-options.md](./docs/notes/0g-mainnet-funding-options.md) | Ranked paths to acquire OG on Aristotle (credits, bridge, onramps, exchanges) |
 | [docs/notes/codex-tee-architecture-review.md](./docs/notes/codex-tee-architecture-review.md) | Adversarial architecture review |
+| [docs/adr/](./docs/adr/README.md) | Architecture Decision Records — 3 ADRs covering platform choice (0G + Phala TDX), credential format (SD-JWT VC over PCD/ZK), and per-receipt quote binding |
 | [docs/trust-list-governance.md](./docs/trust-list-governance.md) | v1 stub → v2 DAO design for trusted-issuer governance |
 | [docs/outreach/README.md](./docs/outreach/README.md) | 6 NGO + foundation cold-email drafts (Pillar 5 traction log) |
 | [skills/compass-eligibility-check/SKILL.md](./skills/compass-eligibility-check/SKILL.md) | Reusable Claude Code / OpenClaw verification skill |

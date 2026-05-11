@@ -5,6 +5,50 @@ build-up phase are folded into milestone summaries; recent changes are
 listed by commit. The version cadence follows the hackathon timeline,
 not semver — this is `v0.x` until the post-hackathon hardening pass.
 
+## Unreleased — ADRs + Mermaid C4 + social preview + Discussions (2026-05-11, third wave)
+
+Doc-deep + community surfaces.
+
+### Added
+
+- **`docs/adr/`** — Architecture Decision Records (MADR-lite format):
+  - **ADR-0001**: 0G Chain (Aristotle) + Phala dstack TDX as the
+    privacy platform — over Aztec / Aleph / SGX / SEV-SNP / 0G TeeML.
+  - **ADR-0002**: SD-JWT VC for selective disclosure — over PCD,
+    zkSNARK Groth16, BBS+, or plain JWT.
+  - **ADR-0003**: Per-receipt RA quote with
+    `report_data = sha256(ethAddress || composeHash || receiptId)`
+    binding — over boot-quote binding, batched quotes, or
+    image-only binding. Defeats archived-quote replay.
+  - **README** — ADR index + "when to write an ADR" guidance.
+- **Mermaid C4Context diagram** inside the README Architecture
+  section. Renders natively on GitHub. Covers the 3 person-actors
+  (worker, clinician, judge) + 4 systems (Compass, NGO Issuer,
+  0G Chain + Storage, Phala dstack TDX) + 7 relationships.
+- **`docs/social-preview.png`** — custom 1280×640 GitHub social
+  preview. Rendered from the live `/opengraph-image` endpoint
+  (Next.js `next/og` Satori output, 1200×630 baseline), padded
+  to GitHub's 2:1 spec on a dark `#0a0e1a` canvas to match the
+  Cinematic Privacy aesthetic. Drop-in for **Settings → General →
+  Social preview → Upload image**.
+- **`.github/FUNDING.yml`** — single `custom:` entry pointing at the
+  maintainer's Telegram for collaboration / NGO partnership inquiries.
+  (No GitHub Sponsors account yet; trivial one-line swap when one
+  is configured.)
+- **GitHub Discussions enabled** via
+  `gh api -X PATCH repos/StephenSook/Compass-OG- -f has_discussions=true`.
+  Six default categories auto-created (Announcements, General,
+  Ideas, Polls, Q&A, Show and tell). Q&A is the canonical
+  user-help surface for non-security questions per `SUPPORT.md`.
+
+### Changed
+
+- **README documentation map** — added link to `docs/adr/` so judges
+  can find the rationale-with-rejected-alternatives writeups without
+  hunting.
+
+---
+
 ## Unreleased — Repo hygiene + visualizations (2026-05-11, second wave)
 
 Repository-health pass aligned with current OSS best practices, plus three
