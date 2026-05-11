@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { GLOSSARY } from "@/lib/glossary";
+import { GLOSSARY, type GlossaryEntry } from "@/lib/glossary";
 
 // <Term> wraps a technical term with an accessible tooltip showing a
 // plain-language definition. Powered by Radix Tooltip — keyboard-
@@ -26,7 +26,12 @@ type TermProps = {
 };
 
 export function Term({ k, children }: TermProps) {
-  const entry = GLOSSARY[k];
+  // GLOSSARY is `as const satisfies Record<string, GlossaryEntry>` so
+  // `keyof typeof GLOSSARY` gives compile-time key validation. But the
+  // narrowed literal entry types lose the optional `link` field on
+  // entries that don't carry one — widen at the access site so
+  // `entry.link` is well-typed regardless of which key we received.
+  const entry = GLOSSARY[k] as GlossaryEntry | undefined;
   if (!entry) {
     if (process.env.NODE_ENV !== "production") {
       // eslint-disable-next-line no-console
