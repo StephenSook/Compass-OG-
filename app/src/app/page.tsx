@@ -82,6 +82,12 @@ export default function HomePage() {
             Guided demo →
           </Link>
           <Link
+            href="/verify"
+            className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground sm:text-xs"
+          >
+            Verify a receipt →
+          </Link>
+          <Link
             href="/faq"
             className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground sm:text-xs"
           >

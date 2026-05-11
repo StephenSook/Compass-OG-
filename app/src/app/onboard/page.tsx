@@ -32,6 +32,16 @@ const AGENT_MINT_TX_HASH =
 type StepId = "connect" | "mint" | "issue";
 type StepState = "pending" | "running" | "done";
 
+const STEP_LABELS: Record<StepId, string> = {
+  connect: "connect wallet",
+  mint: "mint agent",
+  issue: "issue credential",
+};
+
+function labelFor(id: StepId): string {
+  return STEP_LABELS[id];
+}
+
 type StepRecord = Record<StepId, StepState>;
 
 const STEP_ORDER: readonly StepId[] = ["connect", "mint", "issue"] as const;
@@ -185,7 +195,27 @@ export default function OnboardPage() {
             {allDone && "All three steps complete"}
           </div>
 
-          <ol className="mt-16 space-y-4">
+          <div className="mt-12 flex items-center gap-4" aria-hidden="true">
+            <div className="flex gap-2">
+              {STEP_ORDER.map((id) => (
+                <span
+                  key={id}
+                  className={`h-1.5 w-16 rounded-full transition-colors duration-500 ${
+                    steps[id] === "done"
+                      ? "bg-foreground/80"
+                      : steps[id] === "running"
+                        ? "bg-foreground/40"
+                        : "bg-border/60"
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
+              {STEP_ORDER.filter((id) => steps[id] === "done").length} of {STEP_ORDER.length}{allDone ? " · complete" : firstIncompleteId ? ` · ${labelFor(firstIncompleteId)}` : ""}
+            </span>
+          </div>
+
+          <ol className="mt-8 space-y-4">
             <Step
               n={1}
               id="connect"

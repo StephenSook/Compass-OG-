@@ -63,13 +63,13 @@ const STEPS: Step[] = [
   },
   {
     number: "06",
-    title: "Verify the chain yourself",
-    href: "https://github.com/StephenSook/Compass-OG-#c-tutorial--verify-someone-elses-compass-receipt",
-    what: "Clone the repo and run the verify-receipt CLI against a bundled fixture or a real on-chain receipt.",
+    title: "Verify the chain yourself (in your browser)",
+    href: "/verify",
+    what: "Paste a Compass receipt bundle into /verify. Your browser re-runs the four cryptographic checks the verify-receipt CLI does — no server call, no clone, no install.",
     whyItMatters:
-      "Don't trust the maintainer. Don't trust the website. Re-derive the cryptographic chain locally — signer recovery, quote freshness, image binding, attestation digest — from the receipt bundle alone.",
+      "Don't trust the maintainer. Don't trust the website. The page does not send your bundle anywhere; everything happens in your tab. Same signer-recovery, quote-freshness, image-binding, and attestation-digest checks the Node CLI runs at enclave/scripts/verify-receipt.ts.",
     whatLandsOnChain:
-      "Nothing. This is the verifier path that closes the trust loop.",
+      "Nothing. This is the verifier path that closes the trust loop — and it now runs without a terminal.",
   },
   {
     number: "07",
