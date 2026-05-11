@@ -12,7 +12,7 @@ import {
   type IssueResponse,
 } from "@/components/onboard/IssueCredentialButton";
 import { RequestEligibilityButton } from "@/components/onboard/RequestEligibilityButton";
-import { activeChain, isPrivyEnabled } from "@/lib/chains";
+import { activeChain, isPrivyEnabled, useMainnet } from "@/lib/chains";
 
 const COMPASS_PROVIDER_ADDRESS = process.env.NEXT_PUBLIC_COMPASS_PROVIDER_ADDRESS as
   | `0x${string}`
@@ -190,7 +190,7 @@ export default function OnboardPage() {
 
           <div role="status" aria-live="polite" className="sr-only">
             {firstIncompleteId === "connect" && steps.connect === "running" && "Connecting wallet"}
-            {firstIncompleteId === "mint" && steps.mint === "running" && "Minting agent on Galileo"}
+            {firstIncompleteId === "mint" && steps.mint === "running" && `Minting agent on ${activeChain().name}`}
             {firstIncompleteId === "issue" && steps.issue === "running" && "Issuing demo credential"}
             {allDone && "All three steps complete"}
           </div>
@@ -248,8 +248,8 @@ export default function OnboardPage() {
               detail={
                 privyOn && walletAddress
                   ? liveMint
-                    ? `ERC-7857-stripped soulbound INFT, tokenId #${liveMint.tokenId.toString()} on 0G Galileo. The wallet that signed the mint is the canonical agent owner.`
-                    : "ERC-7857-stripped soulbound INFT. AgentRegistry.mintAgent runs on 0G Galileo; the signing key is your Privy embedded wallet. You'll need a small amount of OG to pay gas — fund the wallet via the Galileo faucet if it's empty."
+                    ? `ERC-7857-stripped soulbound INFT, tokenId #${liveMint.tokenId.toString()} on ${activeChain().name}. The wallet that signed the mint is the canonical agent owner.`
+                    : `ERC-7857-stripped soulbound INFT. AgentRegistry.mintAgent runs on ${activeChain().name}; the signing key is your Privy embedded wallet. You'll need a small amount of OG to pay gas — ${useMainnet() ? "acquire OG via the funding-options doc linked below" : "fund the wallet via the Galileo faucet"} if it's empty.`
                   : "ERC-7857-stripped soulbound INFT, committed to the wallet. The tx hash below points to a prior real Galileo mint of an agent under the same contract — proof of the on-chain primitive, not this fixture walkthrough's mint."
               }
               actionLabel="Mint"

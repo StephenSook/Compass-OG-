@@ -19,8 +19,10 @@ import {
   AGENT_REGISTRY_ABI,
 } from "@/lib/contracts";
 
-// Faucet only exists on Galileo testnet; mainnet has no faucet and the
-// component renders a different "fund via hub.0g.ai" hint instead.
+// Faucet only exists on Galileo testnet. On Aristotle mainnet there is no
+// faucet — users must acquire OG via a centralized exchange or bridge per
+// docs/notes/0g-mainnet-funding-options.md. The needs-fund branch below
+// switches the affordance based on `useMainnet()`.
 const GALILEO_FAUCET_URL = "https://faucet.0g.ai/";
 
 function explorerTxBase(): string {
@@ -165,15 +167,24 @@ export function MintAgentButton({ walletAddress, onMinted }: Props) {
   }
 
   if (phase === "needs-fund") {
+    const chain = activeChain();
+    const isMainnet = useMainnet();
+    // Galileo: link to the faucet. Aristotle: no faucet — link to the
+    // mainnet funding-options doc so the user knows the CEX/bridge path
+    // before they hit a dead-end.
+    const fundHref = isMainnet
+      ? "https://github.com/StephenSook/Compass-OG-/blob/main/docs/notes/0g-mainnet-funding-options.md"
+      : GALILEO_FAUCET_URL;
+    const fundLabel = isMainnet ? `Acquire OG for ${chain.name} →` : `Fund on ${chain.name} →`;
     return (
       <div className="flex flex-col items-end gap-2">
         <a
-          href={GALILEO_FAUCET_URL}
+          href={fundHref}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-full border border-amber-400/30 px-4 py-2 font-mono text-[10px] tracking-[0.3em] text-amber-400/80 uppercase transition-colors hover:border-amber-400/60"
         >
-          Fund on Galileo →
+          {fundLabel}
         </a>
         <button
           type="button"
