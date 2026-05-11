@@ -75,6 +75,24 @@ export default function HomePage() {
           >
             About →
           </Link>
+          <Link
+            href="/demo"
+            className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground sm:text-xs"
+          >
+            Guided demo →
+          </Link>
+          <Link
+            href="/faq"
+            className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground sm:text-xs"
+          >
+            FAQ →
+          </Link>
+          <Link
+            href="/roadmap"
+            className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase transition-colors hover:text-foreground sm:text-xs"
+          >
+            Roadmap →
+          </Link>
         </div>
       </section>
     </main>
