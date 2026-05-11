@@ -392,13 +392,15 @@ export function parseBundle(text: string): ReceiptBundle {
     "agentIdCommitment",
     "verifierPubKey",
     "credentialBundleHash",
-    "result",
     "resultHash",
     "quoteCommitment",
   ]) {
     if (typeof r[field] !== "string") {
       throw new Error(`bundle.receipt.${field} must be a string`);
     }
+  }
+  if (typeof r.result !== "object" || r.result === null || Array.isArray(r.result)) {
+    throw new Error("bundle.receipt.result must be a JSON object");
   }
   if (typeof r.expiry !== "number" || typeof r.issuedAt !== "number") {
     throw new Error("bundle.receipt.expiry and issuedAt must be numbers");
