@@ -14,15 +14,18 @@ export const AGENT_REGISTRY_GALILEO: Address =
 export const COMPASS_HUB_GALILEO: Address =
   "0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b";
 
-// A.5 mainnet (Aristotle, chainId 16661) — addresses filled in after the
-// real deploy lands. Until then, activeAgentRegistry()/activeCompassHub()
-// throw a clear error if NEXT_PUBLIC_COMPASS_USE_MAINNET=1 is set early —
-// surfaces the misconfiguration loudly instead of writing to address zero.
+// A.5 mainnet (Aristotle, chainId 16661) — deployed 2026-05-10.
+// Manifest: docs/deployments/og_aristotle.json. HELP policy registered
+// at policyId 0x21b8b0e6…2d08f (same as Galileo; canonical UTF-8 hash).
+// Provider relayer 0xaD7…b0a funded with 0.05 OG.
+//
+// activeAgentRegistry()/activeCompassHub() return these when
+// NEXT_PUBLIC_COMPASS_USE_MAINNET=1 is set in Vercel env.
 export const AGENT_REGISTRY_ARISTOTLE: Address =
-  "0x0000000000000000000000000000000000000000";
+  "0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9";
 
 export const COMPASS_HUB_ARISTOTLE: Address =
-  "0x0000000000000000000000000000000000000000";
+  "0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
