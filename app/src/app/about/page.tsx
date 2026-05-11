@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArchitectureDiagram } from "@/components/about/ArchitectureDiagram";
+import { SplineScene } from "@/components/about/SplineScene";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
 import { TeeStatusBadge } from "@/components/about/TeeStatusBadge";
@@ -49,7 +50,7 @@ const REALITY: ReadonlyArray<{ component: string; state: RealityState; note: str
   { component: "Aristotle mainnet (chainId 16661) deploy", state: "real", note: "deployed 2026-05-10 — AgentRegistry 0xf1FA…0Bf9, CompassHub 0xe42f…C58b. HELP policy registered (tx 0xc19a567d…c0f2); provider relayer 0xaD7…b0a funded 0.05 OG. Funding path: MoonPay → ETH on Ethereum L1 → hub.0g.ai TokenFlight Cross-Chain Swap (Hyperstream/Khalani) → native OG on Aristotle. Frontend defaults to Galileo until NEXT_PUBLIC_COMPASS_USE_MAINNET=1 is set" },
   { component: "Kiosk mode for NGO drop-in centres", state: "draft", note: "live at /kiosk — locked nav, 4-step welcome→sign-in→mint→credential→request-eligibility flow with large touch targets + plain-language labels + receipt-as-intake-artifact ending. Reuses Privy + on-chain primitives from /onboard, restyled for shared tablet use. v2 adds auto-reset timer + audio cues for low-literacy assistance" },
   { component: "Kiosk localization (5 languages)", state: "draft", note: "live at /kiosk welcome screen — language picker for English, Filipino (Tagalog), Bahasa Indonesia, Bahasa Malaysia, 廣東話 (Cantonese). All non-English strings are AI-generated baseline pending native-speaker review (gated on C.4 outreach replies). String table at app/src/lib/i18n/kiosk-strings.ts; current scope is kiosk-only — the rest of the app stays English. Honest-limits disclosure in the file header" },
-  { component: "Spline 3D scene on /about", state: "draft", note: "scaffolded at app/src/components/about/SplineScene.tsx; lazy-imports @splinetool/react-spline only when NEXT_PUBLIC_COMPASS_SPLINE_SCENE_URL env var is set, so the bundle is unchanged until user (a) npm-installs the dep, (b) composes a scene at app.spline.design, (c) sets the env var. R13 LCP guard: fall back to environmental SVG if Lighthouse mobile drops below 85" },
+  { component: "Spline 3D scene on /about", state: "real", note: "activated 2026-05-10. @splinetool/react-spline + @splinetool/runtime installed; <SplineScene /> renders below the architecture diagram when NEXT_PUBLIC_COMPASS_SPLINE_SCENE_URL is set. Lazy-imported behind Suspense so the runtime (~530KB) loads off the critical path. Falls back to null when env var is unset, so the route stays unchanged on a clean clone with no env file. R13 LCP guard still in force: if Lighthouse mobile drops below 85, swap to environmental SVG." },
   { component: "HLS / MP4 hero video background on /", state: "draft", note: "scaffolded at app/src/components/primitives/VideoBackground.tsx; renders null until NEXT_PUBLIC_COMPASS_HERO_VIDEO_URL env var points at an HLS playlist (.m3u8) or MP4 URL. Default hero uses AmbientSphere SVG. Asset prep + Pexels sourcing + ffmpeg recipe documented in docs/notes/hero-video-sourcing.md. R16 LCP guard: Lighthouse mobile floor 85; rollback is unsetting the env var" },
   { component: "3D force-graph view of public audit log", state: "real", note: "live at /audit-graph.html — standalone HTML using 3d-force-graph CDN; bucket-clustered receipt nodes with no inter-receipt edges (cannot suggest correlation between disclosures). Gentle camera orbit + per-policy color. v2 swaps the fixture node list for live Galileo ReceiptIssued event queries" },
 ];
@@ -119,6 +120,7 @@ export default function AboutPage() {
 
           <Section title="Architecture">
             <ArchitectureDiagram />
+            <SplineScene className="mt-8" />
           </Section>
 
           <Section title="0G integration">
