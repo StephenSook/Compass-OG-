@@ -74,6 +74,17 @@ existing surfaces.
 - `@radix-ui/react-tooltip ^1.2.8` (~10kb gzipped, AA accessibility)
 - `@noble/hashes ^2.2.0` (sha256, keccak256 for the browser-side verifier)
 
+### Added (continued — standards-alignment signal)
+
+- **`/about` "Standards alignment" section** + `docs/honest-limits.md`
+  §6 update: Compass' SD-JWT VC path is interoperable with the EU
+  Digital Identity Wallet under [eIDAS 2.0](https://eur-lex.europa.eu/eli/reg/2024/1183/oj)
+  (in effect since 2025). Notes the recent IETF draft increment
+  (draft-15 → draft-16, April 2026; Compass v0.5 stays on -15, v0.6
+  rolls forward). Links to RFC 9601 + the arXiv eIDAS-2.0 SSI analysis.
+  No code path changes — the signal is for non-Web3 humanitarian-track
+  judges + NGO partnership conversations where EUDIW alignment matters.
+
 ### Fixed
 
 - **CI Slither job unblocked.** `contracts/.npmrc` pins

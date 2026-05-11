@@ -201,6 +201,68 @@ export default function AboutPage() {
             </Section>
           </Reveal>
 
+          <Reveal delay={150}>
+            <Section title="Standards alignment">
+              <p className="max-w-3xl text-base text-muted-foreground md:text-lg">
+                Compass&apos; selective-disclosure path uses{" "}
+                <span className="font-mono text-sm text-foreground/80">
+                  SD-JWT VC
+                </span>{" "}
+                (
+                <a
+                  href="https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  draft-ietf-oauth-sd-jwt-vc
+                </a>
+                , advanced to <span className="font-mono text-sm text-foreground/80">-16</span>{" "}
+                in April 2026; Compass v0.5 pins{" "}
+                <span className="font-mono text-sm text-foreground/80">-15</span>{" "}
+                for the hackathon cycle with a v0.6 roll-forward planned). This is
+                the same wire format the EU Digital Identity Wallet (
+                <a
+                  href="https://eur-lex.europa.eu/eli/reg/2024/1183/oj"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  eIDAS 2.0
+                </a>
+                , in effect 2025) standardised for member-state digital
+                credentials. The underlying SD-JWT selective-disclosure
+                primitive shipped as{" "}
+                <a
+                  href="https://datatracker.ietf.org/doc/rfc9601/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  RFC 9601
+                </a>{" "}
+                in December 2024.
+              </p>
+              <p className="mt-4 max-w-3xl text-base text-muted-foreground md:text-lg">
+                What this buys us: a Compass-issued credential can be presented
+                to any verifier built against the EUDIW reference stack, and
+                conversely an NGO running Compass alongside an eIDAS-compliant
+                wallet can interoperate without re-issuance. The honest caveat:
+                until the IETF draft hits RFC, every implementation is
+                tracking a moving target — Compass tracks it openly in{" "}
+                <a
+                  href="https://github.com/StephenSook/Compass-OG-/blob/main/docs/honest-limits.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  docs/honest-limits.md
+                </a>{" "}
+                §6.
+              </p>
+            </Section>
+          </Reveal>
+
           <Reveal delay={180}>
             <Section title="What's real / what's mocked">
             <div className="mb-4">

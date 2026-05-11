@@ -70,9 +70,19 @@ issue we can't resolve in time. Pure-0G stays the primary path.
 
 We pin `@sd-jwt/sd-jwt-vc` to a draft-stage IETF profile. The underlying
 SD-JWT selective-disclosure primitive is published as RFC 9601 (December
-2024); the VC profile (draft-ietf-oauth-sd-jwt-vc) is still moving. Re-pin
-on each draft increment. Production deployments should track the IETF
-OAuth working group's progress.
+2024); the VC profile (draft-ietf-oauth-sd-jwt-vc) is still moving — it
+advanced to **draft-16** in April 2026 (Compass v0.5 pins **draft-15**;
+v0.6 will roll forward). Re-pin on each draft increment. Production
+deployments should track the IETF OAuth working group's progress.
+
+**Standards alignment.** SD-JWT VC is the same wire format the EU
+Digital Identity Wallet (EUDIW) under [eIDAS 2.0](https://eur-lex.europa.eu/eli/reg/2024/1183/oj)
+(in effect since 2025) standardised for member-state digital credentials.
+A Compass-issued credential is interoperable with EUDIW-reference
+verifiers; an eIDAS-compliant NGO wallet can interoperate with Compass'
+TEE-attested receipt path without re-issuance. This is the same posture
+the [arXiv self-sovereign-identity analysis](https://arxiv.org/html/2601.19837v2)
+of eIDAS 2.0 recommends for new SSI implementations.
 
 ### 7. Cross-issuer threshold trust
 

@@ -151,9 +151,12 @@ read this before forming first impressions. Full version at
 ## Roadmap
 
 **v0.6 (June 2026):** Browser-side 0G Storage ciphertext upload.
-Standards-compliant `cnf: { jwk }` emission. Enforced CSP (currently
-report-only). Vercel-KV-backed rate limiter to replace the in-memory
-bucket. `/api/consume` ownerOf pre-check before the enclave call.
+Standards-compliant `cnf: { jwk }` emission. SD-JWT VC pin roll-forward
+to `draft-ietf-oauth-sd-jwt-vc-16` (April 2026 — Compass v0.5 ships
+`-15`; both are interoperable with the EU Digital Identity Wallet
+under eIDAS 2.0). Enforced CSP (currently report-only). Vercel-KV-backed
+rate limiter to replace the in-memory bucket. `/api/consume` ownerOf
+pre-check before the enclave call.
 
 **v2 (Q3 2026):** In-contract `receiptId` derivation. Provider relayer
 inside the TEE. Per-NGO provider keys (HELP, Bethune House, MFMW each
