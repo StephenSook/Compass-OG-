@@ -4,6 +4,7 @@ import { SplineScene } from "@/components/about/SplineScene";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { StatusBadge } from "@/components/clinic/StatusBadge";
 import { TeeStatusBadge } from "@/components/about/TeeStatusBadge";
+import { Reveal } from "@/components/primitives/Reveal";
 
 const INTEGRATION = [
   {
@@ -118,13 +119,16 @@ export default function AboutPage() {
             commitments. No name, HKID, employer, or document fields.
           </p>
 
-          <Section title="Architecture">
-            <ArchitectureDiagram />
-            <SplineScene className="mt-8" />
-          </Section>
+          <Reveal>
+            <Section title="Architecture">
+              <ArchitectureDiagram />
+              <SplineScene className="mt-8" />
+            </Section>
+          </Reveal>
 
-          <Section title="0G integration">
-            <div className="overflow-x-auto">
+          <Reveal delay={60}>
+            <Section title="0G integration">
+              <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-border/40">
@@ -144,9 +148,11 @@ export default function AboutPage() {
                 </tbody>
               </table>
             </div>
-          </Section>
+            </Section>
+          </Reveal>
 
-          <Section title="How Compass differs from adjacent projects">
+          <Reveal delay={120}>
+            <Section title="How Compass differs from adjacent projects">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -192,9 +198,11 @@ export default function AboutPage() {
               subpoena resistance for NGO-issued service eligibility</em>,
               optimised for interactive intake at clinic kiosks.
             </p>
-          </Section>
+            </Section>
+          </Reveal>
 
-          <Section title="What's real / what's mocked">
+          <Reveal delay={180}>
+            <Section title="What's real / what's mocked">
             <div className="mb-4">
               <TeeStatusBadge />
             </div>
@@ -220,9 +228,11 @@ export default function AboutPage() {
                 </tbody>
               </table>
             </div>
-          </Section>
+            </Section>
+          </Reveal>
 
-          <Section title="Cryptographic chain">
+          <Reveal delay={240}>
+            <Section title="Cryptographic chain">
             <ol className="space-y-5 text-sm text-muted-foreground md:text-base">
               {CHAIN.map((step) => (
                 <li key={step.n} className="flex gap-4">
@@ -238,7 +248,8 @@ export default function AboutPage() {
                 </li>
               ))}
             </ol>
-          </Section>
+            </Section>
+          </Reveal>
 
           <Section title="Honest limits">
             <p className="text-base text-muted-foreground">

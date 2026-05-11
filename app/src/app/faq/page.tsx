@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LiquidGlass } from "@/components/primitives/LiquidGlass";
+import { Term } from "@/components/primitives/Term";
 
 type QA = { q: string; a: React.ReactNode };
 
@@ -9,10 +10,12 @@ const FAQ_TECHNICAL: QA[] = [
     a: (
       <>
         <p>
-          No — Compass v1 uses SD-JWT VC selective disclosure plus a sealed
-          Phala dstack TDX receipt-signer. The TEE evaluates the policy
-          predicate against the disclosed claims. The on-chain commitment
-          binds an attestation digest sourced from a per-receipt RA quote.
+          No — Compass v1 uses <Term k="sd-jwt-vc">SD-JWT VC</Term> selective
+          disclosure plus a sealed <Term k="phala-tdx">Phala dstack TDX</Term>
+          {" "}receipt-signer. The TEE evaluates the policy predicate
+          against the disclosed claims. The on-chain commitment binds an
+          attestation digest sourced from a per-receipt{" "}
+          <Term k="ra-quote">RA quote</Term>.
         </p>
         <p className="mt-3">
           The trade-off vs ZK is documented in{" "}
@@ -33,11 +36,15 @@ const FAQ_TECHNICAL: QA[] = [
     a: (
       <>
         <p>
-          A 15-minute timestamp bucket and a cryptographic commitment to
-          the user's on-chain agent identity. Specifically, the
+          A <Term k="bucketed-timestamp">15-minute timestamp bucket</Term>{" "}
+          and a cryptographic commitment to the user&apos;s on-chain agent
+          identity. Specifically, the
           <span className="font-mono"> ReceiptIssued </span>event fields:
-          <span className="font-mono"> receiptId · policyId · nullifier ·
-          agentIdCommitment · resultHash · attestationDigest ·
+          <span className="font-mono"> receiptId · policyId · </span>
+          <Term k="nullifier"><span className="font-mono">nullifier</span></Term>
+          <span className="font-mono"> · </span>
+          <Term k="agentidcommitment"><span className="font-mono">agentIdCommitment</span></Term>
+          <span className="font-mono"> · resultHash · attestationDigest ·
           timestampBucket · expiry</span>.
         </p>
         <p className="mt-3">
@@ -62,10 +69,13 @@ const FAQ_TECHNICAL: QA[] = [
       <>
         <p>
           The signing key is derived inside the TDX enclave from{" "}
-          <span className="font-mono">dstack.getKey('compass-receipt-signer')</span>{" "}
-          — it's deterministically sealed to the MR_TD of the attested
-          image. The key never leaves the enclave; the only way to obtain
-          it is to compromise TDX itself or coerce Intel.
+          <span className="font-mono">
+            <Term k="dstack">dstack</Term>.getKey(&apos;compass-receipt-signer&apos;)
+          </span>{" "}
+          — it&apos;s deterministically sealed to the{" "}
+          <Term k="mr-td">MR_TD</Term> of the attested image. The key
+          never leaves the enclave; the only way to obtain it is to
+          compromise TDX itself or coerce Intel.
         </p>
         <p className="mt-3">
           Per-receipt RA quotes bind{" "}
@@ -177,10 +187,12 @@ const FAQ_HUMAN: QA[] = [
         <p>
           It's a working hackathon submission. Contracts are deployed and
           accepting receipts on both Aristotle mainnet (chainId 16661) and
-          Galileo testnet (chainId 16602). The Phala dstack TDX enclave is
-          live and signing receipts with a key sealed to its attested
-          image. Browser-side encryption is real — non-extractable
-          WebCrypto in IndexedDB. SD-JWT VC issuance is real Ed25519.
+          Galileo testnet (chainId 16602). The <Term k="phala-tdx">Phala
+          dstack TDX</Term> enclave is live and signing receipts with a
+          key sealed to its attested image. Browser-side encryption is
+          real — <Term k="non-extractable-key">non-extractable
+          WebCrypto</Term> in IndexedDB. <Term k="sd-jwt-vc">SD-JWT VC</Term>{" "}
+          issuance is real <Term k="ed25519">Ed25519</Term>.
         </p>
         <p className="mt-3">
           The persona narrative (Maria, the domestic worker) is a

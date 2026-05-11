@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { GLASS_BASE, LiquidGlass } from "@/components/primitives/LiquidGlass";
 import { RevealText } from "@/components/primitives/RevealText";
 import { MagneticButton } from "@/components/primitives/MagneticButton";
+import { Term } from "@/components/primitives/Term";
 import { CANONICAL_RECEIPT_ID } from "@/lib/fixtures/receipts";
 
 // Galileo AgentMinted tx — proof of the soulbound agent identity. CTA
@@ -22,7 +23,7 @@ export default function SubpoenaPage() {
     <main className="relative flex min-h-screen flex-col bg-background">
       <header className="px-5 pt-8 pb-6 sm:px-6 sm:pt-10">
         <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase sm:text-xs">
-          Investigation Request — Clinic Disclosure Log · PDPO Cap. 486 §57
+          Investigation Request — Clinic Disclosure Log · <Term k="pdpo-57">PDPO Cap. 486 §57</Term>
         </p>
         <p className="mt-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase sm:text-xs">
           subject: anonymous applicant · 2026-05-18 14:32:00 +08:00
