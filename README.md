@@ -2,6 +2,14 @@
 
 > **Prove eligibility, not identity.**
 
+[![CI](https://github.com/StephenSook/Compass-OG-/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/StephenSook/Compass-OG-/actions/workflows/ci.yml)
+[![Slither](https://img.shields.io/badge/slither-0%20sec%20findings-2ea44f?logo=ethereum)](./docs/audits/slither-2026-05-10.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Aristotle mainnet](https://img.shields.io/badge/0G%20Aristotle-mainnet%20live-2ea44f)](https://chainscan.0g.ai/address/0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b)
+[![Galileo testnet](https://img.shields.io/badge/0G%20Galileo-testnet%20live-2ea44f)](https://chainscan-galileo.0g.ai/address/0x60BbE5fcA6D23f7d25142E721258c641b45A7c3b)
+[![Phala TEE](https://img.shields.io/badge/Phala%20dstack-TDX%20live-2ea44f)](https://65c93172e22403466eecee47dd1cc90375014a0f-8080.dstack-pha-prod9.phala.network)
+[![Whitepaper](https://img.shields.io/badge/whitepaper-PDF-orange)](./docs/whitepaper.pdf)
+
 A private eligibility firewall on 0G — vulnerable migrant workers prove they qualify for services through an autonomous agent, while clinics receive only non-identifying receipts.
 
 **Track 5 — Privacy & Sovereign Infrastructure**, 0G APAC Hackathon 2026.
@@ -431,6 +439,40 @@ Production TEE deploy via Phala Cloud: see [enclave/phala/deploy.md](./enclave/p
 Compass narrows disclosure but does not eliminate it. Coercion, deniable encryption, full k-anonymity against statistical re-identification, and SD-JWT VC draft churn all remain open issues. See [docs/honest-limits.md](./docs/honest-limits.md) for the full list.
 
 The receipt-signer key is **enclave-bound** by virtue of dstack `getKey`'s deterministic-key-sealed-to-MR_TD primitive plus the per-receipt quote's `report_data = sha256(ethAddress || composeHash || receiptId)` binding. Per-receipt freshness defeats the quote-replay attack a single boot quote would leave open. Verifier-side trust chain documented in [`enclave/src/verify-attestation.ts`](./enclave/src/verify-attestation.ts).
+
+---
+
+## Cite this work
+
+If you reference Compass in academic, journalistic, or developer-survey work, please cite as:
+
+```bibtex
+@misc{compass2026,
+  title  = {Compass: A Private Eligibility Firewall on 0G},
+  author = {Sookra, Stephen},
+  year   = {2026},
+  url    = {https://github.com/StephenSook/Compass-OG-},
+  note   = {0G APAC Hackathon Track 5 (Privacy \& Sovereign Infrastructure).
+            Aristotle mainnet (chainId 16661): CompassHub
+            0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b, AgentRegistry
+            0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9.}
+}
+```
+
+Plain-text citation: *Sookra, Stephen. Compass: A Private Eligibility Firewall on 0G. 2026. https://github.com/StephenSook/Compass-OG-.*
+
+For media coverage, founder quotes, and brand assets, see [`docs/press-kit.md`](./docs/press-kit.md).
+
+---
+
+## Contributing + security
+
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — local setup, conventions, testing expectations.
+- [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) — community standards (scoped specifically to Compass' anti-trafficking mission).
+- [`SECURITY.md`](./SECURITY.md) — responsible-disclosure policy and reporter hall-of-fame.
+- [`CHANGELOG.md`](./CHANGELOG.md) — release notes by milestone.
+
+Issue templates under [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/); PR template at [`.github/pull_request_template.md`](./.github/pull_request_template.md).
 
 ---
 
