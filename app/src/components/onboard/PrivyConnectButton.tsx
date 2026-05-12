@@ -64,12 +64,7 @@ export function PrivyConnectButton({ onConnected }: Props) {
   }
 
   if (authenticated && address) {
-    const short = `${address.slice(0, 6)}…${address.slice(-4)}`;
-    return (
-      <span className="rounded-full border border-green-400/30 px-4 py-2 font-mono text-[10px] tracking-[0.3em] text-green-400/80 uppercase">
-        ✓ {short}
-      </span>
-    );
+    return <WalletPill address={address} />;
   }
 
   if (inFlightRef.current && authenticated && !address) {
@@ -91,6 +86,37 @@ export function PrivyConnectButton({ onConnected }: Props) {
       className="rounded-full border border-border px-4 py-2 font-mono text-[10px] tracking-[0.3em] text-foreground uppercase transition-colors hover:border-foreground/40"
     >
       {timedOut ? "Retry" : "Connect"}
+    </button>
+  );
+}
+
+// Connected-state pill. Click copies the full 42-char address to the
+// clipboard and briefly flashes "✓ COPIED". Hover shows the full address
+// via native title tooltip. Visual style matches the prior <span> exactly
+// so the recording's frame composition is unchanged.
+function WalletPill({ address }: { address: Address }) {
+  const [copied, setCopied] = useState(false);
+  const short = `${address.slice(0, 6)}…${address.slice(-4)}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.error("[privy] clipboard write failed", err);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title={`Click to copy full address — ${address}`}
+      aria-label={`Copy wallet address ${address}`}
+      className="rounded-full border border-green-400/30 px-4 py-2 font-mono text-[10px] tracking-[0.3em] text-green-400/80 uppercase transition-colors hover:border-green-400/60 hover:text-green-400 cursor-pointer"
+    >
+      {copied ? "✓ copied" : `✓ ${short}`}
     </button>
   );
 }
