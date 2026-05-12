@@ -129,6 +129,6 @@ export const GLOSSARY = {
   "fdh": {
     term: "FDH",
     definition:
-      "Foreign Domestic Helper. The largest migrant-worker visa category in Hong Kong (~340,000 visa holders, roughly 5% of the population). Subject to the 14-day rule: a worker whose contract ends must leave HK within 14 days unless rehired.",
+      "Foreign Domestic Helper. The largest migrant-worker visa category in Hong Kong — 368,000 visa holders (HK LegCo Research Office, end-2024), 9.6% of the local workforce. Subject to the 14-day rule: a worker whose contract ends must leave HK within 14 days unless rehired.",
   },
 } as const satisfies Record<string, GlossaryEntry>;

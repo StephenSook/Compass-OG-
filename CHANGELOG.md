@@ -1,5 +1,97 @@
 # Changelog
 
+## Unreleased — website-wide methodology stat lockstep (2026-05-12, tenth wave)
+
+Extends the ninth-wave methodology pass from documents into the live
+Vercel deployment. Hard primary-source numbers (368K HK FDHs · 27.2M
+APAC migrant workers · US$22K worker cost · US$14K HK gov cost) now
+appear on every high-traffic site surface and every meta surface
+crawled by Google / Twitter-X / LinkedIn / Slack / Discord embeds.
+
+### Added (UI)
+
+- **`/` homepage hero** — mono tracking-wider stats strip between
+  Maria's narrative paragraph and the CTA grid: "368,000 AT RISK ·
+  $22K LOST PER WORKER · $14K LOST PER GOV CASE". Matches existing
+  design system; numerals foreground-highlighted, dot-separators in
+  muted-foreground/30.
+- **`/about` new §By the numbers Section** — first content block after
+  the lead paragraph, before Architecture. Three Stat cards (368K ·
+  ≈US$22,200 · ≈US$14,100) with per-stat footnote citations (LegCo
+  2025 · HK Labour Dept 2025 + Amnesty 2013 · HK LAD FY24/25 + Budget
+  Head 70). Trailing paragraph + whitepaper Business Impact link.
+- **`/demo` guided-tour stats strip** — same triple-stat pattern below
+  the lead paragraph.
+- **`/faq` new FAQ entry** — "What's the business case — TAM, cost
+  per incident, sustainability?" inserted as third question in
+  FAQ_HUMAN. Four-paragraph answer + whitepaper link.
+
+### Changed (meta + glossary + distribution)
+
+- **`app/src/lib/glossary.ts` → fdh definition** — "~340,000 visa
+  holders, roughly 5% of the population" → "368,000 visa holders (HK
+  LegCo Research Office, end-2024), 9.6% of the local workforce".
+  Drives every `<Term k="fdh">` tooltip site-wide (clinic/subpoena +
+  faq + about + onboard).
+- **`app/src/app/opengraph-image.tsx` (root)** — subtitle + footer
+  rewritten with 368K + 27M framing. Affects every social-share
+  preview that doesn't override per-route (Twitter/X, LinkedIn,
+  Slack, Discord embeds, iMessage previews).
+- **`app/src/app/about/opengraph-image.tsx`** — subtitle includes
+  "$22K/$14K cost per incident"; footer: "/about · TAM + cost-per-
+  incident inside".
+- **`app/src/app/layout.tsx` → root metadata.description** — leads
+  with the 368K hook. Lands in Google SERP + every link unfurl.
+- **`app/src/app/manifest.ts` → PWA description** — same business-led
+  copy. Renders in iOS / Android Add-to-Home-Screen banner.
+- **`docs/distribution/devpost-listing.md` →  §The asymmetry** —
+  "~5% of the population" replaced with hard stats + new §Why this
+  matters in dollars subsection.
+- **`docs/distribution/dorahacks-listing.md` → short description** —
+  140-char hook now leads with 368K HK migrant workers.
+
+### Added (assets)
+
+- **`Demo/assets/hackquest/01-04-*.png`** — four 1280×720 Playwright
+  captures of `app-psi-pied.vercel.app` used as Project Archive Images
+  slots during F.4: `/about` cover, `/clinic/subpoena` wow moment,
+  `/audit-graph.html` 3D viz, `/onboard` 3-step flow.
+- **`Demo/assets/hackquest/compass-avatar.png`** — 1024×1024 brand-
+  mark avatar (black square + white italic serif "C") rendered via
+  PIL from `app/src/app/icon.tsx` design at 5.3× resolution. Used for
+  the HackQuest avatar slot.
+
+### Changed (gitignore)
+
+- **`.gitignore`** — added `Demo/build/` (ffmpeg pipeline
+  intermediates, ~70 MB, regenerable via `Demo/edit-recipe.md`),
+  `Demo/compass-demo-final.mp4` (rendered video, ~15 MB, lives on
+  YouTube), and `docs/deployments/og_*.json` (deployment artifacts).
+
+### Skipped (intentional, with reasons)
+
+- **Re-render demo video** — propagation cost ≥ 15 surfaces + the
+  submitted X post URL (status 2054073329355530692) is unfixable
+  (X free-tier post-edit window is 1 hr Premium-only). YouTube
+  description annotation already documents the 15M → 27.2M
+  reconciliation.
+- **Per-route OG cards for `/demo` /verify /faq /onboard /audit
+  /clinic/subpoena /roadmap** — each already serves a tight route-
+  specific hook that would be diluted by adding stats. Root + /about
+  cover the discoverability surface.
+- **`/clinic/subpoena` page body** — intentionally minimal ("That's
+  all that exists"). Adding stats dilutes the wow moment.
+- **`/onboard` + `/kiosk` hero copy** — working-flow pages; copy
+  changes carry regression risk (multilang in /kiosk; long flow in
+  /onboard). Judges interact, they don't read.
+- **`/audit` / `/verify` / `/receipt` / `/analytics` / `/vault`** —
+  narrative-light technical surfaces. No methodology-gap to close.
+- **Demo Beat 6 video title card** — locked to YouTube URL
+  vg5WZHmlzZI; re-render breaks 15-surface propagation. 27.2M ILO
+  figure cited in every textual surface instead.
+- **Skill `compass-eligibility-check/SKILL.md`** — pure technical
+  reference for the verify-receipt CLI; no methodology fit.
+
 ## Unreleased — Sookra Methodology compliance pass (2026-05-12, ninth wave)
 
 Post-submission audit against the Sookra Methodology (Five Pillars +
