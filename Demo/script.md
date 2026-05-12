@@ -122,8 +122,12 @@ mint.
 > The receipt-signer runs inside Phala TDX. It evaluates the policy, signs the receipt with a key sealed inside the attested image.
 > The receipt lands on 0G Chain — Aristotle mainnet.
 > Three sentences.
+> *(beat — 1 second)*
+> Now imagine the subpoena.
 
 The line "three sentences" is the joke and the brag. Architecture in three sentences is not a thing — except here. "Aristotle mainnet" reinforces the Beat 3 mint.
+
+The added bridge line "Now imagine the subpoena." (2026-05-11) is a Socratic teaser that primes Beat 5 without spoiling it. Delivered flat, quiet, almost as an aside — same cadence as "Three sentences." The word "imagine" verbally cues the audience's expectation right before the visual hard-cut to `/clinic/subpoena`. Drop voice on "subpoena," no inflection swell. The hard cut to Beat 5 should fire <500 ms after "subpoena" lands.
 
 ---
 
