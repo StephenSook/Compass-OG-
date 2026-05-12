@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability (private)
+    url: https://github.com/StephenSook/Compass-OG-/security/policy
+    about: Do NOT file security issues publicly. See SECURITY.md for the private disclosure channel.
+  - name: 📖 Read the whitepaper before filing
+    url: https://github.com/StephenSook/Compass-OG-/blob/main/docs/whitepaper.pdf
+    about: 3-page technical whitepaper covering threat model, architecture, protocol, honest limits, roadmap.
+  - name: 🌐 Verify a receipt in your browser
+    url: https://app-psi-pied.vercel.app/verify
+    about: "If you suspect a receipt is invalid, run it through /verify first — no install needed."
+  - name: 📋 Honest limits (what Compass does NOT protect against)
+    url: https://github.com/StephenSook/Compass-OG-/blob/main/docs/honest-limits.md
+    about: 25-section enumeration of known limits. Check here before filing a bug — it might already be documented.

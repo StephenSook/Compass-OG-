@@ -1,0 +1,34 @@
+# CODEOWNERS — automatic review request routing for Compass.
+#
+# Solo build today (Stephen Sookra); this file pre-wires future co-maintainer
+# routing so adding a teammate is a one-line change rather than a repo-wide
+# refactor. Until that day, all paths route to @StephenSook by default.
+
+# Global fallback — every change pings the maintainer.
+*                                          @StephenSook
+
+# Smart contracts (Solidity + Hardhat + Slither) — highest security blast radius.
+/contracts/                                @StephenSook
+/contracts/contracts/                      @StephenSook
+/.github/workflows/ci.yml                  @StephenSook
+
+# TEE / enclave (dstack TDX, receipt-signer, verifier).
+/enclave/                                  @StephenSook
+
+# Frontend + API routes.
+/app/                                      @StephenSook
+/app/src/app/api/                          @StephenSook
+
+# Docs + audits + threat-model — public-facing accuracy matters.
+/docs/                                     @StephenSook
+/docs/audits/                              @StephenSook
+/docs/honest-limits.md                     @StephenSook
+
+# Skills (reusable ecosystem primitives).
+/skills/                                   @StephenSook
+
+# Repository-health metadata.
+/.github/                                  @StephenSook
+/README.md                                 @StephenSook
+/SECURITY.md                               @StephenSook
+/CHANGELOG.md                              @StephenSook

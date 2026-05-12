@@ -141,3 +141,40 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# === Compass-specific additions ===
+
+# Hardhat
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+.openzeppelin/
+
+# Vercel
+.vercel
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Extra secrets safety
+*.pem
+*.key
+mnemonic.txt
+
+# Per-run verify-receipt evidence (regenerable; canonical evidence is phala-deployment.md)
+docs/notes/verify-receipt-evidence.md
+graphify-out/
+
+# ffmpeg pipeline intermediates (regenerable; recipe at Demo/edit-recipe.md)
+Demo/build/
+
+# Final rendered demo video (lives on YouTube; not source-controlled — 15 MB binary)
+Demo/compass-demo-final.mp4
+
+# Vercel/0G deployment artifacts that don't need source control
+docs/deployments/og_*.json

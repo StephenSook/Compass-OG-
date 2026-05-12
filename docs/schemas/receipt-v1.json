@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/StephenSook/Compass-OG-/blob/main/docs/schemas/receipt-v1.json",
+  "title": "Compass Eligibility Receipt v1",
+  "type": "object",
+  "description": "Canonical schema for the off-chain receipt payload that gets hashed into CompassHub.issueReceipt's attestationDigest field. Reproducible byte-for-byte by the verify-receipt CLI for judge replication.",
+  "required": [
+    "version",
+    "receiptId",
+    "challenge",
+    "policyHash",
+    "agentIdCommitment",
+    "verifierPubKey",
+    "credentialBundleHash",
+    "result",
+    "resultHash",
+    "expiry",
+    "issuedAt",
+    "quoteCommitment"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "compass-receipt-1.2.0",
+      "description": "Schema version. 1.2.0: quoteCommitment now binds the per-receipt TDX quote (whose report_data is sha256(ethAddress || composeHash || receiptId)) — defeats archived-quote replay across deployments."
+    },
+    "receiptId": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "Unique receipt identifier emitted on-chain. Lowercase hex."
+    },
+    "resultHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "keccak256(canonicalize(result)) — emitted on-chain."
+    },
+    "challenge": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "Provider-supplied 32-byte challenge (hex, lowercase). Freshness primitive."
+    },
+    "policyHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "sha256 of the canonical policy JSON in docs/policies/. Lowercase hex."
+    },
+    "agentIdCommitment": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "keccak256 of (agentTokenId || ownerAddress) — non-identifying agent-handle commitment."
+    },
+    "verifierPubKey": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]+$",
+      "description": "Hex-encoded compressed enclave-born signing public key (Plan B requirement). MUST be bound into the TEE attestation REPORTDATA per Phase 6b.0."
+    },
+    "credentialBundleHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "sha256 of the SD-JWT VC bundle the enclave decrypted to evaluate the policy. Allows future audit without exposing the credential itself."
+    },
+    "result": {
+      "type": "object",
+      "required": ["eligible", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "eligible": { "type": "boolean" },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "predicate-false",
+            "credential-revoked",
+            "credential-expired",
+            "credential-bad-signature",
+            "issuer-not-trusted"
+          ]
+        }
+      }
+    },
+    "expiry": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix timestamp (seconds) after which this receipt is no longer valid. CompassHub.issueReceipt rejects receipts with expiry <= block.timestamp."
+    },
+    "issuedAt": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix timestamp (seconds) when the enclave produced the receipt. Floor-bucketed to 15-min on-chain (timestampBucket field) per threat-model section 1b."
+    },
+    "quoteCommitment": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$",
+      "description": "sha256 of a per-receipt TDX quote whose report_data binds sha256(ethAddress || composeHash || receiptId). Defeats quote-replay: an archived boot quote cannot be reused to sign a different receiptId. Env-mode dev receipts carry sha256('compass-env-mode-no-attestation') as a sentinel; verifiers MUST reject this value in production."
+    }
+  },
+  "_canonicalization": {
+    "spec": "RFC 8785 JSON Canonicalization Scheme (JCS)",
+    "library": "@truestamp/canonify or json-canonicalize",
+    "_note": "MUST be applied identically by the issuer (enclave), the verifier (off-chain consumer), and the judge-replicable verify-receipt CLI. Any whitespace / key-order divergence breaks the digest match."
+  },
+  "_attestationDigestFormula": "sha256(canonicalize(this-document))",
+  "_alignmentToOnChain": {
+    "_note": "The on-chain ReceiptIssued event in CompassHub emits a subset of these fields plus on-chain-derived ones: receiptId, policyId, nullifier, agentIdCommitment, resultHash, expiry, attestationDigest, timestampBucket. The attestationDigest emitted on-chain MUST equal sha256(canonicalize(this-receipt-document))."
+  }
+}

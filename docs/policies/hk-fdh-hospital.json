@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "policyId": "hk-fdh-hospital",
+  "issuerCanonicalName": "HK Hospital Authority — FDH Free-Care Eligibility",
+  "version": "1.0.0",
+  "predicate": {
+    "and": [
+      { "claim": "has_active_FDH_visa", "equals": true },
+      { "claim": "HKID_valid", "equals": true }
+    ]
+  },
+  "minAnonymitySet": 1000,
+  "credentialBundleSchema": {
+    "required": ["has_active_FDH_visa", "HKID_valid"],
+    "properties": {
+      "has_active_FDH_visa": { "type": "boolean" },
+      "HKID_valid": { "type": "boolean" }
+    }
+  },
+  "trustedIssuers": [
+    "did:key:z6MkREPLACE_HOSPITAL_DID_KEY_AT_PHASE_4A"
+  ],
+  "humanReadable": {
+    "title": "Hong Kong Public Hospital — FDH Free Care Eligibility",
+    "description": "Confirms a foreign domestic worker holds a currently-active FDH visa and a valid HKID, qualifying for HK public-hospital free-care rates (HK$180 A&E, HK$120 specialist) instead of non-eligible rates (HK$1,230 A&E, obstetric $39k–$90k). Eligibility is binary per Hospital Authority's existing algorithmic check; once the contract terminates, visa shifts to 'visitor' and full non-resident fees apply.",
+    "issuingOrg": "Hong Kong Hospital Authority (existing automated eligibility check)",
+    "rateComparison": {
+      "FDH-eligible-A&E": "HK$180",
+      "non-eligible-A&E": "HK$1,230",
+      "obstetric-non-eligible": "HK$39,000–HK$90,000"
+    }
+  },
+  "policyHashAlgorithm": "sha256",
+  "policyHashCanonicalization": "RFC 8785 JSON Canonicalization Scheme",
+  "_note": "Largest minAnonymitySet (1000) — HK has 368,000 FDHs as of 2024 LegCo Research Office report, so the eligibility set is large. This is the cleanest policy to demo: clear binary check, large k-anonymity set, immediate emotional impact (the rate disparity)."
+}

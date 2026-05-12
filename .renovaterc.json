@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "ignoreDeps": [
+    "@0glabs/0g-serving-broker",
+    "@0glabs/0g-ts-sdk",
+    "@sd-jwt/sd-jwt-vc",
+    "@sd-jwt/jwt-status-list",
+    "@privy-io/react-auth",
+    "@splinetool/react-spline",
+    "@splinetool/runtime"
+  ],
+  "labels": ["dependencies"],
+  "schedule": ["before 5am every weekday"]
+}

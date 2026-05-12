@@ -1,0 +1,60 @@
+name: Feature request
+description: Suggest a new capability for Compass.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature. Compass keeps a narrow scope (private eligibility on 0G) — most proposals are better as a follow-on project. Use the **Compass scope check** at the bottom to decide.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem you are trying to solve
+      description: One paragraph. Who is affected? What do they do today, and where does that fall short?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: The change you are proposing
+      description: Concrete. What would land in the codebase if this issue were closed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: One or two sentences each. What other approaches did you weigh, and why is this proposal preferable?
+    validations:
+      required: false
+
+  - type: textarea
+    id: honest-limits
+    attributes:
+      label: Honest limits
+      description: |
+        What this proposal does *not* solve. Compass is explicit about its limits per [`docs/honest-limits.md`](../../docs/honest-limits.md); extend that posture here.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Compass scope check
+      description: Tick all that apply.
+      options:
+        - label: This change concerns one of the populations Compass is designed to serve (migrant workers, NGO clients, intake clinicians).
+        - label: This change has a clear cryptographic correctness story — I can describe how the threat model changes if it lands.
+        - label: This change does not regress the privacy properties enumerated in `docs/architecture.md` and `docs/threat-model.md`.
+        - label: If implemented, a Playwright / Hardhat / vitest test would cover the new behavior.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        If none of the boxes apply, this may be out of scope — please open a Discussion instead.

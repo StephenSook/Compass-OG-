@@ -1,0 +1,41 @@
+{
+  "name": "@compass/enclave",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "smoke-test": "ts-node src/smoke-test.ts",
+    "build": "tsc",
+    "verify-deploy": "ts-node phala/scripts/verify-deploy.ts",
+    "verify-receipt": "ts-node scripts/verify-receipt.ts",
+    "mint-sample-receipt": "ts-node scripts/mint-sample-receipt.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": "true",
+  "dependencies": {
+    "@0gfoundation/0g-compute-ts-sdk": "^0.8.1",
+    "@0gfoundation/0g-storage-ts-sdk": "^1.2.9",
+    "@noble/curves": "^2.2.0",
+    "@noble/ed25519": "^3.1.0",
+    "@noble/hashes": "^2.2.0",
+    "@phala/dstack-sdk": "0.5.7",
+    "@scure/base": "^2.2.0",
+    "@sd-jwt/core": "^0.19.0",
+    "@sd-jwt/crypto-nodejs": "^0.19.0",
+    "@sd-jwt/jwt-status-list": "^0.19.0",
+    "@sd-jwt/sd-jwt-vc": "^0.19.0",
+    "@types/express": "^5.0.6",
+    "dotenv": "^17.4.2",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.6.0",
+    "vitest": "^4.1.5"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "network": "og_aristotle",
+  "chainId": 16661,
+  "deployer": "0x05b5Bb550eb8401fC4b8a33bf566C03f49ef5d34",
+  "deployedAt": "2026-05-11T02:44:46.413Z",
+  "contracts": {
+    "AgentRegistry": "0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9",
+    "CompassHub": "0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b"
+  }
+}

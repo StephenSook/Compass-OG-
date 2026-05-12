@@ -1,0 +1,5 @@
+keys/
+*.key.json
+
+# Ephemeral verify-receipt sample (regenerable via npm run mint-sample-receipt)
+samples/
