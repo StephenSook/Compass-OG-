@@ -25,19 +25,92 @@ Live demo: <https://app-psi-pied.vercel.app> · Repo:
 
 ## Problem
 
-In Hong Kong, ~340,000 Foreign Domestic Helpers (FDHs) live and work
-under contract terms that bind their visa to their employer. Asking a
-clinic for free legal aid traditionally requires handing over passport
-+ HKID + employment contract — i.e., the same documents an abusive
-employer would need to retaliate via the 14-day rule. Maria, our
-composite persona, should be able to prove "I'm an FDH in HK with an
-open employment dispute" without disclosing **who** she is.
+In Hong Kong, **368,000 Foreign Domestic Helpers** (FDHs) live and work
+under contract terms that bind their visa to their employer (HK LegCo
+Research Office ISSH02/2025). They represent 9.6% of the local
+workforce; 55% are Filipina, 42% are Indonesian. Asking a clinic for
+free legal aid traditionally requires handing over passport + HKID +
+employment contract — i.e., the same documents an abusive employer
+would need to retaliate via the 14-day rule. Maria, our composite
+persona, should be able to prove "I'm an FDH in HK with an open
+employment dispute" without disclosing **who** she is.
 
 Compass treats eligibility as a predicate that can be evaluated *over*
 encrypted credentials inside a TEE, with only a binary outcome
 (`eligible: true/false`) plus a 15-minute-bucketed timestamp emitted
 on-chain. Maria's identity, employer, document images, and full claim
 values never leave her device.
+
+## Business Impact
+
+### TAM — the addressable population
+
+- **368,000** foreign domestic helpers in Hong Kong (end-2024, HK LegCo
+  Research Office ISSH02/2025) — 9.6% of the local workforce.
+- **27.2 million** migrant workers across APAC (ILO Global Estimates on
+  International Migrant Workers, 4th ed., 2024) — the broader
+  population facing similar disclosure traps.
+- **US$1.087 billion** in personal remittances flowing out of Hong Kong
+  annually (World Bank, 2024) — the economic stake of the population
+  Compass serves.
+- **17% of HK FDHs in forced labour** and **66.3% exploited but not
+  forced** (Justice Centre HK, *Coming Clean*, 2016). **60% are
+  deterred from filing Labour Tribunal claims by deportation fear**
+  (Mission for Migrant Workers, 2023).
+
+### Cost per incident
+
+For a worker deported because identity disclosure at intake was
+subpoena-reachable:
+
+- **Lost wages**: HK$152,064 (≈ **US$19,500**) over the remaining
+  24-month contract (MAW HK$5,100/mo + food HK$1,236/mo, effective
+  September 2025).
+- **Outstanding recruitment debt**: HK$21,000 (≈ **US$2,690**) average
+  for Indonesian FDHs; 85% pay above the legal cap (Amnesty
+  International, 2013; Justice Centre, 2016).
+- **Total per-worker incident cost ≈ US$22,200.**
+
+For the Hong Kong government's deflected case:
+
+- **HK Legal Aid Department**: ≈ HK$71,500 (≈ **US$9,170**) per civil
+  application (LAD FY2024/25 statistics — HK$679.6M civil aid expended
+  ÷ 9,506 applications received).
+- **Deportation processing**: ≈ HK$40-60K (≈ **US$5,100-7,700**) per
+  removal (estimated; HK Budget Head 70 + 2,219 removals in 2024).
+- **Total per-incident HK government cost ≈ US$14,100.**
+
+### Sustainability — revenue and grant pipeline
+
+Compass is open-source. Free for NGO deployment. Phala dstack TDX
+hosting cost is **US$0.04/day** at idle (~US$15/year per receipt-signer
+instance). Two-layer model:
+
+1. **Open-core licensing**: AGPL core; commercial dual-license for any
+   non-NGO deployment (corporate identity systems, refugee services,
+   healthcare intake).
+2. **Managed-hosted tier**: at-cost Phala TEE hosting for NGOs that
+   don't self-host.
+
+Realistic 12-month grant ladder:
+
+| Window | Targets | Range (USD) |
+|---|---|---|
+| Months 0-3 | Phala Builders Program · 0G Guild on 0G | $10K-$100K |
+| Months 3-6 | Ethereum Foundation PSE · Mozilla Technology Fund | $30K-$250K |
+| Months 6-12 | Open Society Migration Initiative · Luminate · HK Jockey Club Special Projects | $150K-$1M+ |
+
+Fiscal hosting via Open Source Collective (501(c)(6) — accepts
+foundation USD without project incorporation). Target by month 18:
+≈ US$60K/year recurring (managed hosting + commercial licensing),
+reducing grant dependency below 60%.
+
+### Why this market, why now
+
+The HK Legal Aid Department spent HK$679.6M on civil aid in FY2024/25
+— none of it prevents the disclosure that triggers deportation.
+Compass closes that gap with one open-source primitive that NGOs
+deploy in days. The market exists today; the primitive did not.
 
 ## Threat Model
 
@@ -176,6 +249,23 @@ Bahasa Malaysia).
 - TEE deployment evidence: `docs/notes/phala-deployment.md`
 - Threat model: `docs/honest-limits.md`
 - Skill package: `skills/compass-eligibility-check/SKILL.md`
+- HK LegCo Research Office ISSH02/2025 — FDH statistics:
+  <https://app7.legco.gov.hk/rpdb/en/uploads/2025/ISSH/ISSH02_2025_20250224_en.pdf>
+- ILO Global Estimates on International Migrant Workers, 4th ed.
+  (December 2024): <https://www.ilo.org/sites/default/files/2024-12/MIGRANT%20%E2%80%93%20ILO%20Global%20Estimates%20on%20International%20Migrant%20Workers_ES_E_WEB_0.pdf>
+- World Bank BM.TRF.PWKR.CD.DT (HK SAR, 2024):
+  <https://data.worldbank.org/indicator/BM.TRF.PWKR.CD.DT?locations=HK>
+- HK Labour Department MAW press release P2025092900318 (Sept 2025):
+  <https://www.info.gov.hk/gia/general/202509/29/P2025092900318.htm>
+- HK Legal Aid Department FY2024/25 statistics:
+  <https://www.lad.gov.hk/eng/statistics/>
+- Justice Centre HK, *Coming Clean* (March 2016):
+  <https://www.justicecentre.org.hk/framework/uploads/2016/03/Coming-Clean-The-prevalence-of-forced-labour-and-human-trafficking-for-the-purpose-of-forced-labour-amongst-migrant-domestic-workers-in-Hong-Kong.pdf>
+- 0G Foundation Ecosystem Growth Program:
+  <https://0g.ai/blog/0g-ecosystem-program>
+- Phala Builders Program:
+  <https://docs.phala.network/overview/pha-token/governance/apply-for-project-funding>
+- Open Source Collective: <https://oscollective.org/about/>
 - AgentRegistry on Galileo:
   [`0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8`](https://chainscan-galileo.0g.ai/address/0x461eda452ffAF43c674ef42BdccfDd6B8e13C2D8)
 - CompassHub on Galileo:

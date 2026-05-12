@@ -194,9 +194,11 @@ Paste the same URL — the demo video is a combined Pitch + How-It-Works track p
 #### Description (rich text)
 
 ```
+**368,000 foreign domestic helpers in Hong Kong — 9.6% of the workforce. 17% in forced labour. 60% deterred from filing Labour Tribunal claims by deportation fear. Every legal-aid intake forces disclosure of name, HKID, employer — every disclosure subpoena-reachable. Compass fixes this. Live on 0G Aristotle mainnet (chainId 16661).**
+
 ## The asymmetry
 
-Migrant workers in Hong Kong make up ~5% of the population. The services that exist to help them — legal aid clinics, shelters, public hospitals — all require identifying information at intake. Name, HKID, employer, visa status. Those are exactly the fields an abusive employer can later subpoena, or that a trafficker can use to find a worker who sought help. The status quo asks the most vulnerable people in the system to choose between getting help and being safe.
+Migrant workers in Hong Kong number 368,000 — 9.6% of the local workforce (HK LegCo Research Office, 2025). Across APAC, 27.2 million migrant workers face similar disclosure traps (ILO Global Estimates, 2024). The services that exist to help them — legal aid clinics, shelters, public hospitals — all require identifying information at intake. Name, HKID, employer, visa status. Those are exactly the fields an abusive employer can later subpoena, or that a trafficker can use to find a worker who sought help. The status quo asks the most vulnerable people in the system to choose between getting help and being safe.
 
 ## What Compass changes
 
@@ -226,6 +228,18 @@ We are explicit about what Compass does NOT do. Coercion: an abusive employer wh
 - Playwright E2E suite scaffolded across the user journey.
 
 Don't trust the maintainer — re-derive the cryptographic chain yourself with `enclave/src/verify-receipt.ts --bundle <receipt.json>`.
+
+## Business Impact
+
+**TAM** — 368,000 FDHs in Hong Kong (LegCo 2025) + 27.2M migrant workers across APAC (ILO 2024). HK Legal Aid Department spent HK$679.6M on civil cases in FY2024/25 — none of it prevents the disclosure that triggers deportation.
+
+**Cost per incident:**
+- Worker side: ≈ **US$22,200** lost (HK$152K remaining contract wages + HK$21K outstanding recruitment debt).
+- Hong Kong government side: ≈ **US$14,100** lost (≈ HK$71,500 LAD civil application + HK$40-60K deportation processing).
+
+**Sustainability** — open-source. Free for migrant-worker NGOs. AGPL core + commercial dual-license for non-NGO deployments. Phala dstack TDX hosting costs ≈ US$15/year per receipt-signer instance. 12-month grant ladder mapped: Phala Builders Program ($10-50K) → 0G ecosystem ($10-100K) → EF PSE + Mozilla Technology Fund ($30-250K) → Open Society Migration Initiative + Luminate + HK Jockey Club Special Projects ($150K-1M+). Target by month 18: ≈ US$60K/year recurring (managed hosting + dual-license), reducing grant dependency below 60%.
+
+Full numbers + sources in `docs/whitepaper.md` → §Business Impact.
 
 ## Try it
 

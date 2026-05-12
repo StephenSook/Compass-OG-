@@ -45,7 +45,9 @@ A private eligibility firewall on 0G — vulnerable migrant workers prove they q
 
 ## Why this matters
 
-Hong Kong's foreign domestic helpers can be deported in 14 days if they lose their job. Every time they ask for help, they hand over papers that can be subpoenaed back at them. **Compass closes that gap by letting them prove eligibility for a service without revealing who they are** — using verifiable credentials, a sealed enclave, and a 0G-chain receipt that contains no identifying fields. If a court asks the clinic "who came in at 2pm last Tuesday?", the honest answer is "someone qualified for the service." That's the whole disclosure.
+**368,000 foreign domestic helpers** live in Hong Kong — 9.6% of the workforce. **17% are in forced labour** (Justice Centre HK, 2016). **60% are deterred from filing Labour Tribunal claims by deportation fear** (Mission for Migrant Workers, 2023). Every time they ask for help, they hand over name + HKID + passport + employment contract — and every disclosure is subpoena-reachable by their employer. **Compass closes that gap** by letting them prove eligibility for a service without revealing who they are — using verifiable credentials, a sealed enclave, and a 0G-chain receipt that contains no identifying fields. If a court asks the clinic "who came in at 2pm last Tuesday?", the honest answer is "someone qualified for the service." That's the whole disclosure.
+
+**TAM:** 27.2M migrant workers across APAC face similar disclosure traps (ILO, 2024). **Cost per incident**: ≈ US$22,200 lost to the worker (lost wages + recruitment debt), ≈ US$14,100 to the HK government (deflected legal aid + deportation processing). Full Business Impact section with grant pipeline at [`docs/whitepaper.md`](./docs/whitepaper.md#business-impact).
 
 ---
 

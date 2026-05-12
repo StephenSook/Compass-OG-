@@ -1,5 +1,79 @@
 # Changelog
 
+## Unreleased — Sookra Methodology compliance pass (2026-05-12, ninth wave)
+
+Post-submission audit against the Sookra Methodology (Five Pillars +
+Pitch Formula, documented in the personal Obsidian vault at
+`References/Imports-Distilled/Sookra Methodology - *`). Hackathon
+submission was strong on Pillars 1 (specific people), 2 (structural
+gap), 4 (technology as inevitable answer) — weak on Pillar 3 (opening
+stat hook) and Pillar 5 (closing business numbers). Pitch Formula
+step 6 (lead with business impact + TAM, mentor input from Aaron +
+Henry) was not followed in the hackathon-submission demo. This wave
+closes those gaps for the BEYOND Expo Macau IRL pitch on 2026-05-28
+without disturbing the already-locked HackQuest submission.
+
+Defensible primary-source numbers researched in parallel via 3 agents
+hitting WebSearch + Firecrawl against HK LegCo, ILO, World Bank, HK
+Labour Department, HK LAD, Justice Centre HK, Amnesty International,
+Mission for Migrant Workers, plus 0G/Phala/PSE/Luminate/OSF/HKJC
+grant program pages. All numbers footnoted in
+`docs/whitepaper.md` → §Business Impact and the new
+`Demo/script-irl.md` IRL pitch.
+
+### Added
+
+- **`docs/whitepaper.md` → §Business Impact** — TAM (368K HK FDHs +
+  27.2M APAC migrant workers + US$1.087B HK remittance outflow + 17%
+  forced-labour rate + 60% deportation-fear deterrence), cost per
+  incident (≈ US$22,200 to the worker, ≈ US$14,100 to the HK
+  government), and sustainability (open-core + managed-hosted tier
+  + 12-month grant ladder targeting Phala/0G/EF PSE → OSF/Luminate/
+  HKJC). New References sub-section adds the 9 primary-source URLs
+  the section depends on.
+- **`Demo/script-irl.md`** — NEW. BEYOND Expo Macau IRL pitch script
+  that LEADS WITH BUSINESS per Sookra Methodology Pitch Formula step
+  6. Beat 0 opens on three numbers ($22,200 worker · $14,100
+  government · 368,000 at risk) before the Maria persona enters in
+  Beat 1 as proof. Beat 6 closes with the grant pipeline. Q&A prep
+  table covers 7 likely judge questions including the moat,
+  jurisdictional expansion, and 0G outage handling.
+
+### Changed
+
+- **`docs/whitepaper.md` → §Problem** — FDH population corrected from
+  "~340,000" to the LegCo-sourced **368,000** (end-2024); composition
+  + workforce-share added (55% Filipina, 42% Indonesian, 9.6% of HK
+  workforce).
+- **`README.md` → §Why this matters** — methodology-compliant
+  rewrite: leads with 368K + 17% forced labour + 60% deterrence-from-
+  filing, then closes with US$22,200 / US$14,100 cost-per-incident +
+  link to Business Impact section. Stat-opener primes the rest of the
+  README.
+- **`Demo/hackquest-submission-answers.md` → Description paste** —
+  368K stat-opener prepended to the Description rich-text block; new
+  Business Impact subsection (TAM + cost-per-incident + sustainability
+  + grant ladder) inserted before the §Try-it links. The user can
+  re-paste the updated Description into HackQuest's Project Archive
+  rich-text field (which is still editable post-submission via
+  Project Archive top-level Save Edit) to flow the methodology gap
+  closure to judges who land on the project page after the X cadence
+  drives traffic.
+
+### Honest carry-over
+
+- **Demo Beat 6 title card stays at "15M migrant workers across APAC"**
+  — the rendered video is locked at `vg5WZHmlzZI`; re-rendering means
+  a new YouTube URL and propagation pain across 5 surfaces (README,
+  X post, HackQuest, dorahacks, devpost). The 27.2M ILO figure is
+  the more defensible APAC-wide number and is cited in every textual
+  surface. v0.6 demo re-cut will align the title card.
+- **The HackQuest Submit Project form is locked.** Project Archive
+  rich-text fields (Description, Progress, Fundraising) are still
+  editable. Re-paste the updated Description after this wave if the
+  HackQuest UI allows. The X Post Link / Contract Address / GitHub
+  Link / Prize Tracks / 0G Components are submitted-once fields.
+
 ## Unreleased — F.4 HackQuest project filed (2026-05-12, eighth wave)
 
 Compass formally submitted to the 0G APAC Hackathon via HackQuest at
