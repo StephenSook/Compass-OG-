@@ -396,10 +396,10 @@ Once the Project Archive is "Complete," the **Select the Project to Submit** dro
 After each form lands, append the timestamp + confirmation here:
 
 - [x] Google Form submitted at: 2026-05-12 (per user confirmation)
-- [ ] HackQuest project entry created at: __________
-- [ ] HackQuest project archive saved (Overview / Checkpoints / Team) at: __________
-- [ ] HackQuest Submit Project filed at: __________ (capture confirmation: `Demo/hackquest-submission-confirmation.png`)
-- [ ] X post URL: __________
+- [x] HackQuest project entry created at: 2026-05-12 (Project Archive completed — 100 Info Complete)
+- [x] HackQuest project archive saved (Overview / Checkpoints / Team) at: 2026-05-12
+- [x] HackQuest Submit Project filed at: 2026-05-12 (capture confirmation: `Demo/hackquest-submission-confirmation.png`)
+- [x] X post URL: `https://x.com/steve_social_/status/2054073329355530692` (all 4 @ tags + both # hashtags — Community Award eligible)
 
 ---
 

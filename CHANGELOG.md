@@ -1,5 +1,84 @@
 # Changelog
 
+## Unreleased — F.4 HackQuest project filed (2026-05-12, eighth wave)
+
+Compass formally submitted to the 0G APAC Hackathon via HackQuest at
+`hackathon/57e543a9-0b08-4ba3-8326-e5cd751c0248/.../submit`. Four days
+ahead of the May 16 23:59 GMT+8 deadline. All three prize tracks
+selected (Grand + Excellence + Community). 5 of 6 0G components
+attested (Storage, Compute, Chain, Agent ID, Privacy/Secure Execution;
+DA + Other skipped — DA unused in v1). On-chain proof packs the
+Aristotle mainnet AgentRegistry + CompassHub addresses, 3 registered
+demo policies, and the Galileo testnet parity note within the 300-char
+cap.
+
+The Project Archive (the entry that gates the Submit Project form)
+landed earlier the same day at 100% Info Complete: avatar (1024×1024
+brand-mark generated locally from `icon.tsx` design), 195-char intro,
+3 sector chips (Infra + AI + Other), 8 tech tags (5 stock chips + 3
+custom: TypeScript, Phala-dstack, SD-JWT), all 4 captured screenshots
+(`/about` cover + `/clinic/subpoena` + `/audit-graph.html` + `/onboard`)
+via Playwright at 1280×720 prod, demo + pitch video URLs both set to
+the live YouTube URL, full Description + Progress During Hackathon
+rich-text blocks with verifiability ledger, 6 Phase A-F checkpoints
+mapped to HackQuest's Type taxonomy (Development × 3, Design × 1,
+Launch × 2), evergreen profile bio + United States location swap.
+
+### Added
+
+- **`Demo/hackquest-submission-answers.md`** — Form 3 section
+  expanded with field-by-field paste guide for the Project Archive
+  (Overview / Checkpoints / Team tabs); post-submission tracking
+  checkboxes flipped to checked with the 2026-05-12 timestamp on all
+  four legs (Google Form + Project Archive + Submit Project + X post).
+- **`Demo/assets/hackquest/compass-avatar.png`** — 1024×1024
+  brand-mark avatar (black square + white italic serif "C") rendered
+  via PIL from `app/src/app/icon.tsx` design parameters. Scales clean
+  to any HackQuest avatar slot from 32px to 512px without artifacts.
+  Generated reproducibly — same Times New Roman Italic at fontSize
+  760 on 1024×1024 black background.
+- **`Demo/assets/hackquest/01-04-*.png`** — Four 1280×720 screenshots
+  captured from `app-psi-pied.vercel.app` via Playwright MCP for the
+  Project Archive Images slots: `01-about-architecture.png` (cover —
+  hero "Bounded disclosure" + Layer 1 box), `02-subpoena.png`
+  (INVESTIGATION REQUEST + [NO DATA] wow moment),
+  `03-audit-graph.png` (3D force-graph receipt nodes),
+  `04-onboard.png` ("Maria's agent, in three steps" + Connect wallet).
+
+### Submitted answers (load-bearing references — do NOT change without redoing the submit)
+
+- Contract address (the form's single-address field) =
+  `0xe42fd4F0a3197126fEeF5e6AAfC5Fb8848bBC58b` (CompassHub on
+  Aristotle mainnet, chainId 16661). AgentRegistry
+  `0xf1FAaBef1d00Db1a15b7637Dc0d8526449D06Bf9` is included in the
+  300-char On-Chain Integration Proof.
+- Project X Post Link =
+  `https://x.com/steve_social_/status/2054073329355530692` (all 4
+  mandatory @ tags `@0G_labs @0g_CN @0g_Eco @HackQuest_` + both
+  hashtags `#0GHackathon #BuildOn0G` confirmed present — Community
+  Award eligible).
+- GitHub Repository Link = `https://github.com/StephenSook/Compass-OG-`
+
+### Gated next-actions (post-submission)
+
+- **Capture confirmation screenshot** → save as
+  `Demo/hackquest-submission-confirmation.png`. Single source of truth
+  the form landed within the window.
+- **Continue build-in-public X cadence** through May 16 — posts 7/10
+  (demo video drop), 8/10 (subpoena scene), 9/10 (browser-verifier),
+  10/10 (final shipped + ask) per `Demo/x-post-final.md`. Posts 7-9
+  thread off 6/10; post 10/10 standalone if a stronger
+  Community-Award-eligible link is needed.
+- **48-hour reply window** — monitor `@0G_labs` / `@HackQuest_` /
+  `@0g_CN` / `@0g_Eco` engagement on the submitted X post; reply to
+  every mention within the window. Community Award is votes on X +
+  Discord engagement during active judging.
+- **Phala TEE restart 24hr before any judge demo** — the CVM is
+  stopped between cycles to save cost ($0.04/day idle); restart
+  before any cold demo so `/api/tee-status` returns `mode: tee` not
+  the stub fallback. Verify via cold incognito GET to
+  `https://app-psi-pied.vercel.app/api/tee-status`.
+
 ## Unreleased — F.1 demo video shipped (2026-05-12, seventh wave)
 
 The 3-minute walkthrough is live on YouTube unlisted at
