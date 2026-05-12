@@ -28,6 +28,16 @@ import {
   toHex,
   type Hex,
 } from "viem";
+
+// Vercel function timeout. Default is 10s on Hobby, 15s on Pro. The
+// consumeGrantAndIssueReceipt flow chains: enclave call (~200-500ms) →
+// writeContract broadcast (~1s) → waitForTransactionReceipt
+// (block-time-dependent, 2-30s typical, occasionally longer under network
+// congestion). Bumping maxDuration to 60s gives the on-chain confirmation
+// a real window without forcing the UI to refetch. The viem call below is
+// capped at 55s so we always return cleanly under this ceiling — never
+// gets Vercel-killed mid-wait.
+export const maxDuration = 60;
 import { privateKeyToAccount } from "viem/accounts";
 import { activeChain, useMainnet } from "@/lib/chains";
 import {
@@ -360,12 +370,42 @@ export async function POST(req: Request) {
 
   let txReceipt: Awaited<ReturnType<typeof publicClient.waitForTransactionReceipt>>;
   try {
-    txReceipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+    // Tighter timeout + faster polling: viem defaults are 180s / 4s which
+    // exceed Vercel's per-function budget AND drop confirmation latency
+    // unnecessarily. Aristotle blocks are ~2-3s; polling every 1.5s catches
+    // confirmation within a single block of mining. 55s upper bound stays
+    // under our 60s `maxDuration` export (see top of file) so we never get
+    // Vercel-killed mid-wait.
+    txReceipt = await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: 55_000,
+      pollingInterval: 1_500,
+    });
   } catch (err) {
-    console.error("[/api/consume] waitForTransactionReceipt failed", err);
+    console.error("[/api/consume] waitForTransactionReceipt timed out — tx is on-chain pending; returning 200 with tx hash so the client polls instead of broadcasting a new tx", err);
+    // Compute the 15-min timestamp bucket from issuedAt so the UI can still
+    // render the privacy-preserving bucket pill even before chain
+    // confirmation. The bucket is deterministic from issuedAt and matches
+    // what the contract will emit in ReceiptIssued.
+    const bucket = Math.floor(issuedAt / 900) * 900;
     return NextResponse.json(
-      { error: "tx_unconfirmed", message: "Submitted but not yet confirmed", txHash },
-      { status: 504 },
+      {
+        txHash,
+        blockNumber: null,
+        receiptId,
+        policyId: POLICY_ID,
+        nullifier,
+        agentIdCommitment,
+        resultHash: "0x" + "0".repeat(64),
+        attestationDigest: enclaveResp.attestationDigest,
+        timestampBucket: bucket,
+        expiry: Number(expiry),
+        issuedAt,
+        pending: true,
+        network: chain.name,
+        chainId: chain.id,
+      },
+      { status: 200 },
     );
   }
 
