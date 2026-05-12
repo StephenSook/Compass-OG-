@@ -17,8 +17,7 @@ during the active hackathon may conflict with 0G APAC rules.
 ## Short description (140 chars)
 
 ```
-A vulnerable worker proves eligibility for free help without
-disclosing name, HKID, or employer. Live on 0G Aristotle mainnet.
+368K HK migrant workers prove eligibility without disclosing name, HKID, or employer. Live on 0G Aristotle mainnet.
 ```
 
 ## Full description (use the same body as Devpost — see

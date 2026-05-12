@@ -21,13 +21,29 @@ without disclosing her name, HKID, or employer. Subpoenas reach a
 ```
 ## The asymmetry
 
-Migrant workers in Hong Kong make up ~5% of the population. The
-services that exist to help them — legal aid clinics, shelters, public
-hospitals — all require identifying information at intake. Name, HKID,
-employer, visa status. Those are exactly the fields an abusive employer
-can later subpoena, or that a trafficker can use to find a worker who
-sought help. The status quo asks the most vulnerable people in the
-system to choose between getting help and being safe.
+Migrant workers in Hong Kong number 368,000 — 9.6% of the local
+workforce (HK LegCo Research Office, 2025). Across APAC the migrant-
+worker population is 27.2 million (ILO Global Estimates, 2024). 17%
+of HK FDHs are in forced labour; 60% are deterred from filing Labour
+Tribunal claims by deportation fear (Justice Centre 2016, Mission for
+Migrant Workers 2023). The services that exist to help them — legal
+aid clinics, shelters, public hospitals — all require identifying
+information at intake. Name, HKID, employer, visa status. Those are
+exactly the fields an abusive employer can later subpoena, or that a
+trafficker can use to find a worker who sought help. The status quo
+asks the most vulnerable people in the system to choose between
+getting help and being safe.
+
+## Why this matters in dollars
+
+Cost per incident when a worker is deported because identity
+disclosure at intake was subpoena-reachable: roughly **US$22,200**
+lost to the worker (HK$152K remaining contract wages + HK$21K
+outstanding recruitment debt) and **US$14,100** lost to the Hong Kong
+government (≈ HK$71,500 LAD civil application + HK$40-60K
+deportation processing). HK Legal Aid Department spent HK$679.6M on
+civil cases in FY2024/25 — none of it prevents the disclosure that
+triggers the deportation.
 
 ## What Compass changes
 

@@ -112,6 +112,20 @@ export default function DemoPage() {
             everything you need to score the submission.
           </p>
 
+          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[10px] tracking-[0.25em] text-muted-foreground/70 uppercase sm:gap-x-7 sm:text-[11px]">
+            <span>
+              <span className="text-foreground">368,000</span> HK FDHs at risk
+            </span>
+            <span aria-hidden className="text-muted-foreground/30">·</span>
+            <span>
+              <span className="text-foreground">27.2M</span> APAC migrant workers
+            </span>
+            <span aria-hidden className="text-muted-foreground/30">·</span>
+            <span>
+              <span className="text-foreground">$22K</span> lost per deportation
+            </span>
+          </div>
+
           <div className="mt-20 space-y-12">
             {STEPS.map((step) => (
               <StepRow key={step.number} step={step} />

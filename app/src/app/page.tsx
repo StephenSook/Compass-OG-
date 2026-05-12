@@ -50,6 +50,20 @@ export default function HomePage() {
           contract, and her HKID just to ask the question.
         </p>
 
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-[10px] tracking-[0.25em] text-muted-foreground/70 uppercase sm:mt-10 sm:gap-x-7 sm:text-[11px]">
+          <span>
+            <span className="text-foreground">368,000</span> at risk
+          </span>
+          <span aria-hidden className="text-muted-foreground/30">·</span>
+          <span>
+            <span className="text-foreground">$22K</span> lost per worker
+          </span>
+          <span aria-hidden className="text-muted-foreground/30">·</span>
+          <span>
+            <span className="text-foreground">$14K</span> lost per gov case
+          </span>
+        </div>
+
         <div className="mt-10 flex flex-col items-center gap-3 sm:mt-12 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
           <Link
             href="/onboard"

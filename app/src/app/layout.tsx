@@ -29,7 +29,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Compass — Prove eligibility, not identity",
   description:
-    "A private eligibility firewall on 0G — vulnerable migrant workers prove they qualify for services through an autonomous agent, while clinics receive only non-identifying receipts.",
+    "A private eligibility firewall on 0G. Built for 368,000 HK migrant workers and 27M across APAC. They prove eligibility for services through an autonomous agent, while clinics receive only non-identifying receipts. Live on Aristotle mainnet.",
 };
 
 export default function RootLayout({

@@ -119,6 +119,46 @@ export default function AboutPage() {
             commitments. No name, HKID, employer, or document fields.
           </p>
 
+          <Reveal delay={30}>
+            <Section title="By the numbers">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <Stat
+                  number="368,000"
+                  label="HK foreign domestic helpers at risk"
+                  footnote="LegCo Research Office 2025"
+                />
+                <Stat
+                  number="≈ US$22,200"
+                  label="lost per worker per deportation"
+                  footnote="HK Labour Dept 2025 + Amnesty 2013"
+                />
+                <Stat
+                  number="≈ US$14,100"
+                  label="lost per HK government case"
+                  footnote="HK LAD FY24/25 + Budget Head 70"
+                />
+              </div>
+              <p className="mt-8 max-w-3xl text-sm text-muted-foreground">
+                Across APAC, 27.2 million migrant workers face similar
+                disclosure traps (ILO Global Estimates, 2024). 17% of HK FDHs
+                are in forced labour; 60% are deterred from filing Labour
+                Tribunal claims by deportation fear. HK Legal Aid Department
+                spent HK$679.6M on civil cases in FY2024/25 — none of it
+                prevents the disclosure that triggers the deportation. Full
+                TAM, cost per incident, and 12-month grant ladder in the{" "}
+                <a
+                  href="https://github.com/StephenSook/Compass-OG-/blob/main/docs/whitepaper.md#business-impact"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground underline-offset-4 hover:underline"
+                >
+                  whitepaper Business Impact section
+                </a>
+                .
+              </p>
+            </Section>
+          </Reveal>
+
           <Reveal>
             <Section title="Architecture">
               <ArchitectureDiagram />
@@ -383,5 +423,27 @@ function Th({ children }: { children: React.ReactNode }) {
     <th className="pb-4 text-left font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60 uppercase">
       {children}
     </th>
+  );
+}
+
+function Stat({
+  number,
+  label,
+  footnote,
+}: {
+  number: string;
+  label: string;
+  footnote: string;
+}) {
+  return (
+    <div className="border-l-2 border-border/40 pl-4">
+      <p className="text-2xl font-medium text-foreground md:text-3xl">
+        {number}
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/50 uppercase">
+        {footnote}
+      </p>
+    </div>
   );
 }

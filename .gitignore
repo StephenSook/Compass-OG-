@@ -169,3 +169,12 @@ mnemonic.txt
 # Per-run verify-receipt evidence (regenerable; canonical evidence is phala-deployment.md)
 docs/notes/verify-receipt-evidence.md
 graphify-out/
+
+# ffmpeg pipeline intermediates (regenerable; recipe at Demo/edit-recipe.md)
+Demo/build/
+
+# Final rendered demo video (lives on YouTube; not source-controlled — 15 MB binary)
+Demo/compass-demo-final.mp4
+
+# Vercel/0G deployment artifacts that don't need source control
+docs/deployments/og_*.json

@@ -208,6 +208,54 @@ const FAQ_HUMAN: QA[] = [
     ),
   },
   {
+    q: "What's the business case — TAM, cost per incident, sustainability?",
+    a: (
+      <>
+        <p>
+          Hong Kong has <span className="text-foreground">368,000</span>{" "}
+          Foreign Domestic Helpers — 9.6% of the local workforce (HK LegCo
+          Research Office, 2025). Across APAC the migrant-worker population
+          is 27.2 million (ILO Global Estimates, 2024). 17% of HK FDHs are
+          in forced labour; 60% are deterred from filing Labour Tribunal
+          claims by deportation fear (Justice Centre 2016, Mission for
+          Migrant Workers 2023).
+        </p>
+        <p className="mt-3">
+          Cost per incident when a worker is deported because identity
+          disclosure at intake was subpoena-reachable: roughly{" "}
+          <span className="text-foreground">US$22,200</span> lost to the
+          worker (HK$152K remaining contract wages + HK$21K outstanding
+          recruitment debt) and{" "}
+          <span className="text-foreground">US$14,100</span> lost to the
+          Hong Kong government (≈ HK$71,500 LAD civil application +
+          HK$40-60K deportation processing). HK Legal Aid Department spent
+          HK$679.6M on civil cases in FY2024/25 — none of it prevents the
+          disclosure that triggers the deportation.
+        </p>
+        <p className="mt-3">
+          Sustainability: open-source, free for migrant-worker NGOs. AGPL
+          core + commercial dual-license for non-NGO deployments. Phala
+          dstack TDX hosting ≈ US$15/year per receipt-signer instance.
+          12-month grant ladder targets Phala Builders Program, 0G
+          ecosystem, Ethereum Foundation PSE, Mozilla Technology Fund,
+          then Open Society Migration Initiative + Luminate + HK Jockey
+          Club Special Projects. Target by month 18: ≈ US$60K/year
+          recurring (managed hosting + dual-license).
+        </p>
+        <p className="mt-3">
+          Full sources + grant pipeline detail in{" "}
+          <Link
+            href="https://github.com/StephenSook/Compass-OG-/blob/main/docs/whitepaper.md#business-impact"
+            className="underline"
+          >
+            docs/whitepaper.md → §Business Impact
+          </Link>
+          .
+        </p>
+      </>
+    ),
+  },
+  {
     q: "What's stopping an abusive employer from forcing the worker to reveal her credential anyway?",
     a: (
       <>

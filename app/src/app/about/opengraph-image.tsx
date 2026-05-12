@@ -10,7 +10,7 @@ export default async function Image() {
     title: "Bounded disclosure,",
     accent: "on the wire.",
     subtitle:
-      "Four layers: SD-JWT VC vault · 0G Storage ciphertext · Phala dstack TDX receipt-signer · 0G Chain audit log. Every claim mapped to a real / draft / mocked row.",
-    footer: "/about",
+      "Four layers: SD-JWT VC vault · 0G Storage · Phala dstack TDX receipt-signer · 0G Chain audit log. Built for 368K HK migrant workers + 27M across APAC. $22K/$14K cost per incident.",
+    footer: "/about · TAM + cost-per-incident inside",
   });
 }

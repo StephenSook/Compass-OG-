@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Compass — Prove eligibility, not identity",
     short_name: "Compass",
     description:
-      "A private eligibility firewall on 0G. Vulnerable migrant workers prove they qualify for services without disclosing identity. Live on Aristotle mainnet.",
+      "A private eligibility firewall on 0G. Built for 368,000 HK migrant workers + 27M across APAC. Prove eligibility for services without disclosing identity. Live on Aristotle mainnet.",
     start_url: "/",
     display: "standalone",
     background_color: "#000000",

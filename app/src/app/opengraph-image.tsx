@@ -10,7 +10,7 @@ export default async function Image() {
     title: "Prove eligibility,",
     accent: "not identity.",
     subtitle:
-      "A private eligibility firewall on 0G. Vulnerable migrant workers prove they qualify for services without disclosing name, HKID, or employer.",
-    footer: "Aristotle mainnet · live",
+      "A private eligibility firewall on 0G. 368,000 HK migrant workers + 27M across APAC prove they qualify for services without disclosing name, HKID, or employer.",
+    footer: "368K at risk · Aristotle mainnet · live",
   });
 }
