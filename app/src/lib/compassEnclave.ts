@@ -185,8 +185,16 @@ export async function callEnclave(
   // defense-in-depth — a future Phala bug surfacing garbage strings
   // would otherwise propagate to the caller's response body without
   // notice. attestationDigest is already validated above.
-  if (!parsed.signature || !/^0x[0-9a-fA-F]{130}$/.test(parsed.signature)) {
-    throw new Error("enclave signature missing or not 65-byte 0x-hex");
+  //
+  // The enclave's signReceipt uses `@noble/curves` v2 `secp256k1.sign()`
+  // which returns a 64-byte compact signature (r || s, no recovery
+  // byte) = 128 hex chars. The verifier-side reconstructs recovery by
+  // trying both v=0 and v=1 (see verifyReceipt.ts `sigBytes.length ===
+  // 64` pre-check + ECDSA-recover step). Earlier the regex demanded
+  // 130 chars (Ethereum r||s||v); that was the wrong invariant and
+  // every /api/consume call 503'd against it.
+  if (!parsed.signature || !/^0x[0-9a-fA-F]{128}$/.test(parsed.signature)) {
+    throw new Error("enclave signature missing or not 64-byte compact 0x-hex (r||s)");
   }
   if (!parsed.signerAddress || !/^0x[0-9a-fA-F]{40}$/.test(parsed.signerAddress)) {
     throw new Error("enclave signerAddress missing or not 20-byte 0x-hex");
