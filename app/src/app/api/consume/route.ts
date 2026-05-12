@@ -383,27 +383,32 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("[/api/consume] waitForTransactionReceipt timed out — tx is on-chain pending; returning 200 with tx hash so the client polls instead of broadcasting a new tx", err);
-    // Compute the 15-min timestamp bucket from issuedAt so the UI can still
-    // render the privacy-preserving bucket pill even before chain
-    // confirmation. The bucket is deterministic from issuedAt and matches
-    // what the contract will emit in ReceiptIssued.
-    const bucket = Math.floor(issuedAt / 900) * 900;
+    // Compute the 15-min timestamp bucket from nowSec deterministically.
+    // Matches the bucket the contract will emit in ReceiptIssued so the UI
+    // can render the privacy-preserving bucket pill even before chain
+    // confirmation finalizes.
     return NextResponse.json(
       {
         txHash,
         blockNumber: null,
         receiptId,
-        policyId: POLICY_ID,
-        nullifier,
+        policyId: body.grant.policyId,
+        nullifier: body.grant.nullifier,
         agentIdCommitment,
-        resultHash: "0x" + "0".repeat(64),
-        attestationDigest: enclaveResp.attestationDigest,
-        timestampBucket: bucket,
-        expiry: Number(expiry),
-        issuedAt,
-        pending: true,
-        network: chain.name,
+        resultHash,
+        attestationDigest,
+        timestampBucket: Math.floor(nowSec / 900) * 900,
+        receiptExpiry,
+        network: useMainnet() ? "aristotle" : "galileo",
         chainId: chain.id,
+        tee: {
+          source: teeSource,
+          signerAddress: teeSignerAddress,
+          perReceiptQuoteHex,
+          receiptVersion: teeReceiptVersion,
+          error: teeError,
+        },
+        pending: true,
       },
       { status: 200 },
     );
