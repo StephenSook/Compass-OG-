@@ -70,5 +70,5 @@ for an upcoming round, the pitch (~80 words) is:
 - Live: `https://app-psi-pied.vercel.app`
 - Repo: `https://github.com/StephenSook/Compass-OG-`
 - Whitepaper: `docs/whitepaper.pdf`
-- Demo video: `[DEMO_VIDEO_URL]` (fill in after F.1)
+- Demo video: <https://www.youtube.com/watch?v=vg5WZHmlzZI>
 - X thread: `[X_POST_URL]` (fill in after F.5)

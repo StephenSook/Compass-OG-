@@ -51,7 +51,7 @@ Hong Kong's foreign domestic helpers can be deported in 14 days if they lose the
 
 ## Watch the demo
 
-> **3-minute walkthrough:** `[DEMO_VIDEO_URL]` *(YouTube unlisted — drop the URL here once F.1 lands; see `Demo/script.md` for the 6-beat shooting script and `Demo/storyboard.md` for the visual companion).*
+> **3-minute walkthrough:** <https://www.youtube.com/watch?v=vg5WZHmlzZI> — Maria's path from the harm to a mainnet-attested receipt in six beats (2:52, 1080p). Shooting script at [`Demo/script.md`](./Demo/script.md); visual companion at [`Demo/storyboard.md`](./Demo/storyboard.md); editing recipe at [`Demo/edit-recipe.md`](./Demo/edit-recipe.md).
 >
 > The demo records on **Aristotle mainnet** with `NEXT_PUBLIC_COMPASS_USE_MAINNET=1`. Receipts mint to chainId 16661 and land on `https://chainscan.0g.ai`. The Phala dstack TDX enclave must be live during recording — `/api/consume` fails closed (503 `tee_required`) when the CVM is stopped.
 

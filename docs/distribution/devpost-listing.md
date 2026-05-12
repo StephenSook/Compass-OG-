@@ -114,7 +114,7 @@ verifiable-credentials, zero-knowledge, web-cryptography
 - Live frontend: `https://app-psi-pied.vercel.app`
 - GitHub: `https://github.com/StephenSook/Compass-OG-`
 - Whitepaper PDF: `https://github.com/StephenSook/Compass-OG-/blob/main/docs/whitepaper.pdf`
-- Demo video: `[DEMO_VIDEO_URL]` (fill in once F.1 lands)
+- Demo video: <https://www.youtube.com/watch?v=vg5WZHmlzZI>
 
 ## Image gallery
 

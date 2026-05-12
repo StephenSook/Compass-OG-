@@ -8,7 +8,7 @@ Per plan F.5: post within 24 hours of HackQuest submission. Must include the fou
 
 > Compass — a private eligibility firewall on 0G. A vulnerable migrant worker proves she qualifies for free legal help without disclosing her name, HKID, or employer. The clinic gets a 15-min bucketed timestamp and a cryptographic commitment. That's it. Live on Aristotle mainnet.
 >
-> Demo: [DEMO_VIDEO_URL]
+> Demo: https://www.youtube.com/watch?v=vg5WZHmlzZI
 > Live: https://app-psi-pied.vercel.app
 > Repo: https://github.com/StephenSook/Compass-OG-
 >
@@ -22,7 +22,7 @@ Per plan F.5: post within 24 hours of HackQuest submission. Must include the fou
 
 > Compass — private eligibility firewall on 0G. Prove eligibility, not identity.
 >
-> Demo: [DEMO_VIDEO_URL]
+> Demo: https://www.youtube.com/watch?v=vg5WZHmlzZI
 > Live: https://app-psi-pied.vercel.app
 > Code: https://github.com/StephenSook/Compass-OG-
 >

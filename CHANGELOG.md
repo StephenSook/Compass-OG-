@@ -1,5 +1,46 @@
 # Changelog
 
+## Unreleased — F.1 demo video shipped (2026-05-12, seventh wave)
+
+The 3-minute walkthrough is live on YouTube unlisted at
+<https://www.youtube.com/watch?v=vg5WZHmlzZI>. Recorded in a single
+take, edited post-recording via the ffmpeg pipeline documented in the
+session memory (Beat 2 hands-sink Ken Burns substitution at 11.6-25s
+of the trimmed timeline, Beat 6 black-card closer at 161.9-171.9s,
+audio normalized to -14 LUFS / -1.5 TP per YouTube spec, 1920×1080 @
+16fps H.264 High profile, AAC 48kHz stereo, faststart moov atom).
+Final runtime 2:52, under the 3:00 HackQuest cap. Webcam selfie +
+"Stephen Sookra" name tag preserved as founder presence per Dragon's
+"Why your team" criterion.
+
+### Changed
+
+- **`README.md`** — Hero "Watch the demo" block now links the live
+  YouTube URL with a one-liner ("Maria's path from the harm to a
+  mainnet-attested receipt in six beats, 2:52, 1080p").
+- **`Demo/x-post-final.md`** — Both `[DEMO_VIDEO_URL]` placeholders
+  (primary post + short variant) replaced with the live URL.
+- **`docs/distribution/dorahacks-listing.md`** — Demo video link
+  filled in.
+- **`docs/distribution/devpost-listing.md`** — Demo video link
+  filled in.
+- **Vercel prod env** — `NEXT_PUBLIC_COMPASS_DEMO_VIDEO_URL` set to
+  the live URL. Triggers the sticky `<DemoCta>` primitive (bottom-
+  right "Watch the 3-min demo →" CTA) on every page. New deploy
+  promoted to `app-psi-pied.vercel.app`.
+
+### Not yet (gated on user action)
+
+- F.5 X post — uses `Demo/x-post-final.md` template with the URL
+  already filled in. Post within 24hr of HackQuest submission.
+- HackQuest submission — submit project + paste demo URL + X post
+  URL.
+- Update X post on @steve_social_'s May 6 thread with the demo URL
+  as a thread continuation (optional; new audiences can find via
+  README).
+
+---
+
 ## Unreleased — OG team May 11 announcement sync (2026-05-11, sixth wave)
 
 OG team's "Final Push — 5 DAYS TO GO" tweet (Dragon, May 11) + the
