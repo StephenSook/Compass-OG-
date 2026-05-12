@@ -21,14 +21,17 @@ attestation).
 
 ## Long description (200 words)
 
-Migrant workers in Hong Kong make up roughly 5 % of the population
-and face a documented pattern of trafficking, wage theft, and visa
-coercion. The legal and humanitarian services that exist to help them
-require disclosure of identifying data: name, HKID, employer,
-visa status. Those disclosures are exactly the levers that abusive
-employers and traffickers use to find, retaliate against, and silence
-the workers seeking help. The status quo asks workers to choose
-between getting help and being safe.
+Hong Kong is home to 368,000 Foreign Domestic Helpers — 9.6 % of the
+local workforce (HK LegCo Research Office, 2025). 17 % are in forced
+labour and 60 % are deterred from filing Labour Tribunal claims by
+deportation fear (Justice Centre HK 2016; Mission for Migrant
+Workers 2023). Across APAC the migrant-worker population is 27.2
+million (ILO, 2024). The legal and humanitarian services that exist
+to help them require disclosure of identifying data: name, HKID,
+employer, visa status. Those disclosures are exactly the levers that
+abusive employers and traffickers use to find, retaliate against, and
+silence the workers seeking help. The status quo asks workers to
+choose between getting help and being safe.
 
 Compass eliminates the disclosure. It is a privacy-preserving
 eligibility firewall: a vulnerable worker carries an SD-JWT
@@ -54,6 +57,33 @@ and the commitment. Nothing else exists to be disclosed.
 - 5-language kiosk mode (English, Filipino, Bahasa Indonesia, Bahasa
   Malaysia, Cantonese).
 - 3D audit-log visualization at `/audit-graph.html`.
+
+## Business Impact
+
+**TAM** — 368,000 FDHs in Hong Kong (LegCo 2025) · 27.2 million
+migrant workers across APAC (ILO 2024) · US$1.087 billion in
+personal remittances out of Hong Kong annually (World Bank 2024).
+
+**Cost per incident** when an FDH is deported because identity
+disclosure at intake was subpoena-reachable:
+
+- Worker side: ≈ **US$22,200** lost (HK$152K remaining contract
+  wages + HK$21K outstanding recruitment debt; HK Labour Dept MAW
+  Sept 2025 + Amnesty 2013).
+- HK government side: ≈ **US$14,100** lost (≈ HK$71,500 LAD civil
+  application + HK$40–60K deportation processing; LAD FY2024/25
+  statistics + HK Budget Head 70).
+
+**Sustainability** — open-source. Free for migrant-worker NGOs.
+AGPL core + commercial dual-license for non-NGO deployments. Phala
+dstack TDX hosting ≈ US$15/year per receipt-signer instance.
+12-month grant ladder: Phala Builders Program ($10–50K) → 0G
+ecosystem ($10–100K) → EF PSE + Mozilla Technology Fund
+($30–250K) → Open Society Migration Initiative + Luminate + HK
+Jockey Club Special Projects ($150K–1M+). Target by month 18:
+≈ US$60K/year recurring (managed hosting + dual-license).
+
+Full sources in [`docs/whitepaper.md` → §Business Impact](./whitepaper.md#business-impact).
 
 ## Founder quote
 

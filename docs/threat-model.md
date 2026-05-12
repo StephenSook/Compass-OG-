@@ -148,7 +148,8 @@ hardware vendor problem.
 ## 1h. Small-population correlation (k-anonymity)
 
 **Threat.** "Filipino domestic worker, Eastern District, age 30–35,
-unmarried" is already trivially identifying within HK's ~370k FDH population.
+unmarried" is already trivially identifying within HK's 368,000 FDH
+population (HK LegCo Research Office ISSH02/2025).
 A receipt that says "qualifies for HELP free legal aid" combined with
 timestamp narrows further.
 
