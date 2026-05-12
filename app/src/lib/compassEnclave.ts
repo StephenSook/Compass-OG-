@@ -201,19 +201,31 @@ export async function callEnclave(
   }
   // Parse + validate perReceiptQuoteHex separately so we can be
   // explicit about regex failure vs absence.
+  //
+  // The enclave's `requestPerReceiptQuote` returns `quoteHex` straight
+  // from `@phala/dstack-sdk` `client.getQuote()` — which emits raw hex
+  // WITHOUT the `0x` prefix. Normalize on this side so the downstream
+  // `0x${string}` typed value is uniform. Prior version required the
+  // prefix and 503'd every legitimate quote — that bug landed via the
+  // Wave-2 OWASP hardening commit (f3dc918) alongside the 64-byte
+  // signature regex bug (fixed in commit 0cb941e).
   let perReceiptQuoteHex: `0x${string}` | null = null;
   if (parsed.perReceiptQuoteHex) {
-    if (!/^0x[0-9a-fA-F]+$/.test(parsed.perReceiptQuoteHex)) {
+    const raw = parsed.perReceiptQuoteHex;
+    const normalized = raw.startsWith("0x") || raw.startsWith("0X")
+      ? raw
+      : "0x" + raw;
+    if (!/^0x[0-9a-fA-F]+$/.test(normalized)) {
       // silent-failure-hunter 2026-05-11: prior version silently
       // downgraded source to "env" when this regex failed, masking a
       // client-side parse bug as a TEE failure. Now throw so the caller
       // (/api/consume's fail-closed guard) gets a clear signal.
       throw new Error(
         "enclave perReceiptQuoteHex present but malformed: " +
-          parsed.perReceiptQuoteHex.slice(0, 40),
+          raw.slice(0, 40),
       );
     }
-    perReceiptQuoteHex = parsed.perReceiptQuoteHex as `0x${string}`;
+    perReceiptQuoteHex = normalized as `0x${string}`;
   }
   // Prefer the enclave's explicit `source` field when present; only
   // fall back to truthiness-inference for older enclave images that
