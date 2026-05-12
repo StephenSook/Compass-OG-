@@ -38,19 +38,32 @@ Four sentences. The pacing tightens beat-by-beat. The last fragment lands hardes
 
 ## Beat 3 — the Compass moment (0:48–1:30)
 
-**Visual:** live UX on `/onboard`, the four-step walkthrough. Open the
-production URL `https://app-psi-pied.vercel.app/onboard` with the
-Privy embedded wallet already authenticated. **As of 2026-05-11**,
-`NEXT_PUBLIC_COMPASS_USE_MAINNET=1` is already set in Vercel prod env
-(committed in this audit cycle), so the on-chain leg routes to
-Aristotle mainnet (chainId 16661) by default — no flag-flip needed at
-recording time. Steps 1, 2, 3 each tick to green in under 5s. Step 4 is
-the load-bearing reveal: click "Request HELP eligibility (live) →", the
-wallet prompts for a typed-data signature, the button shows
-"submitting grant… → mining receipt… → ✓ receipt minted" with the
-Aristotle explorer tx hash + the 15-min timestamp bucket pill. The
-mainnet receipt is the differentiation. Most hackathon submissions ship
-to testnet; we ship to a real chain.
+**Visual:** live UX on `/onboard` — a **3-step numbered walkthrough +
+a final "Request HELP eligibility" CTA below the 3 steps**. (The
+script previously called it "four-step"; the page is actually
+"3 steps + 1 closing CTA" — same semantic flow, different layout
+naming.) Open the production URL `https://app-psi-pied.vercel.app/
+onboard` with the Privy embedded wallet already authenticated. **As of
+2026-05-11**, `NEXT_PUBLIC_COMPASS_USE_MAINNET=1` is already set in
+Vercel prod env (committed in this audit cycle), so the on-chain leg
+routes to Aristotle mainnet (chainId 16661) by default — no flag-flip
+needed at recording time.
+
+- **Step 01 Connect wallet** — should already show green ✓ + the
+  Privy embedded wallet address before recording starts.
+- **Step 02 Mint the agent** — `AgentRegistry.mintAgent` on Aristotle;
+  shows the new "Acquire OG for 0G Aristotle →" affordance if balance
+  is 0. If pre-funded, mint ticks green in under 5s.
+- **Step 03 Issue demo credential** — `POST /api/issue` returns an
+  Ed25519-signed SD-JWT VC and persists it AES-256-GCM-encrypted in
+  the browser vault. ~3s.
+- **Below the 3 steps — Request HELP eligibility (live) →** — the
+  load-bearing reveal. Scroll past Step 03. Click it; the wallet
+  prompts for a typed-data signature; the button cycles
+  "submitting grant… → mining receipt… → ✓ receipt minted" with the
+  Aristotle explorer tx hash + the 15-min timestamp bucket pill. THIS
+  is the mainnet differentiation. Most hackathon submissions ship to
+  testnet; we ship to a real chain.
 
 The mainnet network copy on Steps 2-3 was wired to `activeChain()` in
 the same audit cycle (`commit 3e7038d`) — so the network name + faucet
